@@ -8,6 +8,13 @@
       "when": 1752350394176,
       "tag": "0000_lyrical_squadron_supreme",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1752356311961,
+      "tag": "0001_majestic_jetstream",
+      "breakpoints": true
     }
   ]
 }

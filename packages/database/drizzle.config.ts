@@ -14,5 +14,5 @@ export default defineConfig({
     dbCredentials: {
         url: process.env.DATABASE_URL
     },
-    out: './packages/database/migrations'
+    out: './migrations'
 })
