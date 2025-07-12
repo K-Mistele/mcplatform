@@ -5,9 +5,12 @@ import { SectionCards } from '@/components/section-cards'
 import { SiteHeader } from '@/components/site-header'
 import { SidebarInset, SidebarProvider } from '@/components/ui/sidebar'
 
+import { requireSession } from '@/lib/auth'
 import data from './data.json'
 
 export default async function Page() {
+    const session = await requireSession()
+
     return (
         <SidebarProvider
             style={

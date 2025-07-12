@@ -2,20 +2,14 @@
 
 import { authClient } from '@/lib/auth.client'
 import {
-    IconCamera,
-    IconChartBar,
     IconDashboard,
     IconDatabase,
-    IconFileAi,
-    IconFileDescription,
     IconFileWord,
-    IconFolder,
     IconHelp,
     IconListDetails,
     IconReport,
     IconSearch,
-    IconSettings,
-    IconUsers
+    IconSettings
 } from '@tabler/icons-react'
 import type * as React from 'react'
 
@@ -34,86 +28,81 @@ import {
 } from '@/components/ui/sidebar'
 
 const data = {
-    user: {
-        name: 'shadcn',
-        email: 'm@example.com',
-        avatar: '/avatars/shadcn.jpg'
-    },
     navMain: [
         {
             title: 'Dashboard',
-            url: '#',
+            url: '/dashboard',
             icon: IconDashboard
         },
         {
-            title: 'Lifecycle',
+            title: 'MCP Servers',
             url: '#',
             icon: IconListDetails
-        },
-        {
-            title: 'Analytics',
-            url: '#',
-            icon: IconChartBar
-        },
-        {
-            title: 'Projects',
-            url: '#',
-            icon: IconFolder
-        },
-        {
-            title: 'Team',
-            url: '#',
-            icon: IconUsers
         }
+        // {
+        //     title: 'Analytics',
+        //     url: '#',
+        //     icon: IconChartBar
+        // },
+        // {
+        //     title: 'Projects',
+        //     url: '#',
+        //     icon: IconFolder
+        // },
+        // {
+        //     title: 'Team',
+        //     url: '#',
+        //     icon: IconUsers
+        // }
     ],
-    navClouds: [
-        {
-            title: 'Capture',
-            icon: IconCamera,
-            isActive: true,
-            url: '#',
-            items: [
-                {
-                    title: 'Active Proposals',
-                    url: '#'
-                },
-                {
-                    title: 'Archived',
-                    url: '#'
-                }
-            ]
-        },
-        {
-            title: 'Proposal',
-            icon: IconFileDescription,
-            url: '#',
-            items: [
-                {
-                    title: 'Active Proposals',
-                    url: '#'
-                },
-                {
-                    title: 'Archived',
-                    url: '#'
-                }
-            ]
-        },
-        {
-            title: 'Prompts',
-            icon: IconFileAi,
-            url: '#',
-            items: [
-                {
-                    title: 'Active Proposals',
-                    url: '#'
-                },
-                {
-                    title: 'Archived',
-                    url: '#'
-                }
-            ]
-        }
-    ],
+    // navClouds: [
+    //     {
+    //         title: 'Capture',
+    //         icon: IconCamera,
+    //         isActive: true,
+    //         url: '#',
+    //         items: [
+    //             {
+    //                 title: 'Active Proposals',
+    //                 url: '#'
+    //             },
+    //             {
+    //                 title: 'Archived',
+    //                 url: '#'
+    //             }
+    //         ]
+    //     },
+    //     {
+    //         title: 'Proposal',
+    //         icon: IconFileDescription,
+    //         url: '#',
+    //         items: [
+    //             {
+    //                 title: 'Active Proposals',
+    //                 url: '#'
+    //             },
+    //             {
+    //                 title: 'Archived',
+    //                 url: '#'
+    //             }
+    //         ]
+    //     },
+    //     {
+    //         title: 'Prompts',
+    //         icon: IconFileAi,
+    //         url: '#',
+    //         items: [
+    //             {
+    //                 title: 'Active Proposals',
+    //                 url: '#'
+    //             },
+    //             {
+    //                 title: 'Archived',
+    //                 url: '#'
+    //             }
+    //         ]
+    //     }
+    // ],
     navSecondary: [
         {
             title: 'Settings',
@@ -152,6 +141,7 @@ const data = {
 
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
     const { data: organization, error, isPending } = authClient.useActiveOrganization()
+    const { data: session, error: userError, isPending: userIsPending } = authClient.useSession()
 
     return (
         <Sidebar collapsible="offcanvas" {...props}>
@@ -159,7 +149,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                 <SidebarMenu>
                     <SidebarMenuItem>
                         <SidebarMenuButton asChild className="data-[slot=sidebar-menu-button]:!p-1.5">
-                            <a href="#">
+                            <a href="/dashboard/organization/select">
                                 {organization?.logo && (
                                     <img src={organization?.logo} className="size-8 rounded-full" alt="" />
                                 )}
@@ -175,7 +165,13 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                 <NavSecondary items={data.navSecondary} className="mt-auto" />
             </SidebarContent>
             <SidebarFooter>
-                <NavUser user={data.user} />
+                <NavUser
+                    user={{
+                        name: session?.user?.name ?? '',
+                        email: session?.user?.email ?? '',
+                        avatar: session?.user?.image ?? null
+                    }}
+                />
             </SidebarFooter>
         </Sidebar>
     )
