@@ -1,12 +1,12 @@
 import { FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form'
 import { Input } from '@/components/ui/input'
-import { authClient } from '@/lib/auth-client'
+import { authClient } from '@/lib/auth.client'
 import { useDebounce } from '@uidotdev/usehooks'
 import { Building2Icon, CheckIcon, LoaderCircleIcon, XIcon } from 'lucide-react'
 import { nanoid } from 'nanoid'
 import { useEffect } from 'react'
 import type { UseFormReturn } from 'react-hook-form'
-import type { OrganizationFormData, SlugStatus } from './types'
+import type { OrganizationFormData, SlugStatus } from './onboarding-types'
 
 interface OrganizationNameStepProps {
     form: UseFormReturn<OrganizationFormData>
@@ -89,29 +89,29 @@ export function OrganizationNameStep({ form, slugStatus, setSlugStatus }: Organi
         switch (slugStatus) {
             case 'checking':
                 return (
-                    <div className='flex items-center space-x-2 text-sm text-muted-foreground'>
-                        <LoaderCircleIcon className='size-4 animate-spin' />
+                    <div className="flex items-center space-x-2 text-sm text-muted-foreground">
+                        <LoaderCircleIcon className="size-4 animate-spin" />
                         <span>Checking availability...</span>
                     </div>
                 )
             case 'available':
                 return (
-                    <div className='flex items-center space-x-2 text-sm text-green-600'>
-                        <CheckIcon className='size-4' />
+                    <div className="flex items-center space-x-2 text-sm text-green-600">
+                        <CheckIcon className="size-4" />
                         <span>Available: {currentSlug}</span>
                     </div>
                 )
             case 'taken':
                 return (
-                    <div className='flex items-center space-x-2 text-sm text-destructive'>
-                        <XIcon className='size-4' />
+                    <div className="flex items-center space-x-2 text-sm text-destructive">
+                        <XIcon className="size-4" />
                         <span>Slug is taken</span>
                     </div>
                 )
             case 'error':
                 return (
-                    <div className='flex items-center space-x-2 text-sm text-destructive'>
-                        <XIcon className='size-4' />
+                    <div className="flex items-center space-x-2 text-sm text-destructive">
+                        <XIcon className="size-4" />
                         <span>Error checking availability</span>
                     </div>
                 )
@@ -121,26 +121,26 @@ export function OrganizationNameStep({ form, slugStatus, setSlugStatus }: Organi
     }
 
     return (
-        <div className='space-y-6 animate-in slide-in-from-right-3 duration-300'>
-            <div className='text-center'>
-                <div className='mx-auto mb-4 size-12 rounded-lg bg-primary/10 flex items-center justify-center'>
-                    <Building2Icon className='size-6 text-primary' />
+        <div className="space-y-6 animate-in slide-in-from-right-3 duration-300">
+            <div className="text-center">
+                <div className="mx-auto mb-4 size-12 rounded-lg bg-primary/10 flex items-center justify-center">
+                    <Building2Icon className="size-6 text-primary" />
                 </div>
-                <h2 className='text-2xl font-semibold tracking-tight'>What's your organization called?</h2>
-                <p className='text-muted-foreground mt-2'>
+                <h2 className="text-2xl font-semibold tracking-tight">What's your organization called?</h2>
+                <p className="text-muted-foreground mt-2">
                     This will be the name that appears on your dashboard and in team invitations.
                 </p>
             </div>
 
-            <div className='space-y-4'>
+            <div className="space-y-4">
                 <FormField
                     control={form.control}
-                    name='name'
+                    name="name"
                     render={({ field }) => (
                         <FormItem>
                             <FormLabel>Organization Name</FormLabel>
                             <FormControl>
-                                <Input placeholder='Acme Inc.' className='text-lg py-6' autoFocus {...field} />
+                                <Input placeholder="Acme Inc." className="text-lg py-6" autoFocus {...field} />
                             </FormControl>
                             <FormMessage />
                         </FormItem>
@@ -148,21 +148,21 @@ export function OrganizationNameStep({ form, slugStatus, setSlugStatus }: Organi
                 />
 
                 {/* Slug display - readonly */}
-                <div className='space-y-2'>
-                    <label htmlFor='organization-slug' className='text-sm font-medium'>
+                <div className="space-y-2">
+                    <label htmlFor="organization-slug" className="text-sm font-medium">
                         URL Slug
                     </label>
-                    <div className='relative'>
+                    <div className="relative">
                         <Input
-                            id='organization-slug'
+                            id="organization-slug"
                             value={currentSlug}
                             readOnly
                             disabled
-                            className='font-mono bg-muted'
-                            placeholder='Will be generated automatically...'
+                            className="font-mono bg-muted"
+                            placeholder="Will be generated automatically..."
                         />
                     </div>
-                    <p className='text-xs text-muted-foreground'>
+                    <p className="text-xs text-muted-foreground">
                         This will be automatically generated from your organization name
                     </p>
                     {renderSlugStatus()}

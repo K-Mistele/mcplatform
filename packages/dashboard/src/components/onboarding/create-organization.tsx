@@ -1,3 +1,4 @@
+'use client'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader } from '@/components/ui/card'
 import { Form } from '@/components/ui/form'
@@ -6,17 +7,16 @@ import { authClient } from '@/lib/auth.client'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { ArrowLeftIcon, ArrowRightIcon, LoaderCircleIcon } from 'lucide-react'
 import { useRouter } from 'next/navigation'
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { toast } from 'sonner'
 
 import { CompletionStep } from './completion-step'
+import type { OnboardingStep, OrganizationFormData, SlugStatus } from './onboarding-types'
+import { organizationSchema } from './onboarding-types'
 import { OrganizationDomainStep } from './organization-domain-step'
 import { OrganizationLogoStep } from './organization-logo-step'
 import { OrganizationNameStep } from './organization-name-step'
-import type { OnboardingStep, OrganizationFormData, SlugStatus } from './types'
-
-const logger = createLogger('/onboarding-flow')
 
 interface OnboardingFlowProps {
     session: any // You can type this more strictly based on your auth session type
@@ -24,7 +24,6 @@ interface OnboardingFlowProps {
 
 export function OnboardingFlow({ session }: OnboardingFlowProps) {
     const router = useRouter()
-    const { track } = useMixpanel()
     const [currentStep, setCurrentStep] = useState<OnboardingStep>('name')
     const [isLoading, setIsLoading] = useState(false)
     const [slugStatus, setSlugStatus] = useState<SlugStatus>('idle')
@@ -39,11 +38,6 @@ export function OnboardingFlow({ session }: OnboardingFlowProps) {
             logoAutoDetected: false
         }
     })
-
-    // Track onboarding started when component mounts
-    useEffect(() => {
-        track('onboarding_started')
-    }, [])
 
     const getStepProgress = () => {
         // Adjust progress calculation based on whether logo step will be shown
@@ -99,11 +93,6 @@ export function OnboardingFlow({ session }: OnboardingFlowProps) {
 
             // Track name step completion
             const values = form.getValues()
-            track('onboarding_name_completed', {
-                organization_name: values.name,
-                organization_slug: values.slug,
-                slug_was_available: slugStatus === 'available'
-            })
 
             setCurrentStep('domain')
         } else if (currentStep === 'domain') {
@@ -115,11 +104,6 @@ export function OnboardingFlow({ session }: OnboardingFlowProps) {
 
             // Track domain step completion
             const values = form.getValues()
-            track('onboarding_domain_completed', {
-                domain_provided: !!values.domain,
-                domain: values.domain || null,
-                logo_auto_detected: values.logoAutoDetected
-            })
 
             // Check if logo was auto-detected
             const logoAutoDetected = form.getValues('logoAutoDetected')
@@ -132,10 +116,6 @@ export function OnboardingFlow({ session }: OnboardingFlowProps) {
         } else if (currentStep === 'logo') {
             // Track logo step completion
             const values = form.getValues()
-            track('onboarding_logo_completed', {
-                logo_provided: !!values.logo,
-                logo_source: values.logoAutoDetected ? 'auto' : 'manual'
-            })
 
             await handleSubmit()
         }
@@ -152,14 +132,6 @@ export function OnboardingFlow({ session }: OnboardingFlowProps) {
     const handleSkipDomain = async () => {
         // Clear the domain field when skipping
         form.setValue('domain', '')
-
-        // Track domain step completion (skipped)
-        track('onboarding_domain_completed', {
-            domain_provided: false,
-            domain: null,
-            logo_auto_detected: false,
-            skipped: true
-        })
 
         // Check if logo was auto-detected
         const logoAutoDetected = form.getValues('logoAutoDetected')
@@ -194,16 +166,6 @@ export function OnboardingFlow({ session }: OnboardingFlowProps) {
                 setCurrentStep(logoAutoDetected ? 'domain' : 'logo')
                 return
             }
-
-            // Track successful organization creation
-            track('onboarding_completed', {
-                organization_id: result.data?.id,
-                organization_name: values.name,
-                organization_slug: values.slug,
-                has_domain: !!values.domain,
-                has_logo: !!values.logo,
-                logo_source: values.logoAutoDetected ? 'auto' : values.logo ? 'manual' : 'none'
-            })
         } catch (error) {
             toast.error('Failed to create organization', {
                 description: 'An unexpected error occurred. Please try again.'
