@@ -9,3 +9,5 @@ export const schema = {
     ...authSchema,
     ...nonAuthSchema
 }
+
+export { authSchema }
