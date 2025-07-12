@@ -18,6 +18,13 @@ services:
         volumes:
             - valkey_data:/data
 
+    inngest: 
+        image: inngest/inngest:latest
+        command: inngest dev -u http://host.docker.internal:3000/api/inngest
+        ports: 
+            - 127.0.0.1:8288:8288
+        environment:
+        
 
 volumes:    
   pgvector_data:
