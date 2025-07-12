@@ -1,0 +1,20 @@
+{
+    "name": "database",
+    "module": "index.ts",
+    "type": "module",
+    "scripts": {
+        "db:generate": "drizzle-kit generate",
+        "db:migrate": "drizzle-kit migrate",
+        "db:studio": "drizzle-kit studio",
+        "db:auth:migrate": "bunx @better-auth/cli migrate"
+    },
+    "dependencies": {
+        "common": "workspace:*"
+    },
+    "devDependencies": {
+        "@types/bun": "latest"
+    },
+    "peerDependencies": {
+        "typescript": "^5"
+    }
+}

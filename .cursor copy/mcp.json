@@ -1,0 +1,23 @@
+{
+    "mcpServers": {
+        "puppeteer": {
+            "command": "npx",
+            "args": [
+                "-y",
+                "@modelcontextprotocol/server-puppeteer"
+            ],
+            "env": {
+                "PUPPETEER_LAUNCH_OPTIONS": "{ \"headless\": true}",
+                "ALLOW_DANGEROUS": "true",
+                "CHROME_USER_DATA_DIR": "/Users/kyle/Library/Application Support/Google/Chrome/Default"
+            }
+        },
+        "context7": {
+            "command": "npx",
+            "args": [
+                "-y",
+                "@upstash/context7-mcp"
+            ]
+        }
+    }
+}
