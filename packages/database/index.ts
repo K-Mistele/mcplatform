@@ -10,4 +10,17 @@ export const schema = {
     ...nonAuthSchema
 }
 
+export type {
+    Account,
+    Invitation,
+    Member,
+    OAuthAccessToken,
+    OAuthApplication,
+    OAuthConsent,
+    Organization,
+    Session,
+    User,
+    Verification
+} from './src/auth-schema'
+export type { SupportRequest } from './src/schema'
 export { authSchema }

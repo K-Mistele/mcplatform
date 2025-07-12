@@ -129,3 +129,14 @@ export const invitation = pgTable('invitation', {
         .notNull()
         .references(() => user.id, { onDelete: 'cascade' })
 })
+
+export type Organization = typeof organization.$inferSelect
+export type Member = typeof member.$inferSelect
+export type Invitation = typeof invitation.$inferSelect
+export type Session = typeof session.$inferSelect
+export type User = typeof user.$inferSelect
+export type Account = typeof account.$inferSelect
+export type Verification = typeof verification.$inferSelect
+export type OAuthApplication = typeof oauthApplication.$inferSelect
+export type OAuthAccessToken = typeof oauthAccessToken.$inferSelect
+export type OAuthConsent = typeof oauthConsent.$inferSelect

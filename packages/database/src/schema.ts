@@ -11,3 +11,5 @@ export const supportRequests = pgTable('support_requests', {
     problemDescription: text('problem_description'),
     status: supportRequestStatus('status')
 })
+
+export type SupportRequest = typeof supportRequests.$inferSelect
