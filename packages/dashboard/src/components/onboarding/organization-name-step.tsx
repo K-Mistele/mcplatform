@@ -1,6 +1,6 @@
 import { FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form'
 import { Input } from '@/components/ui/input'
-import { authClient } from '@/lib/auth.client'
+import { authClient } from '@/lib/auth/auth.client'
 import { useDebounce } from '@uidotdev/usehooks'
 import { Building2Icon, CheckIcon, LoaderCircleIcon, XIcon } from 'lucide-react'
 import { nanoid } from 'nanoid'

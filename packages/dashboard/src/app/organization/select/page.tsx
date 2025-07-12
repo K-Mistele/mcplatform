@@ -1,5 +1,5 @@
 import { SelectOrganization } from '@/components/select-organization'
-import { auth } from '@/lib/auth'
+import { auth } from '@/lib/auth/auth'
 import { db, schema } from 'database'
 import { eq } from 'drizzle-orm'
 import { headers } from 'next/headers'

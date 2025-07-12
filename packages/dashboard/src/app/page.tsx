@@ -1,6 +1,6 @@
 'use client'
 
-import { redirectExample } from '@/lib/actions'
+import { redirectExample } from '@/lib/orpc/actions'
 import { isDefinedError, onError, onSuccess } from '@orpc/client'
 import { useServerAction } from '@orpc/react/hooks'
 import { useState } from 'react'

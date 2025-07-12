@@ -60,10 +60,10 @@ const sessionHelper = async (
         const memberships = await db.select().from(schema.member).where(eq(schema.member.userId, session.user.id))
         if (memberships.length === 0) {
             console.log('user is not a member of any organizations, prompting them to create one!')
-            redirect('/dashboard/organization/new')
+            redirect('/organization/new')
         }
         console.log('user is a member of multiple organizations, prompting them to select one!')
-        redirect('/dashboard/organization/select')
+        redirect('/organization/select')
     }
     return session
 }

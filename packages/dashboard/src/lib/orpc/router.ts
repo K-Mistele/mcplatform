@@ -2,7 +2,8 @@ import { os } from '@orpc/server'
 import { z } from 'zod'
 
 export const base = os.errors({
-    UNAUTHORIZED: {}
+    UNAUTHORIZED: {},
+    RESOURCE_NOT_FOUND: {}
 })
 
 export const executeExample = os

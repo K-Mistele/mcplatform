@@ -1,5 +1,5 @@
 import { McpServersTable } from '@/components/mcp-servers-table'
-import { requireSession } from '@/lib/auth'
+import { requireSession } from '@/lib/auth/auth'
 import { db, schema } from 'database'
 import { eq } from 'drizzle-orm'
 

@@ -6,9 +6,7 @@ import {
     IconChevronRight,
     IconChevronsLeft,
     IconChevronsRight,
-    IconDotsVertical,
     IconLayoutColumns,
-    IconPlus,
     IconServer
 } from '@tabler/icons-react'
 import {
@@ -25,6 +23,8 @@ import {
 } from '@tanstack/react-table'
 import * as React from 'react'
 
+import { AddServerModal } from '@/components/add-server-modal'
+import { DeleteServerModal } from '@/components/delete-server-modal'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
@@ -32,14 +32,14 @@ import {
     DropdownMenu,
     DropdownMenuCheckboxItem,
     DropdownMenuContent,
-    DropdownMenuItem,
-    DropdownMenuSeparator,
     DropdownMenuTrigger
 } from '@/components/ui/dropdown-menu'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
+import { EyeIcon, TrashIcon } from 'lucide-react'
+import Link from 'next/link'
 
 interface McpServer {
     id: string
@@ -112,30 +112,34 @@ const columns: ColumnDef<McpServer>[] = [
     },
     {
         id: 'actions',
+        header: 'Actions',
         cell: ({ row }) => (
-            <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                    <Button
-                        variant="ghost"
-                        className="data-[state=open]:bg-muted text-muted-foreground flex size-8"
-                        size="icon"
-                    >
-                        <IconDotsVertical />
-                        <span className="sr-only">Open menu</span>
-                    </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="w-32">
-                    <DropdownMenuItem>View Details</DropdownMenuItem>
-                    <DropdownMenuItem>Edit</DropdownMenuItem>
-                    <DropdownMenuSeparator />
-                    <DropdownMenuItem variant="destructive">Delete</DropdownMenuItem>
-                </DropdownMenuContent>
-            </DropdownMenu>
+            <div className="flex items-center gap-2">
+                <Button variant="outline" size="sm" asChild>
+                    <Link href={`/dashboard/mcp-servers/${row.original.id}`}>
+                        <EyeIcon className="h-4 w-4" />
+                        View Details
+                    </Link>
+                </Button>
+                <DeleteServerModal
+                    serverId={row.original.id}
+                    serverName={row.original.name}
+                    trigger={
+                        <Button variant="outline" size="sm">
+                            <TrashIcon className="h-4 w-4" />
+                        </Button>
+                    }
+                />
+            </div>
         )
     }
 ]
 
-export function McpServersTable({ data }: { data: McpServer[] }) {
+interface McpServersTableProps {
+    data: McpServer[]
+}
+
+export function McpServersTable({ data }: McpServersTableProps) {
     const [rowSelection, setRowSelection] = React.useState({})
     const [columnVisibility, setColumnVisibility] = React.useState<VisibilityState>({})
     const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>([])
@@ -206,10 +210,7 @@ export function McpServersTable({ data }: { data: McpServer[] }) {
                                 })}
                         </DropdownMenuContent>
                     </DropdownMenu>
-                    <Button size="sm">
-                        <IconPlus />
-                        <span className="hidden lg:inline">Add Server</span>
-                    </Button>
+                    <AddServerModal />
                 </div>
             </div>
 

@@ -1,6 +1,6 @@
 'use client'
 
-import { authClient } from '@/lib/auth.client'
+import { authClient } from '@/lib/auth/auth.client'
 import {
     IconDashboard,
     IconDatabase,
@@ -148,7 +148,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                 <SidebarMenu>
                     <SidebarMenuItem>
                         <SidebarMenuButton asChild className="data-[slot=sidebar-menu-button]:!p-1.5">
-                            <a href="/dashboard/organization/select">
+                            <a href="/organization/select">
                                 {organization?.logo && (
                                     <img src={organization?.logo} className="size-8 rounded-full" alt="" />
                                 )}

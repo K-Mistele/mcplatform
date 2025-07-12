@@ -4,7 +4,7 @@ import { GithubIcon, LoaderCircle } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { authClient } from '@/lib/auth.client'
+import { authClient } from '@/lib/auth/auth.client'
 import { cn } from '@/lib/utils'
 import { useState } from 'react'
 import { useKey } from 'react-use'
@@ -18,29 +18,20 @@ export function RegisterForm({ className, ...props }: React.ComponentProps<'div'
     const [isLoading, setIsLoading] = useState(false)
 
     const credentialRegister = async () => {
-        const { data, error } = await authClient.signUp.email(
-            {
-                email, // user email address
-                password, // user password -> min 8 characters by default
-                name, // user display name
-                image: `https://img.logo.dev/${domain}?token=pk_TFdOakUKSHuYLhmUlWaSbQ`, // User image URL (optional)
-                callbackURL: '/dashboard' // A URL to redirect to after the user verifies their email (optional)
-            },
-            {
-                onRequest: (ctx) => {
-                    setIsLoading(true)
-                },
-                onSuccess: (ctx) => {
-                    //redirect to the dashboard or sign in page
-                    setIsLoading(false)
-                },
-                onError: (ctx) => {
-                    // display the error message
-                    setIsLoading(false)
-                    toast.error(ctx.error.message)
-                }
-            }
-        )
+        setIsLoading(true)
+        const { data, error } = await authClient.signUp.email({
+            email, // user email address
+            password, // user password -> min 8 characters by default
+            name, // user display name
+            image: `https://img.logo.dev/${domain}?token=pk_TFdOakUKSHuYLhmUlWaSbQ`, // User image URL (optional)
+            callbackURL: '/dashboard' // A URL to redirect to after the user verifies their email (optional)
+        })
+        if (error) {
+            toast.error(error.message)
+            return
+        }
+        toast.success('Account created successfully')
+        setIsLoading(false)
     }
     const socialLogin = async (provider: 'google' | 'github') => {
         const { data, error } = await authClient.signIn.social({
@@ -72,12 +63,6 @@ export function RegisterForm({ className, ...props }: React.ComponentProps<'div'
                             />
                         )}
                         <h1 className="text-xl font-bold">Welcome to Acme Inc.</h1>
-                        <div className="text-center text-sm">
-                            Don&apos;t have an account?{' '}
-                            <a href="#" className="underline underline-offset-4">
-                                Sign up
-                            </a>
-                        </div>
                     </div>
                     <div className="flex flex-col gap-6">
                         <div className="grid gap-3">
@@ -154,8 +139,8 @@ export function RegisterForm({ className, ...props }: React.ComponentProps<'div'
                 </div>
             </form>
             <div className="text-muted-foreground *:[a]:hover:text-primary text-center text-xs text-balance *:[a]:underline *:[a]:underline-offset-4">
-                By clicking continue, you agree to our <a href="#">Terms of Service</a> and{' '}
-                <a href="#">Privacy Policy</a>.
+                By clicking continue, you agree to our <a href="/#">Terms of Service</a> and{' '}
+                <a href="/#">Privacy Policy</a>.
             </div>
         </div>
     )

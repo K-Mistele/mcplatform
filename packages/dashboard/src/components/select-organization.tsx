@@ -2,7 +2,7 @@
 
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { authClient } from '@/lib/auth.client'
+import { authClient } from '@/lib/auth/auth.client'
 import type { Member, Organization } from 'database'
 import { BuildingIcon, LoaderCircleIcon } from 'lucide-react'
 import { useRouter } from 'next/navigation'

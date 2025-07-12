@@ -3,7 +3,7 @@ import { ThemeToggle } from '@/components/theme-toggle'
 import { Toaster } from '@/components/ui/sonner'
 import type { Metadata } from 'next'
 import { Geist, Geist_Mono } from 'next/font/google'
-import '../lib/orpc.server' // for pre-rendering
+import '../lib/orpc/orpc.server' // for pre-rendering
 import './globals.css'
 
 const geistSans = Geist({

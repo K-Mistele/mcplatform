@@ -23,5 +23,4 @@ export type {
     User,
     Verification
 } from './src/auth-schema'
-export { mcpServerAuthTypeSchema, supportRequestMethodSchema, supportRequestStatusSchema } from './src/schema'
 export { authSchema }
