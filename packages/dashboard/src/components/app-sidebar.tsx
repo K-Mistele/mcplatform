@@ -6,14 +6,13 @@ import {
     IconDatabase,
     IconFileWord,
     IconHelp,
-    IconListDetails,
     IconReport,
     IconSearch,
+    IconServer2,
     IconSettings
 } from '@tabler/icons-react'
 import type * as React from 'react'
 
-import { NavDocuments } from '@/components/nav-documents'
 import { NavMain } from '@/components/nav-main'
 import { NavSecondary } from '@/components/nav-secondary'
 import { NavUser } from '@/components/nav-user'
@@ -36,8 +35,8 @@ const data = {
         },
         {
             title: 'MCP Servers',
-            url: '#',
-            icon: IconListDetails
+            url: '/dashboard/mcp-servers',
+            icon: IconServer2
         }
         // {
         //     title: 'Analytics',
@@ -161,7 +160,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
             </SidebarHeader>
             <SidebarContent>
                 <NavMain items={data.navMain} />
-                <NavDocuments items={data.documents} />
+                {/* <NavDocuments items={data.documents} /> */}
                 <NavSecondary items={data.navSecondary} className="mt-auto" />
             </SidebarContent>
             <SidebarFooter>

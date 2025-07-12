@@ -15,6 +15,13 @@
       "when": 1752356311961,
       "tag": "0001_majestic_jetstream",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1752360291123,
+      "tag": "0002_fat_junta",
+      "breakpoints": true
     }
   ]
 }

@@ -1,8 +1,16 @@
 import { nanoid } from 'common/nanoid'
 import { bigint, pgEnum, pgTable, text } from 'drizzle-orm/pg-core'
+import { z } from 'zod'
 import { organization } from './auth-schema'
 
-export const supportRequestStatus = pgEnum('support_request_status', ['pending', 'in_progress', 'resolved', 'closed'])
+export const supportRequestStatus = pgEnum('support_request_status', [
+    'pending',
+    'in_progress',
+    'resolved',
+    'closed'
+] as const)
+export const supportRequestMethod = pgEnum('support_request_method', ['slack', 'linear', 'dashboard'] as const)
+export const mcpServerAuthType = pgEnum('mcp_server_auth_type', ['oauth', 'none', 'collect_email'] as const)
 
 export const supportRequests = pgTable('support_requests', {
     id: text('id').$defaultFn(() => `sr_${nanoid(8)}`),
@@ -23,5 +31,12 @@ export const mcpServers = pgTable('mcp_servers', {
         .references(() => organization.id)
         .notNull(),
     name: text('name').notNull(),
-    createdAt: bigint('created_at', { mode: 'number' }).$defaultFn(() => Date.now())
+    createdAt: bigint('created_at', { mode: 'number' }).$defaultFn(() => Date.now()),
+    authType: mcpServerAuthType('auth_type').default('none'),
+    informationMessage: text('information_message'),
+    supportTicketType: supportRequestMethod('support_ticket_type').default('dashboard')
 })
+
+export const supportRequestStatusSchema = z.enum(supportRequestStatus.enumValues)
+export const supportRequestMethodSchema = z.enum(supportRequestMethod.enumValues)
+export const mcpServerAuthTypeSchema = z.enum(mcpServerAuthType.enumValues)
