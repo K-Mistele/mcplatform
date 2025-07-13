@@ -4,7 +4,10 @@ import { db, schema } from 'database'
 import { eq } from 'drizzle-orm'
 import { type NextRequest, NextResponse } from 'next/server'
 
-async function mcpServerHandler(request: NextRequest) {
+async function mcpServerHandler(
+    request: NextRequest,
+    { params }: { params: Promise<{ transport: string; nanoid: string }> }
+) {
     // Pull the slug from the host header and see if we can find a server with that slug.
     const host = request.headers.get('host')
     if (!host) {
@@ -21,10 +24,19 @@ async function mcpServerHandler(request: NextRequest) {
         return NextResponse.json({ error: 'Server not found' }, { status: 404 })
     }
 
+    // Now we create the MCP server
+
     console.log('initializing MCP server with slug', slug)
     const handler = createMcpHandler(
         async (server) => {
             configureMcpServer(server, mcpServerConfiguration)
+            server.server.oninitialized = async () => {
+                const { nanoid, transport } = await params
+                await db.insert(schema.mcpServerUser).values({
+                    distinctId: nanoid,
+                    transport: transport
+                })
+            }
         },
         {
             serverInfo: {

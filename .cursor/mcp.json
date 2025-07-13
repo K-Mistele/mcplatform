@@ -21,9 +21,6 @@
         },
         "kyles_api_support5": {
             "url": "https://pro-model-sturgeon.ngrok-free.app/api/mcp"
-        },
-        "Kyle_s_MCP_Server": {
-            "url": "http://test-server.localhost:3000/api/mcp"
         }
     }
 }

@@ -1,11 +1,11 @@
 'use client'
 
-import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { CopyIcon, ExternalLinkIcon, MousePointerClickIcon } from 'lucide-react'
+import { CopyIcon, MousePointerClickIcon } from 'lucide-react'
 import { useState } from 'react'
 import { toast } from 'sonner'
+import { Input } from './ui/input'
 
 interface CursorInstallLinkProps {
     serverName: string
@@ -15,20 +15,40 @@ interface CursorInstallLinkProps {
 export function CursorInstallLink({ serverName, serverUrl }: CursorInstallLinkProps) {
     const [linkCopied, setLinkCopied] = useState(false)
     const [configCopied, setConfigCopied] = useState(false)
+    const [darkButtonCopied, setDarkButtonCopied] = useState(false)
+    const [lightButtonCopied, setLightButtonCopied] = useState(false)
 
-    const sanitizedServerName = serverName.replace(/[^a-zA-Z0-9]/g, '_')
     // Generate the MCP server configuration
     const config = {
-        [sanitizedServerName]: {
-            url: serverUrl
-        }
+        name: serverName,
+        url: serverUrl
     }
+
+    // Sanitize server name for URL
+    const sanitizedServerName = encodeURIComponent(serverName)
 
     // Base64 encode the configuration
     const base64Config = Buffer.from(JSON.stringify(config)).toString('base64')
 
     // Generate the Cursor install link
-    const installLink = `cursor://anysphere.cursor-deeplink/mcp/install?name=${encodeURIComponent(serverName)}&config=${base64Config}`
+    const installLink = `cursor://anysphere.cursor-deeplink/mcp/install?name=${sanitizedServerName}&config=${base64Config}`
+
+    // Generate the raw HTML for each button
+    const darkButtonHtml = `<a href="https://cursor.com/install-mcp?name=${sanitizedServerName}&config=${base64Config}">
+    <img
+        src="https://cursor.com/deeplink/mcp-install-dark.svg"
+        alt="Add ${serverName} MCP server to Cursor"
+        height="32"
+    />
+</a>`
+
+    const lightButtonHtml = `<a href="https://cursor.com/install-mcp?name=${sanitizedServerName}&config=${base64Config}">
+    <img
+        src="https://cursor.com/deeplink/mcp-install-light.svg"
+        alt="Add ${serverName} MCP server to Cursor"
+        height="32"
+    />
+</a>`
 
     const handleCopyLink = async () => {
         try {
@@ -52,8 +72,26 @@ export function CursorInstallLink({ serverName, serverUrl }: CursorInstallLinkPr
         }
     }
 
-    const handleInstallClick = () => {
-        window.location.href = installLink
+    const handleCopyDarkButton = async () => {
+        try {
+            await navigator.clipboard.writeText(darkButtonHtml)
+            setDarkButtonCopied(true)
+            toast.success('Dark button HTML copied to clipboard')
+            setTimeout(() => setDarkButtonCopied(false), 2000)
+        } catch (err) {
+            toast.error('Failed to copy dark button HTML')
+        }
+    }
+
+    const handleCopyLightButton = async () => {
+        try {
+            await navigator.clipboard.writeText(lightButtonHtml)
+            setLightButtonCopied(true)
+            toast.success('Light button HTML copied to clipboard')
+            setTimeout(() => setLightButtonCopied(false), 2000)
+        } catch (err) {
+            toast.error('Failed to copy light button HTML')
+        }
     }
 
     return (
@@ -68,11 +106,39 @@ export function CursorInstallLink({ serverName, serverUrl }: CursorInstallLinkPr
             <CardContent className="space-y-4">
                 {/* One-click install button */}
                 <div className="space-y-2">
-                    <div className="text-sm font-medium">One-Click Install</div>
-                    <Button onClick={handleInstallClick} className="w-full" size="lg">
-                        <ExternalLinkIcon className="h-4 w-4 mr-2" />
-                        Install in Cursor
-                    </Button>
+                    <div className="text-md font-bold">Installation Buttons</div>
+                    <div className="flex flex-col items-start gap-2">
+                        <div className="flex items-center gap-2">
+                            <a
+                                href={`https://cursor.com/install-mcp?name=${sanitizedServerName}&config=${base64Config}`}
+                            >
+                                <img
+                                    src="https://cursor.com/deeplink/mcp-install-dark.svg"
+                                    alt="Add Kyle_s_MCP_Server MCP server to Cursor"
+                                    height="32"
+                                />
+                            </a>
+                            <Button variant="outline" size="sm" onClick={handleCopyDarkButton} className="shrink-0">
+                                <CopyIcon className="h-4 w-4" />
+                                {darkButtonCopied ? 'Copied!' : 'Copy HTML'}
+                            </Button>
+                        </div>
+                        <div className="flex items-center gap-2">
+                            <a
+                                href={`https://cursor.com/install-mcp?name=${sanitizedServerName}&config=${base64Config}`}
+                            >
+                                <img
+                                    src="https://cursor.com/deeplink/mcp-install-light.svg"
+                                    alt="Add Kyle_s_MCP_Server MCP server to Cursor"
+                                    height="32"
+                                />
+                            </a>
+                            <Button variant="outline" size="sm" onClick={handleCopyLightButton} className="shrink-0">
+                                <CopyIcon className="h-4 w-4" />
+                                {lightButtonCopied ? 'Copied!' : 'Copy HTML'}
+                            </Button>
+                        </div>
+                    </div>
                     <p className="text-xs text-muted-foreground">
                         This will open Cursor and automatically configure the MCP server
                     </p>
@@ -80,11 +146,9 @@ export function CursorInstallLink({ serverName, serverUrl }: CursorInstallLinkPr
 
                 {/* Install link */}
                 <div className="space-y-2">
-                    <div className="text-sm font-medium">Install Link</div>
-                    <div className="flex items-center gap-2">
-                        <Badge variant="outline" className="font-mono text-xs break-all max-w-[200px] truncate">
-                            {installLink}
-                        </Badge>
+                    <div className="text-md font-bold">Install Link</div>
+                    <div className="flex flex-row w-full items-center gap-2">
+                        <Input className="font-mono text-xs break-all" value={installLink} readOnly />
                         <Button variant="outline" size="sm" onClick={handleCopyLink} className="shrink-0">
                             <CopyIcon className="h-4 w-4" />
                             {linkCopied ? 'Copied!' : 'Copy'}
@@ -97,7 +161,7 @@ export function CursorInstallLink({ serverName, serverUrl }: CursorInstallLinkPr
 
                 {/* Manual configuration */}
                 <div className="space-y-2">
-                    <div className="text-sm font-medium">Manual Configuration</div>
+                    <div className="text-md font-bold">Manual Configuration</div>
                     <div className="bg-muted p-3 rounded-md">
                         <pre className="text-xs text-muted-foreground">{JSON.stringify(config, null, 2)}</pre>
                     </div>

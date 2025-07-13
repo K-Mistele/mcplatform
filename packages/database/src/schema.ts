@@ -57,3 +57,17 @@ export const toolCalls = pgTable('mcp_tool_calls', {
     input: jsonb('input'),
     output: jsonb('output')
 })
+
+export const mcpServerUser = pgTable('mcp_server_user', {
+    transport: text('transport'),
+    distinctId: text('distinct_id').unique('mcp_server_user_distinct_id_unique', { nulls: 'not distinct' }),
+    email: text('email').unique('mcp_server_user_email_unique', { nulls: 'not distinct' }),
+    firstSeenAt: bigint('first_seen_at', { mode: 'number' }).$defaultFn(() => Date.now())
+})
+
+export const mcpServerConnection = pgTable('mcp_server_connect', {
+    slug: text('slug').references(() => mcpServers.slug),
+    distinctId: text('distinct_id').references(() => mcpServerUser.distinctId, { onDelete: 'cascade' }),
+    email: text('email').references(() => mcpServerUser.email, { onDelete: 'cascade' }),
+    createdAt: bigint('created_at', { mode: 'number' }).$defaultFn(() => Date.now())
+})
