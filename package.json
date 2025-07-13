@@ -9,5 +9,9 @@
     },
     "peerDependencies": {
         "typescript": "^5"
+    },
+    "dependencies": {
+        "exa-js": "^1.8.20",
+        "weave": "^0.9.2"
     }
 }
