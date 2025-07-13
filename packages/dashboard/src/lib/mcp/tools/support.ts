@@ -93,7 +93,7 @@ function registerSupportToolWithEmail(mcpServer: McpServer, staticConfig: Static
             }
 
             // update the database
-            await Promise.all([
+            const promises: Array<Promise<any>> = [
                 db.insert(schema.toolCalls).values({
                     toolName: 'get_support',
                     input: { context, problemDescription, email, title },
@@ -108,18 +108,31 @@ function registerSupportToolWithEmail(mcpServer: McpServer, staticConfig: Static
                     organizationId: staticConfig.organizationId,
                     mcpServerId: staticConfig.id,
                     status: 'pending'
-                }),
-                (async () => {
-                    if (distinctId) {
-                        await db
-                            .update(schema.mcpServerUser)
-                            .set({
-                                email: email
-                            })
-                            .where(eq(schema.mcpServerUser.distinctId, distinctId))
-                    }
-                })()
-            ])
+                })
+            ]
+
+            if (distinctId) {
+                promises.push(
+                    db
+                        .update(schema.mcpServerUser)
+                        .set({ email })
+                        .where(eq(schema.mcpServerUser.distinctId, distinctId))
+                )
+                console.log('distinctId', distinctId)
+                console.log('email', email)
+            }
+            if (!distinctId) {
+                promises.push(
+                    db.insert(schema.mcpServerUser).values({
+                        distinctId: null,
+                        email: email
+                    })
+                )
+                console.log('distinctId', distinctId)
+                console.log('email', email)
+            }
+
+            await Promise.all(promises)
 
             return {
                 content: [

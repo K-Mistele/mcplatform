@@ -38,6 +38,7 @@ import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { ServerIcon } from 'lucide-react'
+import Link from 'next/link'
 
 interface ConnectedServer {
     distinctId: string
@@ -108,7 +109,12 @@ const columns: ColumnDef<UserWithServers>[] = [
                         </AvatarFallback>
                     </Avatar>
                     <div className="flex flex-col">
-                        <span className="font-medium">{user.name}</span>
+                        <Link
+                            href={`/dashboard/users/${encodeURIComponent(user.distinctId)}`}
+                            className="font-medium hover:underline"
+                        >
+                            {user.name}
+                        </Link>
                         <span className="text-sm text-muted-foreground">{user.email}</span>
                         <span className="text-xs text-muted-foreground">ID: {user.distinctId}</span>
                     </div>

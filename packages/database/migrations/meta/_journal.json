@@ -5,22 +5,8 @@
     {
       "idx": 0,
       "version": "7",
-      "when": 1752395819352,
-      "tag": "0000_glorious_madame_hydra",
-      "breakpoints": true
-    },
-    {
-      "idx": 1,
-      "version": "7",
-      "when": 1752395948170,
-      "tag": "0001_wet_famine",
-      "breakpoints": true
-    },
-    {
-      "idx": 2,
-      "version": "7",
-      "when": 1752396201115,
-      "tag": "0002_free_jazinda",
+      "when": 1752396461830,
+      "tag": "0000_perpetual_roland_deschain",
       "breakpoints": true
     }
   ]

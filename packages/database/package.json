@@ -5,6 +5,9 @@
     "scripts": {
         "db:generate": "drizzle-kit generate",
         "db:migrate": "drizzle-kit migrate",
+        "db:push": "drizzle-kit push",
+        "db:introspect": "drizzle-kit introspect",
+        "db:pull": "drizzle-kit pull",
         "db:studio": "drizzle-kit studio",
         "db:auth:migrate": "bunx @better-auth/cli migrate"
     },

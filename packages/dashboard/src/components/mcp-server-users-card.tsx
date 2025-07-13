@@ -4,6 +4,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { db, schema } from 'database'
 import { desc, eq } from 'drizzle-orm'
 import { CalendarIcon, UsersIcon } from 'lucide-react'
+import Link from 'next/link'
 
 interface McpServerUsersCardProps {
     serverId: string
@@ -78,7 +79,16 @@ export async function McpServerUsersCard({ serverId, serverSlug }: McpServerUser
                                     </Avatar>
                                     <div className="flex-1 min-w-0">
                                         <div className="font-medium text-sm truncate">
-                                            {connection.email || 'Unknown user'}
+                                            {connection.distinctId ? (
+                                                <Link
+                                                    href={`/dashboard/users/${encodeURIComponent(connection.distinctId)}`}
+                                                    className="hover:underline"
+                                                >
+                                                    {connection.email || 'Unknown user'}
+                                                </Link>
+                                            ) : (
+                                                connection.email || 'Unknown user'
+                                            )}
                                         </div>
                                         <div className="flex items-center gap-2 text-xs text-muted-foreground">
                                             <CalendarIcon className="h-3 w-3" />
