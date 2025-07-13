@@ -1,3 +1,4 @@
+import { ServerUrlDisplay } from '@/components/server-url-display'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
@@ -55,6 +56,12 @@ export default async function McpServerDetailsPage(props: McpServerDetailsPagePr
         notFound()
     }
 
+    const slug = server.slug as string
+    const currentLoc = process.env.NEXT_PUBLIC_BETTER_AUTH_URL
+    const proto = currentLoc?.startsWith('https://') ? 'https://' : 'http://'
+    const host = currentLoc?.split('://')[1]
+    const url = `${proto}${slug}.${host}/mcp`
+
     return (
         <div className="flex flex-col gap-4 py-4 md:gap-6 md:py-6">
             <div className="px-4 lg:px-6">
@@ -101,13 +108,16 @@ export default async function McpServerDetailsPage(props: McpServerDetailsPagePr
                                 <p className="mt-1 font-medium">{server.name}</p>
                             </div>
                             {server.slug && (
-                                <div>
-                                    <div className="text-sm font-medium text-muted-foreground">Server URL</div>
-                                    <div className="mt-1">
-                                        <Badge variant="secondary" className="font-mono text-sm">
-                                            {server.slug}.mcp.naptha.gg
-                                        </Badge>
+                                <div className="flex flex-col gap-2">
+                                    <div>
+                                        <div className="text-sm font-medium text-muted-foreground">Server Slug</div>
+                                        <div className="mt-1">
+                                            <Badge variant="secondary" className="font-mono text-sm">
+                                                {server.slug}
+                                            </Badge>
+                                        </div>
                                     </div>
+                                    <ServerUrlDisplay url={url} />
                                 </div>
                             )}
                             <div>

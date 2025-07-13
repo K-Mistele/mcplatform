@@ -10,7 +10,7 @@ function extractSubdomain(request: NextRequest): string | null {
     if (url.includes('localhost') || url.includes('127.0.0.1')) {
         // Try to extract subdomain from the full URL
         const fullUrlMatch = url.match(/http:\/\/([^.]+)\.localhost/)
-        if (fullUrlMatch && fullUrlMatch[1]) {
+        if (fullUrlMatch?.[1]) {
             return fullUrlMatch[1]
         }
 
@@ -46,14 +46,11 @@ export async function middleware(request: NextRequest) {
 
     if (subdomain) {
         // Block access to admin page from subdomains
-        if (pathname.startsWith('/admin')) {
+        if (pathname.startsWith('/dashboard')) {
             return NextResponse.redirect(new URL('/', request.url))
         }
 
-        // For the root path on a subdomain, rewrite to the subdomain page
-        if (pathname === '/') {
-            return NextResponse.rewrite(new URL(`/s/${subdomain}`, request.url))
-        }
+        // NOTE: we want /mcp to be enabled
     }
 
     // On the root domain, allow normal access

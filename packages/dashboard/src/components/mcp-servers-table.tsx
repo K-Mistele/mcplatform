@@ -38,8 +38,9 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
-import { EyeIcon, TrashIcon } from 'lucide-react'
+import { CopyIcon, EyeIcon, TrashIcon } from 'lucide-react'
 import Link from 'next/link'
+import { toast } from 'sonner'
 
 interface McpServer {
     id: string
@@ -108,15 +109,27 @@ const columns: ColumnDef<McpServer>[] = [
         accessorKey: 'slug',
         header: 'Server URL',
         cell: ({ row }) => {
-            const slug = row.getValue('slug') as string | null
-            if (!slug) return <span className="text-muted-foreground text-xs">No URL configured</span>
-
-            const serverUrl = `${slug}.mcp.naptha.gg`
+            const slug = row.getValue('slug') as string
+            const currentLoc = process.env.NEXT_PUBLIC_BETTER_AUTH_URL
+            const proto = currentLoc?.startsWith('https://') ? 'https://' : 'http://'
+            const host = currentLoc?.split('://')[1]
+            const url = `${proto}${slug}.${host}/mcp`
             return (
                 <div className="flex items-center gap-2">
                     <Badge variant="secondary" className="font-mono text-xs">
-                        {serverUrl}
+                        {url}
                     </Badge>
+                    <Button
+                        variant="outline"
+                        size="sm"
+                        className="cursor-pointer"
+                        onClick={() => {
+                            navigator.clipboard.writeText(url)
+                            toast.success('URL copied to clipboard')
+                        }}
+                    >
+                        <CopyIcon className="h-4 w-4" />
+                    </Button>
                 </div>
             )
         }
