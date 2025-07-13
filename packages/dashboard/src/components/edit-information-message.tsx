@@ -65,12 +65,14 @@ export function EditInformationMessage({ serverId, currentMessage }: EditInforma
     }
 
     return (
-        <Card className="md:col-span-2">
+        <Card className="">
             <CardHeader>
                 <div className="flex items-center justify-between">
                     <div>
                         <CardTitle>Information Message</CardTitle>
-                        <CardDescription>Message displayed to users about this server</CardDescription>
+                        <CardDescription>
+                            This server will display this message to users when they access it.
+                        </CardDescription>
                     </div>
                     {!isEditing && (
                         <Button

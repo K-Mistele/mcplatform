@@ -27,11 +27,7 @@ export const createMcpServerAction = base
         const [newMcpServer] = await db
             .insert(schema.mcpServers)
             .values({
-                name: input.name,
-                slug: input.slug,
-                authType: input.authType,
-                supportTicketType: input.supportTicketType,
-                informationMessage: input.informationMessage,
+                ...input,
                 organizationId: session.session.activeOrganizationId
             })
             .returning()
@@ -98,16 +94,23 @@ export const validateSubdomainAction = base
     })
     .actionable()
 
-export const setMcpInformationMessage = base
-    .input(z.object({ serverId: z.string(), informationMessage: z.string() }))
+export const updateMcpServerConfiguration = base
+    .input(
+        z.object({
+            serverId: z.string(),
+            authType: z.enum(['oauth', 'none', 'collect_email']),
+            supportTicketType: z.enum(['slack', 'linear', 'dashboard', 'none'])
+        })
+    )
     .handler(async ({ input, errors, context }) => {
         const session = await requireSession()
-        console.log(`Setting instructions for MCP server ${input.serverId}`)
+        console.log(`Updating configuration for MCP server ${input.serverId}`)
 
         const [updatedServer] = await db
             .update(schema.mcpServers)
             .set({
-                informationMessage: input.informationMessage
+                authType: input.authType,
+                supportTicketType: input.supportTicketType
             })
             .where(
                 and(
@@ -116,11 +119,13 @@ export const setMcpInformationMessage = base
                 )
             )
             .returning()
+
         if (!updatedServer) {
             throw errors.RESOURCE_NOT_FOUND({
                 message: 'MCP server not found'
             })
         }
+
         revalidatePath(`/dashboard/mcp-servers/${input.serverId}`)
         return updatedServer
     })

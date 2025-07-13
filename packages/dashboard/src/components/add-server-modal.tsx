@@ -1,7 +1,7 @@
 'use client'
 
 import { zodResolver } from '@hookform/resolvers/zod'
-import { useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { useForm } from 'react-hook-form'
 import type { z } from 'zod'
 
@@ -18,8 +18,9 @@ import {
 import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form'
 import { Input } from '@/components/ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { createMcpServerAction } from '@/lib/orpc/actions'
+import { createMcpServerAction, validateSubdomainAction } from '@/lib/orpc/actions'
 import { createMcpServerSchema } from '@/lib/schemas.isometric'
+import { cn } from '@/lib/utils'
 import { isDefinedError, onError, onSuccess } from '@orpc/client'
 import { useServerAction } from '@orpc/react/hooks'
 import { IconPlus } from '@tabler/icons-react'
@@ -30,6 +31,9 @@ export type CreateMcpServerInput = z.infer<typeof createMcpServerSchema>
 
 export function AddServerModal() {
     const [open, setOpen] = useState(false)
+    const [slugValidationError, setSlugValidationError] = useState<string | null>(null)
+    const [isValidatingSlug, setIsValidatingSlug] = useState(false)
+    const debounceRef = useRef<NodeJS.Timeout | null>(null)
     const router = useRouter()
 
     const form = useForm<CreateMcpServerInput>({
@@ -56,6 +60,7 @@ export function AddServerModal() {
                 toast.success('MCP server created successfully')
                 setOpen(false)
                 form.reset()
+                resetValidationState()
                 // Redirect to the details page for the newly created server
                 if (result && typeof result === 'object' && 'id' in result) {
                     router.push(`/dashboard/mcp-servers/${result.id}`)
@@ -63,6 +68,84 @@ export function AddServerModal() {
             })
         ]
     })
+
+    const { execute: validateSlug } = useServerAction(validateSubdomainAction, {
+        interceptors: [
+            onError((error) => {
+                if (isDefinedError(error)) {
+                    setSlugValidationError(error.message)
+                } else {
+                    setSlugValidationError('Failed to validate slug')
+                }
+                setIsValidatingSlug(false)
+            }),
+            onSuccess(() => {
+                setSlugValidationError(null)
+                setIsValidatingSlug(false)
+            })
+        ]
+    })
+
+    // Helper function to reset validation state
+    const resetValidationState = useCallback(() => {
+        if (debounceRef.current) {
+            clearTimeout(debounceRef.current)
+        }
+        setSlugValidationError(null)
+        setIsValidatingSlug(false)
+    }, [])
+
+    // Debounced validation function with 2-second delay
+    const debouncedValidateSlug = useCallback(
+        (slug: string) => {
+            // Clear existing timeout
+            if (debounceRef.current) {
+                clearTimeout(debounceRef.current)
+            }
+
+            // Clear previous error state when user starts typing
+            if (slugValidationError) {
+                setSlugValidationError(null)
+            }
+
+            // Reset validating state
+            setIsValidatingSlug(false)
+
+            // Set timeout for validation
+            debounceRef.current = setTimeout(() => {
+                if (slug.length >= 6) {
+                    setIsValidatingSlug(true)
+                    validateSlug({ subdomain: slug })
+                } else if (slug.length > 0) {
+                    setSlugValidationError('Server slugs must be at least 6 characters long.')
+                    setIsValidatingSlug(false)
+                } else {
+                    setSlugValidationError(null)
+                    setIsValidatingSlug(false)
+                }
+            }, 2000) // 2 second debounce
+        },
+        [validateSlug, slugValidationError]
+    )
+
+    // Cleanup timeout on unmount
+    useEffect(() => {
+        return () => {
+            if (debounceRef.current) {
+                clearTimeout(debounceRef.current)
+            }
+        }
+    }, [])
+
+    // Reset validation state when modal closes
+    useEffect(() => {
+        if (!open) {
+            resetValidationState()
+        }
+    }, [open, resetValidationState])
+
+    const currentSlug = form.watch('slug')
+    const isButtonDisabled = status === 'pending' || !!slugValidationError || isValidatingSlug
 
     return (
         <Dialog open={open} onOpenChange={setOpen}>
@@ -106,6 +189,9 @@ export function AddServerModal() {
                                         <Input
                                             placeholder="my-server-slug"
                                             {...field}
+                                            className={cn(
+                                                slugValidationError && 'border-red-500 focus-visible:ring-red-500'
+                                            )}
                                             onChange={(e) => {
                                                 // Convert to lowercase and replace spaces with hyphens
                                                 const value = e.target.value
@@ -113,14 +199,23 @@ export function AddServerModal() {
                                                     .replace(/[^a-z0-9-]/g, '-')
                                                     .replace(/-+/g, '-')
                                                 field.onChange(value)
+
+                                                // Trigger debounced validation
+                                                debouncedValidateSlug(value)
                                             }}
                                         />
                                     </FormControl>
                                     <FormDescription>
                                         URL-friendly identifier for your server. Will be used in{' '}
                                         {field.value ? `${field.value}.mcp.naptha.gg` : 'slug.mcp.naptha.gg'}
+                                        {isValidatingSlug && (
+                                            <span className="ml-2 text-sm text-muted-foreground">Validating...</span>
+                                        )}
                                     </FormDescription>
                                     <FormMessage />
+                                    {slugValidationError && (
+                                        <p className="text-sm text-red-500 mt-1">{slugValidationError}</p>
+                                    )}
                                 </FormItem>
                             )}
                         />
@@ -181,7 +276,7 @@ export function AddServerModal() {
                             <Button type="button" variant="outline" onClick={() => setOpen(false)}>
                                 Cancel
                             </Button>
-                            <Button type="submit" disabled={status === 'pending'} className="cursor-pointer">
+                            <Button type="submit" disabled={isButtonDisabled} className="cursor-pointer">
                                 {status === 'pending' ? 'Creating...' : 'Create Server'}
                             </Button>
                         </DialogFooter>

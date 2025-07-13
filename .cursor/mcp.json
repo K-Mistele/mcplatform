@@ -19,7 +19,7 @@
                 "@upstash/context7-mcp"
             ]
         },
-        "diceroll": {
+        "kyles_api_support2": {
             "url": "https://pro-model-sturgeon.ngrok-free.app/api/mcp"
         }
     }

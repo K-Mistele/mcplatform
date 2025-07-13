@@ -1,4 +1,4 @@
-import { EditInformationMessage } from '@/components/edit-information-message'
+import { EditServerConfiguration } from '@/components/edit-server-configuration'
 import { ServerUrlDisplay } from '@/components/server-url-display'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -6,7 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { requireSession } from '@/lib/auth/auth'
 import { db, schema } from 'database'
 import { eq } from 'drizzle-orm'
-import { ArrowLeftIcon, CalendarIcon, ServerIcon, ShieldIcon, TicketIcon } from 'lucide-react'
+import { ArrowLeftIcon, CalendarIcon, ServerIcon } from 'lucide-react'
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
 
@@ -23,28 +23,6 @@ function formatDate(timestamp: number | null): string {
         hour: '2-digit',
         minute: '2-digit'
     })
-}
-
-function getAuthTypeLabel(authType: string): string {
-    switch (authType) {
-        case 'oauth':
-            return 'OAuth'
-        case 'collect_email':
-            return 'Collect Email'
-        default:
-            return 'None'
-    }
-}
-
-function getSupportTypeLabel(supportType: string): string {
-    switch (supportType) {
-        case 'slack':
-            return 'Slack'
-        case 'linear':
-            return 'Linear'
-        default:
-            return 'Dashboard'
-    }
 }
 
 export default async function McpServerDetailsPage(props: McpServerDetailsPageProps) {
@@ -85,7 +63,7 @@ export default async function McpServerDetailsPage(props: McpServerDetailsPagePr
             </div>
 
             <div className="px-4 lg:px-6">
-                <div className="grid gap-6 md:grid-cols-2">
+                <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
                     {/* Basic Information Card */}
                     <Card>
                         <CardHeader>
@@ -132,35 +110,11 @@ export default async function McpServerDetailsPage(props: McpServerDetailsPagePr
                     </Card>
 
                     {/* Configuration Card */}
-                    <Card>
-                        <CardHeader>
-                            <CardTitle className="flex items-center gap-2">
-                                <ShieldIcon className="h-5 w-5" />
-                                Configuration
-                            </CardTitle>
-                            <CardDescription>Authentication and support settings</CardDescription>
-                        </CardHeader>
-                        <CardContent className="space-y-4">
-                            <div>
-                                <div className="text-sm font-medium text-muted-foreground">Authentication Type</div>
-                                <div className="mt-1">
-                                    <Badge variant="secondary">{getAuthTypeLabel(server.authType || 'none')}</Badge>
-                                </div>
-                            </div>
-                            <div>
-                                <div className="text-sm font-medium text-muted-foreground">Support Ticket Type</div>
-                                <div className="mt-1 flex items-center gap-2">
-                                    <TicketIcon className="h-4 w-4 text-muted-foreground" />
-                                    <Badge variant="outline">
-                                        {getSupportTypeLabel(server.supportTicketType || 'dashboard')}
-                                    </Badge>
-                                </div>
-                            </div>
-                        </CardContent>
-                    </Card>
-
-                    {/* Information Message Card */}
-                    <EditInformationMessage serverId={server.id} currentMessage={server.informationMessage} />
+                    <EditServerConfiguration
+                        serverId={server.id}
+                        currentAuthType={server.authType || 'none'}
+                        currentSupportTicketType={server.supportTicketType || 'dashboard'}
+                    />
                 </div>
             </div>
         </div>

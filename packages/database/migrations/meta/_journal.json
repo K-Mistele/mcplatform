@@ -29,6 +29,20 @@
       "when": 1752366640099,
       "tag": "0003_aspiring_rocket_racer",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1752372492549,
+      "tag": "0004_brainy_thunderbird",
+      "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1752373521673,
+      "tag": "0005_quiet_deathbird",
+      "breakpoints": true
     }
   ]
 }
