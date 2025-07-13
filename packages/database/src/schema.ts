@@ -37,6 +37,7 @@ export const mcpServers = pgTable('mcp_servers', {
     organizationId: text('organization_id')
         .references(() => organization.id, { onDelete: 'cascade' })
         .notNull(),
+    oauthIssuerUrl: text('oauth_issuer_url'),
     name: text('name').notNull(),
     productPlatformOrTool: text('product_platform_or_tool').notNull(),
     slug: text('slug').unique().notNull(),

@@ -875,6 +875,64 @@
       "policies": {},
       "isRLSEnabled": false
     },
+    "public.mcp_server_connect": {
+      "name": "mcp_server_connect",
+      "schema": "",
+      "columns": {
+        "transport": {
+          "name": "transport",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "slug": {
+          "name": "slug",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "email": {
+          "name": "email",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "bigint",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "mcp_server_distinct_id": {
+          "name": "mcp_server_distinct_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "mcp_server_connect_slug_mcp_servers_slug_fk": {
+          "name": "mcp_server_connect_slug_mcp_servers_slug_fk",
+          "tableFrom": "mcp_server_connect",
+          "tableTo": "mcp_servers",
+          "schemaTo": "public",
+          "columnsFrom": [
+            "slug"
+          ],
+          "columnsTo": [
+            "slug"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "checkConstraints": {},
+      "policies": {},
+      "isRLSEnabled": false
+    },
     "public.mcp_servers": {
       "name": "mcp_servers",
       "schema": "",
@@ -930,6 +988,12 @@
           "type": "text",
           "primaryKey": false,
           "notNull": true
+        },
+        "oauth_issuer_url": {
+          "name": "oauth_issuer_url",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
         }
       },
       "indexes": {},
@@ -1004,64 +1068,6 @@
           "name": "mcp_server_user_distinct_id_unique"
         }
       },
-      "checkConstraints": {},
-      "policies": {},
-      "isRLSEnabled": false
-    },
-    "public.mcp_server_connect": {
-      "name": "mcp_server_connect",
-      "schema": "",
-      "columns": {
-        "transport": {
-          "name": "transport",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "slug": {
-          "name": "slug",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "email": {
-          "name": "email",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "created_at": {
-          "name": "created_at",
-          "type": "bigint",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "mcp_server_distinct_id": {
-          "name": "mcp_server_distinct_id",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false
-        }
-      },
-      "indexes": {},
-      "foreignKeys": {
-        "mcp_server_connect_slug_mcp_servers_slug_fk": {
-          "name": "mcp_server_connect_slug_mcp_servers_slug_fk",
-          "tableFrom": "mcp_server_connect",
-          "tableTo": "mcp_servers",
-          "schemaTo": "public",
-          "columnsFrom": [
-            "slug"
-          ],
-          "columnsTo": [
-            "slug"
-          ],
-          "onDelete": "no action",
-          "onUpdate": "no action"
-        }
-      },
-      "compositePrimaryKeys": {},
-      "uniqueConstraints": {},
       "checkConstraints": {},
       "policies": {},
       "isRLSEnabled": false

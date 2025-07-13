@@ -54,7 +54,9 @@ export default async function DashboardPage() {
                 activeUsersPromise={activeUsersPromise}
             />
 
-            <ChartAreaInteractive />
+            <div className="px-4 lg:px-6">
+                <ChartAreaInteractive />
+            </div>
 
             {/* <DataTable data={data} /> */}
         </div>

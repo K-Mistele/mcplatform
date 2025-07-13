@@ -19,8 +19,8 @@
                 "@upstash/context7-mcp"
             ]
         },
-        "kyles_server_tracking4": {
-            "url": "http://test-server.localhost:3000/api/i/fdafda/mcp"
+        "kyles_server_tracking14": {
+            "url": "http://test-oauth-server.localhost:3000/api/i/fdafda/mcp"
         }
     }
 }

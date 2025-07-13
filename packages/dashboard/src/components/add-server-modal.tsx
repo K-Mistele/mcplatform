@@ -40,6 +40,7 @@ export function AddServerModal() {
         resolver: zodResolver(createMcpServerSchema),
         defaultValues: {
             name: '',
+            productPlatformOrTool: '',
             slug: '',
             authType: 'none',
             informationMessage: '',
@@ -174,6 +175,24 @@ export function AddServerModal() {
                                         <Input placeholder="Enter server name" {...field} />
                                     </FormControl>
                                     <FormDescription>A unique name to identify your MCP server.</FormDescription>
+                                    <FormMessage />
+                                </FormItem>
+                            )}
+                        />
+
+                        <FormField
+                            control={form.control}
+                            name="productPlatformOrTool"
+                            render={({ field }) => (
+                                <FormItem>
+                                    <FormLabel>Product/Platform/Tool</FormLabel>
+                                    <FormControl>
+                                        <Input placeholder="e.g., Your Product Name, Cursor, VS Code" {...field} />
+                                    </FormControl>
+                                    <FormDescription>
+                                        The name of the product, platform, or tool this MCP server will provide context
+                                        for.
+                                    </FormDescription>
                                     <FormMessage />
                                 </FormItem>
                             )}

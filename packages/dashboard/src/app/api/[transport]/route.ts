@@ -1,7 +1,7 @@
 import { configureMcpServer } from '@/lib/mcp'
-import { createMcpHandler } from '@vercel/mcp-adapter'
 import { db, schema } from 'database'
 import { eq } from 'drizzle-orm'
+import { createMcpHandler } from 'mcp-handler'
 import { type NextRequest, NextResponse } from 'next/server'
 
 async function mcpServerHandler(request: NextRequest) {

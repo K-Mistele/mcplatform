@@ -189,6 +189,21 @@ export const session = pgTable("session", {
 	unique("session_token_unique").on(table.token),
 ]);
 
+export const mcpServerConnect = pgTable("mcp_server_connect", {
+	transport: text(),
+	slug: text(),
+	email: text(),
+	// You can use { mode: "bigint" } if numbers are exceeding js number limitations
+	createdAt: bigint("created_at", { mode: "number" }),
+	mcpServerDistinctId: text("mcp_server_distinct_id"),
+}, (table) => [
+	foreignKey({
+			columns: [table.slug],
+			foreignColumns: [mcpServers.slug],
+			name: "mcp_server_connect_slug_mcp_servers_slug_fk"
+		}),
+]);
+
 export const mcpServers = pgTable("mcp_servers", {
 	id: text().primaryKey().notNull(),
 	organizationId: text("organization_id").notNull(),
@@ -199,6 +214,7 @@ export const mcpServers = pgTable("mcp_servers", {
 	supportTicketType: supportRequestMethod("support_ticket_type").default('dashboard'),
 	slug: text().notNull(),
 	productPlatformOrTool: text("product_platform_or_tool").notNull(),
+	oauthIssuerUrl: text("oauth_issuer_url"),
 }, (table) => [
 	foreignKey({
 			columns: [table.organizationId],
@@ -216,21 +232,6 @@ export const mcpServerUser = pgTable("mcp_server_user", {
 	id: text().primaryKey().notNull(),
 }, (table) => [
 	unique("mcp_server_user_distinct_id_unique").on(table.distinctId),
-]);
-
-export const mcpServerConnect = pgTable("mcp_server_connect", {
-	transport: text(),
-	slug: text(),
-	email: text(),
-	// You can use { mode: "bigint" } if numbers are exceeding js number limitations
-	createdAt: bigint("created_at", { mode: "number" }),
-	mcpServerDistinctId: text("mcp_server_distinct_id"),
-}, (table) => [
-	foreignKey({
-			columns: [table.slug],
-			foreignColumns: [mcpServers.slug],
-			name: "mcp_server_connect_slug_mcp_servers_slug_fk"
-		}),
 ]);
 
 export const mcpToolCalls = pgTable("mcp_tool_calls", {

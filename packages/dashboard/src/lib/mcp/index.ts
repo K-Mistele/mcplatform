@@ -1,6 +1,7 @@
 import { registerSupportTool } from './tools/support'
 import type { McpServer, StaticMcpServerConfig } from './types'
-
+export { protectedResourceHandler } from './protected-resource-handler'
+export { withMcpAuth } from './with-mcp-auth'
 /**
  * This function is called by the route handler to configure the MCP server object based on the static configuration from the database.
  * @param server - the MCP server instance

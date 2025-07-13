@@ -21,11 +21,11 @@ export const organizationRelations = relations(organization, ({many}) => ({
 
 export const mcpServersRelations = relations(mcpServers, ({one, many}) => ({
 	supportRequests: many(supportRequests),
+	mcpServerConnects: many(mcpServerConnect),
 	organization: one(organization, {
 		fields: [mcpServers.organizationId],
 		references: [organization.id]
 	}),
-	mcpServerConnects: many(mcpServerConnect),
 	mcpToolCalls: many(mcpToolCalls),
 }));
 
