@@ -18,6 +18,9 @@
                 "-y",
                 "@upstash/context7-mcp"
             ]
+        },
+        "diceroll": {
+            "url": "https://pro-model-sturgeon.ngrok-free.app/api/mcp"
         }
     }
 }

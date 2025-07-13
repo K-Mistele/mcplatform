@@ -1,3 +1,4 @@
+import { EditInformationMessage } from '@/components/edit-information-message'
 import { ServerUrlDisplay } from '@/components/server-url-display'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -60,7 +61,7 @@ export default async function McpServerDetailsPage(props: McpServerDetailsPagePr
     const currentLoc = process.env.NEXT_PUBLIC_BETTER_AUTH_URL
     const proto = currentLoc?.startsWith('https://') ? 'https://' : 'http://'
     const host = currentLoc?.split('://')[1]
-    const url = `${proto}${slug}.${host}/mcp`
+    const url = `${proto}${slug}.${host}/api/mcp`
 
     return (
         <div className="flex flex-col gap-4 py-4 md:gap-6 md:py-6">
@@ -159,19 +160,7 @@ export default async function McpServerDetailsPage(props: McpServerDetailsPagePr
                     </Card>
 
                     {/* Information Message Card */}
-                    {server.informationMessage && (
-                        <Card className="md:col-span-2">
-                            <CardHeader>
-                                <CardTitle>Information Message</CardTitle>
-                                <CardDescription>Message displayed to users about this server</CardDescription>
-                            </CardHeader>
-                            <CardContent>
-                                <div className="rounded-lg bg-muted/50 p-4">
-                                    <p className="text-sm">{server.informationMessage}</p>
-                                </div>
-                            </CardContent>
-                        </Card>
-                    )}
+                    <EditInformationMessage serverId={server.id} currentMessage={server.informationMessage} />
                 </div>
             </div>
         </div>

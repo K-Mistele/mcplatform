@@ -97,3 +97,31 @@ export const validateSubdomainAction = base
         return { success: true }
     })
     .actionable()
+
+export const setMcpInformationMessage = base
+    .input(z.object({ serverId: z.string(), informationMessage: z.string() }))
+    .handler(async ({ input, errors, context }) => {
+        const session = await requireSession()
+        console.log(`Setting instructions for MCP server ${input.serverId}`)
+
+        const [updatedServer] = await db
+            .update(schema.mcpServers)
+            .set({
+                informationMessage: input.informationMessage
+            })
+            .where(
+                and(
+                    eq(schema.mcpServers.id, input.serverId),
+                    eq(schema.mcpServers.organizationId, session.session.activeOrganizationId)
+                )
+            )
+            .returning()
+        if (!updatedServer) {
+            throw errors.RESOURCE_NOT_FOUND({
+                message: 'MCP server not found'
+            })
+        }
+        revalidatePath(`/dashboard/mcp-servers/${input.serverId}`)
+        return updatedServer
+    })
+    .actionable({})

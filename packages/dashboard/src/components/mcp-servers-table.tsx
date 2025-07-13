@@ -113,7 +113,7 @@ const columns: ColumnDef<McpServer>[] = [
             const currentLoc = process.env.NEXT_PUBLIC_BETTER_AUTH_URL
             const proto = currentLoc?.startsWith('https://') ? 'https://' : 'http://'
             const host = currentLoc?.split('://')[1]
-            const url = `${proto}${slug}.${host}/mcp`
+            const url = `${proto}${slug}.${host}/api/mcp`
             return (
                 <div className="flex items-center gap-2">
                     <Badge variant="secondary" className="font-mono text-xs">
