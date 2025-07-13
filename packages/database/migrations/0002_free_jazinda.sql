@@ -1,0 +1,1 @@
+ALTER TABLE "mcp_server_user" ADD CONSTRAINT "mcp_server_user_distinct_id_unique" UNIQUE NULLS NOT DISTINCT("distinct_id");

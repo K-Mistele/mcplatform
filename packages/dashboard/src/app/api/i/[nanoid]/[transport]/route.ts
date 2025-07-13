@@ -8,6 +8,8 @@ async function mcpServerHandler(
     request: NextRequest,
     { params }: { params: Promise<{ transport: string; nanoid: string }> }
 ) {
+    const { nanoid, transport } = await params
+
     // Pull the slug from the host header and see if we can find a server with that slug.
     const host = request.headers.get('host')
     if (!host) {
@@ -26,17 +28,21 @@ async function mcpServerHandler(
 
     // Now we create the MCP server
 
-    console.log('initializing MCP server with slug', slug)
     const handler = createMcpHandler(
         async (server) => {
             configureMcpServer(server, mcpServerConfiguration)
-            server.server.oninitialized = async () => {
-                const { nanoid, transport } = await params
-                await db.insert(schema.mcpServerUser).values({
-                    distinctId: nanoid,
-                    transport: transport
+
+            await db
+                .insert(schema.mcpServerUser)
+                .values({
+                    distinctId: nanoid
                 })
-            }
+                .onConflictDoNothing()
+            await db.insert(schema.mcpServerConnection).values({
+                distinctId: nanoid,
+                slug: slug,
+                transport: transport
+            })
         },
         {
             serverInfo: {
@@ -46,7 +52,7 @@ async function mcpServerHandler(
         },
         {
             redisUrl: process.env.REDIS_URL,
-            basePath: '/api'
+            basePath: `/api/i/${nanoid}`
         }
     )
 

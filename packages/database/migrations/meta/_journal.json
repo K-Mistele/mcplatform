@@ -5,127 +5,22 @@
     {
       "idx": 0,
       "version": "7",
-      "when": 1752350394176,
-      "tag": "0000_lyrical_squadron_supreme",
+      "when": 1752395819352,
+      "tag": "0000_glorious_madame_hydra",
       "breakpoints": true
     },
     {
       "idx": 1,
       "version": "7",
-      "when": 1752356311961,
-      "tag": "0001_majestic_jetstream",
+      "when": 1752395948170,
+      "tag": "0001_wet_famine",
       "breakpoints": true
     },
     {
       "idx": 2,
       "version": "7",
-      "when": 1752360291123,
-      "tag": "0002_fat_junta",
-      "breakpoints": true
-    },
-    {
-      "idx": 3,
-      "version": "7",
-      "when": 1752366640099,
-      "tag": "0003_aspiring_rocket_racer",
-      "breakpoints": true
-    },
-    {
-      "idx": 4,
-      "version": "7",
-      "when": 1752372492549,
-      "tag": "0004_brainy_thunderbird",
-      "breakpoints": true
-    },
-    {
-      "idx": 5,
-      "version": "7",
-      "when": 1752373521673,
-      "tag": "0005_quiet_deathbird",
-      "breakpoints": true
-    },
-    {
-      "idx": 6,
-      "version": "7",
-      "when": 1752378979875,
-      "tag": "0006_youthful_darkhawk",
-      "breakpoints": true
-    },
-    {
-      "idx": 7,
-      "version": "7",
-      "when": 1752383342885,
-      "tag": "0007_reflective_tarantula",
-      "breakpoints": true
-    },
-    {
-      "idx": 8,
-      "version": "7",
-      "when": 1752385000472,
-      "tag": "0008_sharp_ultimates",
-      "breakpoints": true
-    },
-    {
-      "idx": 9,
-      "version": "7",
-      "when": 1752385067745,
-      "tag": "0009_harsh_wraith",
-      "breakpoints": true
-    },
-    {
-      "idx": 10,
-      "version": "7",
-      "when": 1752385091187,
-      "tag": "0010_flawless_norman_osborn",
-      "breakpoints": true
-    },
-    {
-      "idx": 11,
-      "version": "7",
-      "when": 1752385310638,
-      "tag": "0011_calm_bloodstorm",
-      "breakpoints": true
-    },
-    {
-      "idx": 12,
-      "version": "7",
-      "when": 1752385352409,
-      "tag": "0012_living_sunset_bain",
-      "breakpoints": true
-    },
-    {
-      "idx": 13,
-      "version": "7",
-      "when": 1752385480653,
-      "tag": "0013_dizzy_rictor",
-      "breakpoints": true
-    },
-    {
-      "idx": 14,
-      "version": "7",
-      "when": 1752387400389,
-      "tag": "0014_magical_greymalkin",
-      "breakpoints": true
-    },
-    {
-      "idx": 15,
-      "version": "7",
-      "when": 1752392606655,
-      "tag": "0015_curvy_reaper",
-      "breakpoints": true
-    },
-    {
-      "idx": 16,
-      "version": "7",
-      "when": 1752392835975,
-      "tag": "0016_unusual_sunspot",
-      "breakpoints": true
-    },
-    {
-      "idx": 17,
-      "version": "7",
-      "when": 1752392872132,
-      "tag": "0017_free_fantastic_four",
+      "when": 1752396201115,
+      "tag": "0002_free_jazinda",
       "breakpoints": true
     }
   ]

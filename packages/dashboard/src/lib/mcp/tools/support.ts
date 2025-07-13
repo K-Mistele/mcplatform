@@ -1,4 +1,5 @@
 import { db, schema } from 'database'
+import { eq } from 'drizzle-orm'
 import z from 'zod'
 import type { McpServer, StaticMcpServerConfig } from '../types'
 
@@ -44,7 +45,11 @@ const inputSchemaWithEmail = (staticConfig: StaticMcpServerConfig) =>
  * @param staticConfig
  * @returns
  */
-export async function registerSupportTool(mcpServer: McpServer, staticConfig: StaticMcpServerConfig) {
+export async function registerSupportTool(
+    mcpServer: McpServer,
+    staticConfig: StaticMcpServerConfig,
+    distinctId?: string
+) {
     if (staticConfig.supportTicketType === 'none') {
         return
     }
@@ -58,7 +63,7 @@ export async function registerSupportTool(mcpServer: McpServer, staticConfig: St
     }
 
     if (staticConfig.authType === 'collect_email') {
-        registerSupportToolWithEmail(mcpServer, staticConfig)
+        registerSupportToolWithEmail(mcpServer, staticConfig, distinctId)
     } else {
         throw new Error('Support tickets are not implemented for this MCP server')
     }
@@ -66,7 +71,7 @@ export async function registerSupportTool(mcpServer: McpServer, staticConfig: St
     return {}
 }
 
-function registerSupportToolWithEmail(mcpServer: McpServer, staticConfig: StaticMcpServerConfig) {
+function registerSupportToolWithEmail(mcpServer: McpServer, staticConfig: StaticMcpServerConfig, distinctId?: string) {
     const inputSchema = inputSchemaWithEmail(staticConfig)
     mcpServer.registerTool(
         'get support',
@@ -103,7 +108,17 @@ function registerSupportToolWithEmail(mcpServer: McpServer, staticConfig: Static
                     organizationId: staticConfig.organizationId,
                     mcpServerId: staticConfig.id,
                     status: 'pending'
-                })
+                }),
+                (async () => {
+                    if (distinctId) {
+                        await db
+                            .update(schema.mcpServerUser)
+                            .set({
+                                email: email
+                            })
+                            .where(eq(schema.mcpServerUser.distinctId, distinctId))
+                    }
+                })()
             ])
 
             return {

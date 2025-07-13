@@ -1,9 +1,103 @@
 {
-  "id": "462c7c93-ff0b-4a35-a4c9-a1287f6b009a",
-  "prevId": "53a28762-b9a2-4898-8a98-21ecc6999eb7",
+  "id": "796af0ed-2c35-4d67-bbf0-dd2f07a9f49c",
+  "prevId": "9ead0ea0-bbc1-4534-a2fa-f63e9a95a228",
   "version": "7",
   "dialect": "postgresql",
   "tables": {
+    "public.mcp_server_connect": {
+      "name": "mcp_server_connect",
+      "schema": "",
+      "columns": {
+        "transport": {
+          "name": "transport",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "slug": {
+          "name": "slug",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "email": {
+          "name": "email",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "bigint",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "mcp_server_distinct_id": {
+          "name": "mcp_server_distinct_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "mcp_server_connect_slug_mcp_servers_slug_fk": {
+          "name": "mcp_server_connect_slug_mcp_servers_slug_fk",
+          "tableFrom": "mcp_server_connect",
+          "tableTo": "mcp_servers",
+          "columnsFrom": [
+            "slug"
+          ],
+          "columnsTo": [
+            "slug"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.mcp_server_user": {
+      "name": "mcp_server_user",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "distinct_id": {
+          "name": "distinct_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "email": {
+          "name": "email",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "first_seen_at": {
+          "name": "first_seen_at",
+          "type": "bigint",
+          "primaryKey": false,
+          "notNull": false
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
     "public.mcp_servers": {
       "name": "mcp_servers",
       "schema": "",
@@ -26,11 +120,39 @@
           "primaryKey": false,
           "notNull": true
         },
+        "product_platform_or_tool": {
+          "name": "product_platform_or_tool",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "slug": {
+          "name": "slug",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
         "created_at": {
           "name": "created_at",
           "type": "bigint",
           "primaryKey": false,
           "notNull": false
+        },
+        "auth_type": {
+          "name": "auth_type",
+          "type": "mcp_server_auth_type",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": false,
+          "default": "'none'"
+        },
+        "support_ticket_type": {
+          "name": "support_ticket_type",
+          "type": "support_request_method",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": false,
+          "default": "'dashboard'"
         }
       },
       "indexes": {},
@@ -45,12 +167,20 @@
           "columnsTo": [
             "id"
           ],
-          "onDelete": "no action",
+          "onDelete": "cascade",
           "onUpdate": "no action"
         }
       },
       "compositePrimaryKeys": {},
-      "uniqueConstraints": {},
+      "uniqueConstraints": {
+        "mcp_servers_slug_unique": {
+          "name": "mcp_servers_slug_unique",
+          "nullsNotDistinct": false,
+          "columns": [
+            "slug"
+          ]
+        }
+      },
       "policies": {},
       "checkConstraints": {},
       "isRLSEnabled": false
@@ -62,12 +192,18 @@
         "id": {
           "name": "id",
           "type": "text",
-          "primaryKey": false,
-          "notNull": false
+          "primaryKey": true,
+          "notNull": true
         },
         "created_at": {
           "name": "created_at",
           "type": "bigint",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "title": {
+          "name": "title",
+          "type": "text",
           "primaryKey": false,
           "notNull": false
         },
@@ -77,14 +213,8 @@
           "primaryKey": false,
           "notNull": false
         },
-        "use_case": {
-          "name": "use_case",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "problem_description": {
-          "name": "problem_description",
+        "context": {
+          "name": "context",
           "type": "text",
           "primaryKey": false,
           "notNull": false
@@ -94,11 +224,134 @@
           "type": "support_request_status",
           "typeSchema": "public",
           "primaryKey": false,
+          "notNull": false,
+          "default": "'pending'"
+        },
+        "support_request_method": {
+          "name": "support_request_method",
+          "type": "support_request_method",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": false,
+          "default": "'dashboard'"
+        },
+        "resolved_at": {
+          "name": "resolved_at",
+          "type": "bigint",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "email": {
+          "name": "email",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "organization_id": {
+          "name": "organization_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "mcp_server_id": {
+          "name": "mcp_server_id",
+          "type": "text",
+          "primaryKey": false,
           "notNull": false
         }
       },
       "indexes": {},
-      "foreignKeys": {},
+      "foreignKeys": {
+        "support_requests_organization_id_organization_id_fk": {
+          "name": "support_requests_organization_id_organization_id_fk",
+          "tableFrom": "support_requests",
+          "tableTo": "organization",
+          "columnsFrom": [
+            "organization_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "support_requests_mcp_server_id_mcp_servers_id_fk": {
+          "name": "support_requests_mcp_server_id_mcp_servers_id_fk",
+          "tableFrom": "support_requests",
+          "tableTo": "mcp_servers",
+          "columnsFrom": [
+            "mcp_server_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.mcp_tool_calls": {
+      "name": "mcp_tool_calls",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "bigint",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "mcp_server_id": {
+          "name": "mcp_server_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "tool_name": {
+          "name": "tool_name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "input": {
+          "name": "input",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "output": {
+          "name": "output",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": false
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "mcp_tool_calls_mcp_server_id_mcp_servers_id_fk": {
+          "name": "mcp_tool_calls_mcp_server_id_mcp_servers_id_fk",
+          "tableFrom": "mcp_tool_calls",
+          "tableTo": "mcp_servers",
+          "columnsFrom": [
+            "mcp_server_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
       "compositePrimaryKeys": {},
       "uniqueConstraints": {},
       "policies": {},
@@ -860,10 +1113,31 @@
     }
   },
   "enums": {
+    "public.mcp_server_auth_type": {
+      "name": "mcp_server_auth_type",
+      "schema": "public",
+      "values": [
+        "platform_oauth",
+        "custom_oauth",
+        "none",
+        "collect_email"
+      ]
+    },
+    "public.support_request_method": {
+      "name": "support_request_method",
+      "schema": "public",
+      "values": [
+        "slack",
+        "linear",
+        "dashboard",
+        "none"
+      ]
+    },
     "public.support_request_status": {
       "name": "support_request_status",
       "schema": "public",
       "values": [
+        "needs_email",
         "pending",
         "in_progress",
         "resolved",

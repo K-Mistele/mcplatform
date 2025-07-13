@@ -1,5 +1,6 @@
 import { CursorInstallLink } from '@/components/cursor-install-link'
 import { EditServerConfiguration } from '@/components/edit-server-configuration'
+import { McpServerUsersCard } from '@/components/mcp-server-users-card'
 import { ServerUrlDisplay } from '@/components/server-url-display'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -116,6 +117,9 @@ export default async function McpServerDetailsPage(props: McpServerDetailsPagePr
                         currentAuthType={server.authType || 'none'}
                         currentSupportTicketType={server.supportTicketType || 'dashboard'}
                     />
+
+                    {/* Connected Users Card */}
+                    <McpServerUsersCard serverId={server.id} serverSlug={server.slug} />
 
                     {/* Cursor Install Link Card */}
                     <CursorInstallLink serverName={server.name} serverUrl={url} />

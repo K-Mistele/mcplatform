@@ -17,7 +17,7 @@ export function SupportTicketsCard({ supportTicketsPromise }: SupportTicketsCard
             <CardHeader>
                 <CardDescription>Support Tickets</CardDescription>
                 <CardTitle className="text-4xl font-semibold tabular-nums @[250px]/card:text-5xl">
-                    {data.count.toLocaleString()}
+                    {data.count?.toLocaleString() ?? 0}
                 </CardTitle>
                 <CardAction>
                     <Badge variant="outline">

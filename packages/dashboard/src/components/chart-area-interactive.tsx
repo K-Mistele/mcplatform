@@ -17,6 +17,7 @@ export function ChartAreaInteractive() {
     const [timeRange, setTimeRange] = React.useState<'1h' | '1d' | '1w' | '1m'>('1d')
     const [chartData, setChartData] = React.useState<any[]>([])
     const [toolNames, setToolNames] = React.useState<string[]>([])
+    const [connectionTypes, setConnectionTypes] = React.useState<string[]>([])
     const [loading, setLoading] = React.useState(true)
     const [error, setError] = React.useState<string | null>(null)
 
@@ -38,6 +39,7 @@ export function ChartAreaInteractive() {
 
                 setChartData(result.data)
                 setToolNames(result.toolNames)
+                setConnectionTypes(result.connectionTypes || [])
             } catch (err) {
                 setError(err instanceof Error ? err.message : 'Failed to fetch data')
             } finally {
@@ -52,7 +54,7 @@ export function ChartAreaInteractive() {
     const chartConfig: ChartConfig = React.useMemo(() => {
         const config: ChartConfig = {
             visitors: {
-                label: 'Tool Calls'
+                label: 'Activity'
             }
         }
 
@@ -64,21 +66,33 @@ export function ChartAreaInteractive() {
             'var(--color-chart-5)'
         ]
 
+        // Add tool names
         for (const [index, toolName] of toolNames.entries()) {
             config[toolName] = {
-                label: toolName,
+                label: `Tool: ${toolName}`,
                 color: chartColors[index % chartColors.length]
             }
         }
 
+        // Add connection types
+        for (const [index, connectionType] of connectionTypes.entries()) {
+            config[connectionType] = {
+                label: connectionType === 'mcp_connections' ? 'Unq. Connections' : connectionType,
+                color: chartColors[(toolNames.length + index) % chartColors.length]
+            }
+        }
+
         return config
-    }, [toolNames])
+    }, [toolNames, connectionTypes])
+
+    // Get all chart keys for rendering
+    const allChartKeys = [...toolNames, ...connectionTypes]
 
     if (loading) {
         return (
             <Card className="@container/card">
                 <CardHeader>
-                    <CardTitle>Tool Calls Activity</CardTitle>
+                    <CardTitle>MCP Activity</CardTitle>
                     <CardDescription>Loading...</CardDescription>
                 </CardHeader>
                 <CardContent className="px-2 pt-4 sm:px-6 sm:pt-6">
@@ -94,7 +108,7 @@ export function ChartAreaInteractive() {
         return (
             <Card className="@container/card">
                 <CardHeader>
-                    <CardTitle>Tool Calls Activity</CardTitle>
+                    <CardTitle>MCP Activity</CardTitle>
                     <CardDescription>Error loading data</CardDescription>
                 </CardHeader>
                 <CardContent className="px-2 pt-4 sm:px-6 sm:pt-6">
@@ -106,13 +120,32 @@ export function ChartAreaInteractive() {
         )
     }
 
+    if (allChartKeys.length === 0) {
+        return (
+            <Card className="@container/card">
+                <CardHeader>
+                    <CardTitle>MCP Activity</CardTitle>
+                    <CardDescription>
+                        <span className="hidden @[540px]/card:block">No MCP activity data available</span>
+                        <span className="@[540px]/card:hidden">No data available</span>
+                    </CardDescription>
+                </CardHeader>
+                <CardContent className="px-2 pt-4 sm:px-6 sm:pt-6">
+                    <div className="h-[250px] flex items-center justify-center">
+                        <div className="text-muted-foreground">No tool calls or connections recorded yet</div>
+                    </div>
+                </CardContent>
+            </Card>
+        )
+    }
+
     return (
         <Card className="@container/card">
             <CardHeader>
-                <CardTitle>Tool Calls Activity</CardTitle>
+                <CardTitle>MCP Activity</CardTitle>
                 <CardDescription>
-                    <span className="hidden @[540px]/card:block">MCP tool calls over time</span>
-                    <span className="@[540px]/card:hidden">Tool calls over time</span>
+                    <span className="hidden @[540px]/card:block">Tool calls and connections over time</span>
+                    <span className="@[540px]/card:hidden">Activity over time</span>
                 </CardDescription>
                 <CardAction>
                     <ToggleGroup
@@ -156,7 +189,7 @@ export function ChartAreaInteractive() {
                 <ChartContainer config={chartConfig} className="aspect-auto h-[250px] w-full">
                     <AreaChart data={chartData}>
                         <defs>
-                            {toolNames.map((toolName, index) => {
+                            {allChartKeys.map((key, index) => {
                                 const chartColors = [
                                     'var(--color-chart-1)',
                                     'var(--color-chart-2)',
@@ -166,7 +199,7 @@ export function ChartAreaInteractive() {
                                 ]
                                 const color = chartColors[index % chartColors.length]
                                 return (
-                                    <linearGradient key={toolName} id={`fill${toolName}`} x1="0" y1="0" x2="0" y2="1">
+                                    <linearGradient key={key} id={`fill${key}`} x1="0" y1="0" x2="0" y2="1">
                                         <stop offset="5%" stopColor={color} stopOpacity={0.8} />
                                         <stop offset="95%" stopColor={color} stopOpacity={0.1} />
                                     </linearGradient>
@@ -218,7 +251,7 @@ export function ChartAreaInteractive() {
                                 />
                             }
                         />
-                        {toolNames.map((toolName, index) => {
+                        {allChartKeys.map((key, index) => {
                             const chartColors = [
                                 'var(--color-chart-1)',
                                 'var(--color-chart-2)',
@@ -229,10 +262,10 @@ export function ChartAreaInteractive() {
                             const color = chartColors[index % chartColors.length]
                             return (
                                 <Area
-                                    key={toolName}
-                                    dataKey={toolName}
+                                    key={key}
+                                    dataKey={key}
                                     type="natural"
-                                    fill={`url(#fill${toolName})`}
+                                    fill={`url(#fill${key})`}
                                     stroke={color}
                                     stackId="a"
                                 />

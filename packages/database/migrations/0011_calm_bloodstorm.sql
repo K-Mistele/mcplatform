@@ -1,2 +1,0 @@
-ALTER TABLE "support_requests" ADD COLUMN "mcp_server_id" text NOT NULL;--> statement-breakpoint
-ALTER TABLE "support_requests" ADD CONSTRAINT "support_requests_mcp_server_id_mcp_servers_id_fk" FOREIGN KEY ("mcp_server_id") REFERENCES "public"."mcp_servers"("id") ON DELETE no action ON UPDATE no action;

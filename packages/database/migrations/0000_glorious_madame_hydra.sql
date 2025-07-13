@@ -1,11 +1,54 @@
-CREATE TYPE "public"."support_request_status" AS ENUM('pending', 'in_progress', 'resolved', 'closed');--> statement-breakpoint
-CREATE TABLE "support_requests" (
-	"id" text,
+CREATE TYPE "public"."mcp_server_auth_type" AS ENUM('platform_oauth', 'custom_oauth', 'none', 'collect_email');--> statement-breakpoint
+CREATE TYPE "public"."support_request_method" AS ENUM('slack', 'linear', 'dashboard', 'none');--> statement-breakpoint
+CREATE TYPE "public"."support_request_status" AS ENUM('needs_email', 'pending', 'in_progress', 'resolved', 'closed');--> statement-breakpoint
+CREATE TABLE "mcp_server_connect" (
+	"transport" text,
+	"slug" text,
+	"email" text,
 	"created_at" bigint,
+	"mcp_server_user_id" text NOT NULL
+);
+--> statement-breakpoint
+CREATE TABLE "mcp_server_user" (
+	"id" text PRIMARY KEY NOT NULL,
+	"distinct_id" text,
+	"email" text,
+	"first_seen_at" bigint
+);
+--> statement-breakpoint
+CREATE TABLE "mcp_servers" (
+	"id" text PRIMARY KEY NOT NULL,
+	"organization_id" text NOT NULL,
+	"name" text NOT NULL,
+	"product_platform_or_tool" text NOT NULL,
+	"slug" text NOT NULL,
+	"created_at" bigint,
+	"auth_type" "mcp_server_auth_type" DEFAULT 'none',
+	"support_ticket_type" "support_request_method" DEFAULT 'dashboard',
+	CONSTRAINT "mcp_servers_slug_unique" UNIQUE("slug")
+);
+--> statement-breakpoint
+CREATE TABLE "support_requests" (
+	"id" text PRIMARY KEY NOT NULL,
+	"created_at" bigint,
+	"title" text,
 	"concise_summary" text,
-	"use_case" text,
-	"problem_description" text,
-	"status" "support_request_status"
+	"context" text,
+	"status" "support_request_status" DEFAULT 'pending',
+	"support_request_method" "support_request_method" DEFAULT 'dashboard',
+	"resolved_at" bigint,
+	"email" text NOT NULL,
+	"organization_id" text NOT NULL,
+	"mcp_server_id" text
+);
+--> statement-breakpoint
+CREATE TABLE "mcp_tool_calls" (
+	"id" text PRIMARY KEY NOT NULL,
+	"created_at" bigint,
+	"mcp_server_id" text NOT NULL,
+	"tool_name" text NOT NULL,
+	"input" jsonb,
+	"output" jsonb
 );
 --> statement-breakpoint
 CREATE TABLE "account" (
@@ -126,6 +169,12 @@ CREATE TABLE "verification" (
 	"updated_at" timestamp
 );
 --> statement-breakpoint
+ALTER TABLE "mcp_server_connect" ADD CONSTRAINT "mcp_server_connect_slug_mcp_servers_slug_fk" FOREIGN KEY ("slug") REFERENCES "public"."mcp_servers"("slug") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "mcp_server_connect" ADD CONSTRAINT "mcp_server_connect_mcp_server_user_id_mcp_server_user_id_fk" FOREIGN KEY ("mcp_server_user_id") REFERENCES "public"."mcp_server_user"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "mcp_servers" ADD CONSTRAINT "mcp_servers_organization_id_organization_id_fk" FOREIGN KEY ("organization_id") REFERENCES "public"."organization"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "support_requests" ADD CONSTRAINT "support_requests_organization_id_organization_id_fk" FOREIGN KEY ("organization_id") REFERENCES "public"."organization"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "support_requests" ADD CONSTRAINT "support_requests_mcp_server_id_mcp_servers_id_fk" FOREIGN KEY ("mcp_server_id") REFERENCES "public"."mcp_servers"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "mcp_tool_calls" ADD CONSTRAINT "mcp_tool_calls_mcp_server_id_mcp_servers_id_fk" FOREIGN KEY ("mcp_server_id") REFERENCES "public"."mcp_servers"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "account" ADD CONSTRAINT "account_user_id_user_id_fk" FOREIGN KEY ("user_id") REFERENCES "public"."user"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "invitation" ADD CONSTRAINT "invitation_organization_id_organization_id_fk" FOREIGN KEY ("organization_id") REFERENCES "public"."organization"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "invitation" ADD CONSTRAINT "invitation_inviter_id_user_id_fk" FOREIGN KEY ("inviter_id") REFERENCES "public"."user"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint

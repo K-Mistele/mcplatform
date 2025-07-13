@@ -57,8 +57,8 @@ export const getToolCallsChart = base
 
             const startTimeMs = startTime.getTime()
 
-            // Query tool calls - simplified approach
-            const result = await db
+            // Query tool calls
+            const toolCallsResult = await db
                 .select({
                     id: schema.toolCalls.id,
                     toolName: schema.toolCalls.toolName,
@@ -74,39 +74,105 @@ export const getToolCallsChart = base
                 )
                 .orderBy(schema.toolCalls.createdAt)
 
-            // Get all unique tool names
-            const toolNames = [...new Set(result.map((r) => r.toolName))]
+            // Query MCP connections - grouped by user per day to avoid counting reconnections
+            const connectionsResult = await db
+                .select({
+                    distinctId: schema.mcpServerConnection.distinctId,
+                    email: schema.mcpServerConnection.email,
+                    createdAt: schema.mcpServerConnection.createdAt,
+                    slug: schema.mcpServerConnection.slug
+                })
+                .from(schema.mcpServerConnection)
+                .leftJoin(schema.mcpServers, eq(schema.mcpServerConnection.slug, schema.mcpServers.slug))
+                .where(
+                    and(
+                        eq(schema.mcpServers.organizationId, session.session.activeOrganizationId),
+                        gte(schema.mcpServerConnection.createdAt, startTimeMs)
+                    )
+                )
+                .orderBy(schema.mcpServerConnection.createdAt)
 
-            // If no real data, create sample data for demonstration
-            if (result.length === 0) {
-                const sampleData = generateSampleData(input.timeRange, ['get_support', 'web_search', 'file_read'])
+            // Process tool calls data - filter out null createdAt values
+            const validToolCalls = toolCallsResult.filter((r) => r.createdAt !== null) as Array<{
+                id: string
+                toolName: string
+                createdAt: number
+            }>
+            const toolNames = [...new Set(validToolCalls.map((r) => r.toolName))]
+
+            // Process connections data - filter out null createdAt values
+            const validConnections = connectionsResult.filter((r) => r.createdAt !== null) as Array<{
+                distinctId: string | null
+                email: string | null
+                createdAt: number
+                slug: string | null
+            }>
+            const processedConnections = processConnectionsPerUserPerDay(validConnections, input.timeRange)
+
+            // If no data at all, return empty structure
+            if (validToolCalls.length === 0 && validConnections.length === 0) {
                 return {
-                    data: sampleData,
-                    toolNames: ['get_support', 'web_search', 'file_read']
+                    data: [],
+                    toolNames: [],
+                    connectionTypes: []
                 }
             }
 
-            // Process the data to create time series
-            const timeSeriesData = createTimeSeriesData(result, input.timeRange, toolNames)
+            // Create time series data
+            const timeSeriesData = createTimeSeriesData(
+                validToolCalls,
+                processedConnections,
+                input.timeRange,
+                toolNames
+            )
 
             return {
                 data: timeSeriesData,
-                toolNames: toolNames
+                toolNames: toolNames,
+                connectionTypes: ['mcp_connections']
             }
         } catch (error) {
             console.error('Error in getToolCallsChart:', error)
-
-            // Return sample data as fallback
-            const sampleData = generateSampleData(input.timeRange, ['get_support', 'web_search', 'file_read'])
-            return {
-                data: sampleData,
-                toolNames: ['get_support', 'web_search', 'file_read']
-            }
+            throw error
         }
     })
 
+function processConnectionsPerUserPerDay(
+    connections: Array<{ distinctId: string | null; email: string | null; createdAt: number; slug: string | null }>,
+    timeRange: '1h' | '1d' | '1w' | '1m'
+) {
+    // Group connections by user and day to avoid counting reconnections
+    const userDayMap = new Map<string, Set<string>>()
+
+    for (const conn of connections) {
+        const userId = conn.email || conn.distinctId || 'unknown'
+        const date = new Date(conn.createdAt)
+        const dateKey = formatDateForTimeRange(date, timeRange)
+
+        if (!userDayMap.has(dateKey)) {
+            userDayMap.set(dateKey, new Set())
+        }
+        userDayMap.get(dateKey)!.add(userId)
+    }
+
+    // Convert to connection events (one per unique user per time period)
+    const processedConnections = []
+    for (const [dateKey, users] of userDayMap.entries()) {
+        for (const userId of users) {
+            processedConnections.push({
+                userId,
+                dateKey,
+                type: 'mcp_connections'
+            })
+        }
+    }
+
+    return processedConnections
+}
+
 function createTimeSeriesData(
-    data: Array<{ id: string; toolName: string; createdAt: number }>,
+    toolCalls: Array<{ id: string; toolName: string; createdAt: number }>,
+    connections: Array<{ userId: string; dateKey: string; type: string }>,
     timeRange: '1h' | '1d' | '1w' | '1m',
     toolNames: string[]
 ) {
@@ -142,14 +208,18 @@ function createTimeSeriesData(
         const bucketKey = formatDateForTimeRange(bucketTime, timeRange)
 
         const bucket: Record<string, number> = {}
+        // Initialize tool call counts
         for (const toolName of toolNames) {
             bucket[toolName] = 0
         }
+        // Initialize connection counts
+        bucket.mcp_connections = 0
+
         timeSeriesMap.set(bucketKey, bucket)
     }
 
-    // Fill buckets with actual data
-    for (const item of data) {
+    // Fill buckets with tool call data
+    for (const item of toolCalls) {
         const itemTime = new Date(item.createdAt)
         const bucketKey = formatDateForTimeRange(itemTime, timeRange)
 
@@ -159,53 +229,19 @@ function createTimeSeriesData(
         }
     }
 
+    // Fill buckets with connection data
+    for (const conn of connections) {
+        const bucket = timeSeriesMap.get(conn.dateKey)
+        if (bucket) {
+            bucket.mcp_connections = (bucket.mcp_connections || 0) + 1
+        }
+    }
+
     // Convert to array format
-    return Array.from(timeSeriesMap.entries()).map(([date, tools]) => ({
+    return Array.from(timeSeriesMap.entries()).map(([date, metrics]) => ({
         date,
-        ...tools
+        ...(metrics || {})
     }))
-}
-
-function generateSampleData(timeRange: '1h' | '1d' | '1w' | '1m', toolNames: string[]) {
-    const now = new Date()
-    const data = []
-
-    let intervals: number
-    let intervalMs: number
-
-    switch (timeRange) {
-        case '1h':
-            intervals = 12 // 5-minute intervals
-            intervalMs = 5 * 60 * 1000
-            break
-        case '1d':
-            intervals = 24 // hourly intervals
-            intervalMs = 60 * 60 * 1000
-            break
-        case '1w':
-            intervals = 7 // daily intervals
-            intervalMs = 24 * 60 * 60 * 1000
-            break
-        case '1m':
-            intervals = 30 // daily intervals
-            intervalMs = 24 * 60 * 60 * 1000
-            break
-    }
-
-    for (let i = intervals - 1; i >= 0; i--) {
-        const time = new Date(now.getTime() - i * intervalMs)
-        const dataPoint: Record<string, any> = {
-            date: formatDateForTimeRange(time, timeRange)
-        }
-
-        for (const toolName of toolNames) {
-            dataPoint[toolName] = Math.floor(Math.random() * 10)
-        }
-
-        data.push(dataPoint)
-    }
-
-    return data
 }
 
 function formatDateForTimeRange(date: Date, timeRange: '1h' | '1d' | '1w' | '1m'): string {

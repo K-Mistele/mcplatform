@@ -6,6 +6,10 @@ import type { McpServer, StaticMcpServerConfig } from './types'
  * @param server - the MCP server instance
  * @param serverStaticConfiguration - the static configuration for the MCP server from the database
  */
-export function configureMcpServer(server: McpServer, serverStaticConfiguration: StaticMcpServerConfig) {
-    registerSupportTool(server, serverStaticConfiguration)
+export function configureMcpServer(
+    server: McpServer,
+    serverStaticConfiguration: StaticMcpServerConfig,
+    distinctId?: string
+) {
+    registerSupportTool(server, serverStaticConfiguration, distinctId)
 }

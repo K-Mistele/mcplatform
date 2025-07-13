@@ -1,1 +1,0 @@
-ALTER TABLE "mcp_server_user" ADD COLUMN "transport" text;

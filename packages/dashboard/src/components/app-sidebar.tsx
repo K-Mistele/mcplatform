@@ -10,7 +10,8 @@ import {
     IconReport,
     IconSearch,
     IconServer2,
-    IconSettings
+    IconSettings,
+    IconUsers
 } from '@tabler/icons-react'
 import type * as React from 'react'
 
@@ -40,6 +41,12 @@ export const data = {
             url: '/dashboard/mcp-servers',
             icon: IconServer2,
             description: 'Create and manage MCP servers for your different products, applications and solutions.'
+        },
+        {
+            title: 'Users',
+            url: '/dashboard/users',
+            icon: IconUsers,
+            description: 'View users and their connected MCP servers'
         },
         {
             title: 'Support Tickets',
