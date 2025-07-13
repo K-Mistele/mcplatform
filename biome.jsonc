@@ -25,6 +25,9 @@
     "linter": {
         "enabled": true,
         "rules": {
+            "complexity": {
+                "noForEach": "off"
+            },
             "recommended": true,
             "suspicious": {
                 "noExplicitAny": "off"
