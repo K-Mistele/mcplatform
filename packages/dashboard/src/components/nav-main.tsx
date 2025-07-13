@@ -1,6 +1,6 @@
 'use client'
 
-import { type Icon, IconCirclePlusFilled } from '@tabler/icons-react'
+import type { Icon } from '@tabler/icons-react'
 
 import {
     SidebarGroup,
@@ -11,6 +11,7 @@ import {
 } from '@/components/ui/sidebar'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
+import { useMemo } from 'react'
 
 export function NavMain({
     items
@@ -22,11 +23,13 @@ export function NavMain({
     }[]
 }) {
     const pathname = usePathname()
-    console.log(pathname)
+    const currentItem = useMemo(() => {
+        return items.find((item) => item.url === pathname)
+    }, [items, pathname])
     return (
         <SidebarGroup>
             <SidebarGroupContent className="flex flex-col gap-2">
-                <SidebarMenu>
+                {/* <SidebarMenu>
                     <SidebarMenuItem className="flex items-center gap-2">
                         <SidebarMenuButton
                             tooltip="Create MCP Server"
@@ -36,7 +39,7 @@ export function NavMain({
                             <span>Quick Create</span>
                         </SidebarMenuButton>
                     </SidebarMenuItem>
-                </SidebarMenu>
+                </SidebarMenu> */}
                 <SidebarMenu>
                     {items.map((item) => (
                         <SidebarMenuItem key={item.title}>

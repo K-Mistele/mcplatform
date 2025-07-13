@@ -1,19 +1,17 @@
 import { SelectOrganization } from '@/components/select-organization'
-import { auth } from '@/lib/auth/auth'
+import { requireSession } from '@/lib/auth/auth'
 import { db, schema } from 'database'
 import { eq } from 'drizzle-orm'
-import { headers } from 'next/headers'
 import { redirect } from 'next/navigation'
 
 export default async function SelectOrganizationPage() {
-    const session = await auth.api.getSession({
-        headers: await headers()
-    })
+    const session = await requireSession({ data: { organizationRequired: false } })
 
     const results = await db
         .select()
         .from(schema.member)
         .leftJoin(schema.organization, eq(schema.member.organizationId, schema.organization.id))
+        .where(eq(schema.member.userId, session.session.userId))
 
     const organizations = results.map((result) => ({
         organization: result.organization,

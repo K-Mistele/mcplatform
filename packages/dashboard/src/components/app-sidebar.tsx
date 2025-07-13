@@ -27,22 +27,25 @@ import {
     SidebarMenuItem
 } from '@/components/ui/sidebar'
 
-const data = {
+export const data = {
     navMain: [
         {
             title: 'Dashboard',
             url: '/dashboard',
-            icon: IconDashboard
+            icon: IconDashboard,
+            description: "Overview of your organization's activity and insights"
         },
         {
             title: 'MCP Servers',
             url: '/dashboard/mcp-servers',
-            icon: IconServer2
+            icon: IconServer2,
+            description: 'Create and manage MCP servers for your different products, applications and solutions.'
         },
         {
             title: 'Support Tickets',
             url: '/dashboard/support-tickets',
-            icon: IconHelpCircle
+            icon: IconHelpCircle,
+            description: 'View and manage support tickets submitted through your MCP servers'
         }
         // {
         //     title: 'Analytics',

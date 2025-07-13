@@ -11,6 +11,5 @@ You should use the connected Puppeteer tools to validate UI additions and change
 * always launch in headless mode
 * the user data dir is "/Users/kyle/Library/Application Support/Google/Chrome/Default", make sure to always use this
 
-If you are prompted to login you can navigate to `/auth/signin` and login with 
-username: claude@example.com
-password: supersecurepassword
+If you are prompted to login you can navigate to `/login-for-claude` to be automatically logged in
+

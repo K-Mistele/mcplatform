@@ -1,18 +1,47 @@
 import { ChartAreaInteractive } from '@/components/chart-area-interactive'
 import { DataTable } from '@/components/data-table'
-import { QuickCreateSection } from '@/components/quick-create-section'
 import { SectionCards } from '@/components/section-cards'
 
 import { requireSession } from '@/lib/auth/auth'
+import { db, schema } from 'database'
+import { count, eq } from 'drizzle-orm'
 import data from './data.json'
 
-export default async function Page() {
-    await requireSession()
+export default async function DashboardPage() {
+    const session = await requireSession()
+    const toolCallsPromise = db
+        .select({
+            count: count(schema.toolCalls.id)
+        })
+        .from(schema.toolCalls)
+        .leftJoin(schema.mcpServers, eq(schema.toolCalls.mcpServerId, schema.mcpServers.id))
+        .where(eq(schema.mcpServers.organizationId, session.session.activeOrganizationId))
+        .then((result) => result[0] || { count: 0 })
+
+    const supportTicketsPromise = db
+        .select({
+            count: count(schema.supportRequests.id)
+        })
+        .from(schema.supportRequests)
+        .where(eq(schema.supportRequests.organizationId, session.session.activeOrganizationId))
+        .then((result) => result[0] || { count: 0 })
+
+    const activeUsersPromise = db
+        .select({
+            count: count(schema.mcpServers.id)
+        })
+        .from(schema.mcpServers)
+        .where(eq(schema.mcpServers.organizationId, session.session.activeOrganizationId))
+        .then((result) => result[0] || { count: 0 })
 
     return (
         <div className="flex flex-col gap-4 py-4 md:gap-6 md:py-6">
-            <SectionCards />
-            <QuickCreateSection />
+            <SectionCards
+                toolCallsPromise={toolCallsPromise}
+                supportTicketsPromise={supportTicketsPromise}
+                activeUsersPromise={activeUsersPromise}
+            />
+
             <div className="px-4 lg:px-6">
                 <ChartAreaInteractive />
             </div>

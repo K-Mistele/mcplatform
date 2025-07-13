@@ -191,9 +191,9 @@ export function ChartAreaInteractive() {
     return (
         <Card className="@container/card">
             <CardHeader>
-                <CardTitle>Total Visitors</CardTitle>
+                <CardTitle>Overall Engagement</CardTitle>
                 <CardDescription>
-                    <span className="hidden @[540px]/card:block">Recent visitor activity</span>
+                    <span className="hidden @[540px]/card:block">Recent user activity</span>
                     <span className="@[540px]/card:hidden">Recent activity</span>
                 </CardDescription>
                 <CardAction>
@@ -274,7 +274,15 @@ export function ChartAreaInteractive() {
                             content={
                                 <ChartTooltipContent
                                     labelFormatter={(value) => {
-                                        return new Date(value).toLocaleDateString('en-US', {
+                                        const date = new Date(value)
+                                        if (timeRange === '1h') {
+                                            return date.toLocaleString('en-US', {
+                                                hour: 'numeric',
+                                                minute: '2-digit',
+                                                hour12: true
+                                            })
+                                        }
+                                        return date.toLocaleDateString('en-US', {
                                             month: 'short',
                                             day: 'numeric'
                                         })

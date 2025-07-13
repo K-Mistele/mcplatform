@@ -15,6 +15,7 @@ export const supportRequests = pgTable('support_requests', {
         .primaryKey()
         .$defaultFn(() => `sr_${nanoid(8)}`),
     createdAt: bigint('created_at', { mode: 'number' }).$defaultFn(() => Date.now()),
+    title: text('title'),
     conciseSummary: text('concise_summary'),
     context: text('context'),
     status: supportRequestStatus('status').default('pending'),
