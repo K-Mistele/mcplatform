@@ -234,7 +234,8 @@ export function AddServerModal() {
                                         </FormControl>
                                         <SelectContent>
                                             <SelectItem value="none">None</SelectItem>
-                                            <SelectItem value="oauth">OAuth</SelectItem>
+                                            <SelectItem value="platform_oauth">Platform OAuth</SelectItem>
+                                            <SelectItem value="custom_oauth">Custom OAuth</SelectItem>
                                             <SelectItem value="collect_email">Collect Email</SelectItem>
                                         </SelectContent>
                                     </Select>

@@ -4,7 +4,7 @@ import { organization } from './auth-schema'
 
 const supportRequestStatusValues = ['needs_email', 'pending', 'in_progress', 'resolved', 'closed'] as const
 const supportRequestMethodValues = ['slack', 'linear', 'dashboard', 'none'] as const
-const mcpServerAuthTypeValues = ['oauth', 'none', 'collect_email'] as const
+const mcpServerAuthTypeValues = ['platform_oauth', 'custom_oauth', 'none', 'collect_email'] as const
 
 export const supportRequestStatus = pgEnum('support_request_status', supportRequestStatusValues)
 export const supportRequestMethod = pgEnum('support_request_method', supportRequestMethodValues)

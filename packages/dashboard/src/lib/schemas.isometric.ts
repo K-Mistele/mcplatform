@@ -2,7 +2,7 @@ import { z } from 'zod'
 
 const supportRequestStatusValues = ['pending', 'in_progress', 'resolved', 'closed'] as const
 const supportRequestMethodValues = ['slack', 'linear', 'dashboard', 'none'] as const
-const mcpServerAuthTypeValues = ['oauth', 'none', 'collect_email'] as const
+const mcpServerAuthTypeValues = ['platform_oauth', 'custom_oauth', 'none', 'collect_email'] as const
 
 export const supportRequestStatusSchema = z.enum(supportRequestStatusValues)
 export const supportRequestMethodSchema = z.enum(supportRequestMethodValues)

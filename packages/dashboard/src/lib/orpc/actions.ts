@@ -98,7 +98,7 @@ export const updateMcpServerConfiguration = base
     .input(
         z.object({
             serverId: z.string(),
-            authType: z.enum(['oauth', 'none', 'collect_email']),
+            authType: z.enum(['platform_oauth', 'custom_oauth', 'none', 'collect_email']),
             supportTicketType: z.enum(['slack', 'linear', 'dashboard', 'none'])
         })
     )

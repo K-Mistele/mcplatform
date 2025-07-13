@@ -2,5 +2,6 @@
 MCP-based platform for enhancing conversion, onboarding, and activation and increasing visibility into the funnel for devtools companies
 
 
-[] per-server subdomain -> separate OAuth Configurations per customer!
-[] MCP server configuration
+
+[ ] implement local MCP 
+[ ] get deployed with SST

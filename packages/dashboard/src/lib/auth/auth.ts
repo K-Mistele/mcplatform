@@ -1,6 +1,6 @@
 import { betterAuth } from 'better-auth'
 import { drizzleAdapter } from 'better-auth/adapters/drizzle'
-import { organization } from 'better-auth/plugins'
+import { mcp, organization } from 'better-auth/plugins'
 import { authSchema, db, schema } from 'database'
 import { eq } from 'drizzle-orm'
 import { headers } from 'next/headers'
@@ -13,7 +13,12 @@ export const auth = betterAuth({
             ...authSchema
         }
     }),
-    plugins: [organization()],
+    plugins: [
+        organization(),
+        mcp({
+            loginPage: '/login'
+        })
+    ],
     emailAndPassword: {
         enabled: true
     },
