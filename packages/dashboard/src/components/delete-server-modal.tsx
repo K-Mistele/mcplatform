@@ -13,6 +13,10 @@ import {
     DialogTitle,
     DialogTrigger
 } from '@/components/ui/dialog'
+import { deleteMcpServerAction } from '@/lib/orpc/actions'
+import { isDefinedError, onError, onSuccess } from '@orpc/client'
+import { useServerAction } from '@orpc/react/hooks'
+import { toast } from 'sonner'
 
 interface DeleteServerModalProps {
     serverId: string
@@ -22,20 +26,25 @@ interface DeleteServerModalProps {
 
 export function DeleteServerModal({ serverId, serverName, trigger }: DeleteServerModalProps) {
     const [open, setOpen] = useState(false)
-    const [isDeleting, setIsDeleting] = useState(false)
 
-    const handleDelete = async () => {
-        setIsDeleting(true)
-        try {
-            // Placeholder for when you implement the actual ORPC action
-            console.log('Deleting server:', serverId)
-            await new Promise((resolve) => setTimeout(resolve, 1000)) // Simulate deletion
-            setOpen(false)
-        } catch (error) {
-            console.error('Failed to delete server:', error)
-        } finally {
-            setIsDeleting(false)
-        }
+    const { execute, status } = useServerAction(deleteMcpServerAction, {
+        interceptors: [
+            onError((error) => {
+                if (isDefinedError(error)) {
+                    toast.error(error.message)
+                } else {
+                    toast.error('Failed to delete MCP server')
+                }
+            }),
+            onSuccess(() => {
+                toast.success('MCP server deleted successfully')
+                setOpen(false)
+            })
+        ]
+    })
+
+    const handleDelete = () => {
+        execute({ serverId })
     }
 
     return (
@@ -68,11 +77,16 @@ export function DeleteServerModal({ serverId, serverName, trigger }: DeleteServe
                 </div>
 
                 <DialogFooter>
-                    <Button type="button" variant="outline" onClick={() => setOpen(false)} disabled={isDeleting}>
+                    <Button
+                        type="button"
+                        variant="outline"
+                        onClick={() => setOpen(false)}
+                        disabled={status === 'pending'}
+                    >
                         Cancel
                     </Button>
-                    <Button type="button" variant="destructive" onClick={handleDelete} disabled={isDeleting}>
-                        {isDeleting ? 'Deleting...' : 'Delete Server'}
+                    <Button type="button" variant="destructive" onClick={handleDelete} disabled={status === 'pending'}>
+                        {status === 'pending' ? 'Deleting...' : 'Delete Server'}
                     </Button>
                 </DialogFooter>
             </DialogContent>

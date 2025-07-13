@@ -100,6 +100,16 @@ export default async function McpServerDetailsPage(props: McpServerDetailsPagePr
                                 <div className="text-sm font-medium text-muted-foreground">Server Name</div>
                                 <p className="mt-1 font-medium">{server.name}</p>
                             </div>
+                            {server.slug && (
+                                <div>
+                                    <div className="text-sm font-medium text-muted-foreground">Server URL</div>
+                                    <div className="mt-1">
+                                        <Badge variant="secondary" className="font-mono text-sm">
+                                            {server.slug}.mcp.naptha.gg
+                                        </Badge>
+                                    </div>
+                                </div>
+                            )}
                             <div>
                                 <div className="text-sm font-medium text-muted-foreground">Created</div>
                                 <div className="mt-1 flex items-center gap-2">

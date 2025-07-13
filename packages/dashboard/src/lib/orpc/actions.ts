@@ -5,7 +5,7 @@ import { and, eq } from 'drizzle-orm'
 import { revalidatePath } from 'next/cache'
 import { z } from 'zod'
 import { requireSession } from '../auth/auth'
-import { createMcpServerSchema } from '../schemas.isometric'
+import { createMcpServerSchema, validateSubdomainSchema } from '../schemas.isometric'
 import { base } from './router'
 
 export const redirectExample = base
@@ -18,7 +18,7 @@ export const redirectExample = base
         context: async () => ({}) // Optional: provide initial context if needed
     })
 
-export const createMcpServer = base
+export const createMcpServerAction = base
     .input(createMcpServerSchema)
     .handler(async ({ input, errors, context }) => {
         const session = await requireSession()
@@ -28,6 +28,7 @@ export const createMcpServer = base
             .insert(schema.mcpServers)
             .values({
                 name: input.name,
+                slug: input.slug,
                 authType: input.authType,
                 supportTicketType: input.supportTicketType,
                 informationMessage: input.informationMessage,
@@ -39,7 +40,7 @@ export const createMcpServer = base
     })
     .actionable({})
 
-export const deleteServerAction = base
+export const deleteMcpServerAction = base
     .input(z.object({ serverId: z.string() }))
     .handler(async ({ input, errors, context }) => {
         const session = await requireSession()
@@ -66,3 +67,33 @@ export const deleteServerAction = base
         return { success: true }
     })
     .actionable({})
+
+export const validateSubdomainAction = base
+    .input(validateSubdomainSchema)
+    .handler(async ({ input, errors, context }) => {
+        await requireSession()
+
+        const sanitizedSubdomain = input.subdomain.toLowerCase().replace(/[^a-z0-9-]/g, '')
+        if (sanitizedSubdomain !== input.subdomain)
+            throw errors.INVALID_SUBDOMAIN({
+                message: 'Invalid server slug. Server slugs may only contain letters, numbers, and hyphens.'
+            })
+
+        if (sanitizedSubdomain.length > 36)
+            throw errors.INVALID_SUBDOMAIN({
+                message: 'Invalid server slug. Server slugs may only be 36 characters or less.'
+            })
+
+        if (sanitizedSubdomain.length < 6)
+            throw errors.INVALID_SUBDOMAIN({
+                message: 'Invalid server slug. Server slugs must be at least 6 characters long.'
+            })
+
+        const [server] = await db.select().from(schema.mcpServers).where(eq(schema.mcpServers.slug, input.subdomain))
+        if (server)
+            throw errors.SUBDOMAIN_ALREADY_EXISTS({
+                message: 'Server slug already exists. Server slugs must be globally unique.'
+            })
+        return { success: true }
+    })
+    .actionable()

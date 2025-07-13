@@ -5,9 +5,9 @@ services:
         ports:
             - 127.0.0.1:5432:5432
         environment:
-        POSTGRES_USER: postgres
-        POSTGRES_PASSWORD: postgres
-        POSTGRES_DB: postgres
+            POSTGRES_USER: postgres
+            POSTGRES_PASSWORD: postgres
+            POSTGRES_DB: postgres
         volumes:
             - pgvector_data:/var/lib/postgresql/data
 
@@ -23,7 +23,8 @@ services:
         command: inngest dev -u http://host.docker.internal:3000/api/inngest
         ports: 
             - 127.0.0.1:8288:8288
-        environment:
+        
+
         
 
 volumes:    

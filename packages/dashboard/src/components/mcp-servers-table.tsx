@@ -44,6 +44,7 @@ import Link from 'next/link'
 interface McpServer {
     id: string
     name: string
+    slug: string | null
     organizationId: string
     createdAt: number | null
 }
@@ -102,6 +103,23 @@ const columns: ColumnDef<McpServer>[] = [
                 {row.getValue('id')}
             </Badge>
         )
+    },
+    {
+        accessorKey: 'slug',
+        header: 'Server URL',
+        cell: ({ row }) => {
+            const slug = row.getValue('slug') as string | null
+            if (!slug) return <span className="text-muted-foreground text-xs">No URL configured</span>
+
+            const serverUrl = `${slug}.mcp.naptha.gg`
+            return (
+                <div className="flex items-center gap-2">
+                    <Badge variant="secondary" className="font-mono text-xs">
+                        {serverUrl}
+                    </Badge>
+                </div>
+            )
+        }
     },
     {
         accessorKey: 'createdAt',

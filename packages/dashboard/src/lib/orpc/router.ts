@@ -3,7 +3,9 @@ import { z } from 'zod'
 
 export const base = os.errors({
     UNAUTHORIZED: {},
-    RESOURCE_NOT_FOUND: {}
+    RESOURCE_NOT_FOUND: {},
+    INVALID_SUBDOMAIN: {},
+    SUBDOMAIN_ALREADY_EXISTS: {}
 })
 
 export const executeExample = os

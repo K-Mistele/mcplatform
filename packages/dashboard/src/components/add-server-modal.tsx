@@ -18,7 +18,7 @@ import {
 import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form'
 import { Input } from '@/components/ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { createMcpServer } from '@/lib/orpc/actions'
+import { createMcpServerAction } from '@/lib/orpc/actions'
 import { createMcpServerSchema } from '@/lib/schemas.isometric'
 import { isDefinedError, onError, onSuccess } from '@orpc/client'
 import { useServerAction } from '@orpc/react/hooks'
@@ -36,13 +36,14 @@ export function AddServerModal() {
         resolver: zodResolver(createMcpServerSchema),
         defaultValues: {
             name: '',
+            slug: '',
             authType: 'none',
             informationMessage: '',
             supportTicketType: 'dashboard'
         }
     })
 
-    const { execute, status } = useServerAction(createMcpServer, {
+    const { execute, status } = useServerAction(createMcpServerAction, {
         interceptors: [
             onError((error) => {
                 if (isDefinedError(error)) {
@@ -56,7 +57,6 @@ export function AddServerModal() {
                 setOpen(false)
                 form.reset()
                 // Redirect to the details page for the newly created server
-                // The result should have an id property
                 if (result && typeof result === 'object' && 'id' in result) {
                     router.push(`/dashboard/mcp-servers/${result.id}`)
                 }
@@ -91,6 +91,35 @@ export function AddServerModal() {
                                         <Input placeholder="Enter server name" {...field} />
                                     </FormControl>
                                     <FormDescription>A unique name to identify your MCP server.</FormDescription>
+                                    <FormMessage />
+                                </FormItem>
+                            )}
+                        />
+
+                        <FormField
+                            control={form.control}
+                            name="slug"
+                            render={({ field }) => (
+                                <FormItem>
+                                    <FormLabel>Server Slug</FormLabel>
+                                    <FormControl>
+                                        <Input
+                                            placeholder="my-server-slug"
+                                            {...field}
+                                            onChange={(e) => {
+                                                // Convert to lowercase and replace spaces with hyphens
+                                                const value = e.target.value
+                                                    .toLowerCase()
+                                                    .replace(/[^a-z0-9-]/g, '-')
+                                                    .replace(/-+/g, '-')
+                                                field.onChange(value)
+                                            }}
+                                        />
+                                    </FormControl>
+                                    <FormDescription>
+                                        URL-friendly identifier for your server. Will be used in{' '}
+                                        {field.value ? `${field.value}.mcp.naptha.gg` : 'slug.mcp.naptha.gg'}
+                                    </FormDescription>
                                     <FormMessage />
                                 </FormItem>
                             )}

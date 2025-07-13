@@ -29,6 +29,7 @@ export const mcpServers = pgTable('mcp_servers', {
         .references(() => organization.id)
         .notNull(),
     name: text('name').notNull(),
+    slug: text('slug').unique().notNull(),
     createdAt: bigint('created_at', { mode: 'number' }).$defaultFn(() => Date.now()),
     authType: mcpServerAuthType('auth_type').default('none'),
     informationMessage: text('information_message'),
