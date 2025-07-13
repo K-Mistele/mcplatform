@@ -1,13 +1,27 @@
+import { ErrorBoundary } from '@/components/error-boundary'
 import { requireSession } from '@/lib/auth/auth'
 import { db, schema } from 'database'
-import { eq } from 'drizzle-orm'
-import { UsersTable } from '../../../components/users-table'
+import { and, count, eq } from 'drizzle-orm'
+import { Suspense } from 'react'
+import { UsersClient } from './users-client'
+
+function UsersLoading() {
+    return (
+        <div className="flex flex-col gap-4 py-4 md:gap-6 md:py-6">
+            <div className="px-4 lg:px-6">
+                <div className="h-[400px] flex items-center justify-center">
+                    <div className="text-muted-foreground">Loading users...</div>
+                </div>
+            </div>
+        </div>
+    )
+}
 
 export default async function UsersPage() {
     const session = await requireSession()
 
-    // Get all MCP users who have connected to servers in this organization
-    const mcpUsersWithConnections = await db
+    // Create promises without awaiting them - run concurrently
+    const mcpUsersPromise = db
         .select({
             distinctId: schema.mcpServerUser.distinctId,
             email: schema.mcpServerUser.email,
@@ -25,53 +39,41 @@ export default async function UsersPage() {
         .leftJoin(schema.mcpServers, eq(schema.mcpServerConnection.slug, schema.mcpServers.slug))
         .where(eq(schema.mcpServers.organizationId, session.session.activeOrganizationId))
 
-    // Group by user to combine their server connections
-    const userMap = new Map<string, any>()
+    const supportTicketCountsPromise = db
+        .select({
+            email: schema.supportRequests.email,
+            lifetimeCount: count(schema.supportRequests.id).as('lifetimeCount')
+        })
+        .from(schema.supportRequests)
+        .where(eq(schema.supportRequests.organizationId, session.session.activeOrganizationId))
+        .groupBy(schema.supportRequests.email)
 
-    for (const row of mcpUsersWithConnections) {
-        const userId = row.distinctId
-
-        // Skip rows where distinctId is null
-        if (!userId) {
-            continue
-        }
-
-        if (!userMap.has(userId)) {
-            userMap.set(userId, {
-                id: userId,
-                distinctId: userId,
-                name: row.email?.split('@')[0] || 'Unknown User', // Use email prefix as name
-                email: row.email,
-                image: null,
-                createdAt: new Date(row.firstSeenAt || Date.now()),
-                role: 'MCP User',
-                connectedServers: []
-            })
-        }
-
-        // Add server connection if it exists and is not already added
-        if (row.serverSlug) {
-            const user = userMap.get(userId)
-            const existingServer = user.connectedServers.find((server: any) => server.serverSlug === row.serverSlug)
-
-            if (!existingServer) {
-                user.connectedServers.push({
-                    distinctId: userId,
-                    serverName: row.serverName || 'Unknown Server',
-                    serverSlug: row.serverSlug,
-                    firstSeenAt: row.connectionCreatedAt,
-                    transport: row.transport
-                })
-            }
-        }
-    }
-
-    const usersWithServers = Array.from(userMap.values())
+    const openTicketCountsPromise = db
+        .select({
+            email: schema.supportRequests.email,
+            openCount: count(schema.supportRequests.id).as('openCount')
+        })
+        .from(schema.supportRequests)
+        .where(
+            and(
+                eq(schema.supportRequests.organizationId, session.session.activeOrganizationId),
+                eq(schema.supportRequests.status, 'pending')
+            )
+        )
+        .groupBy(schema.supportRequests.email)
 
     return (
         <div className="flex flex-col gap-4 py-4 md:gap-6 md:py-6">
             <div className="px-4 lg:px-6">
-                <UsersTable data={usersWithServers} />
+                <ErrorBoundary>
+                    <Suspense fallback={<UsersLoading />}>
+                        <UsersClient
+                            mcpUsersPromise={mcpUsersPromise}
+                            supportTicketCountsPromise={supportTicketCountsPromise}
+                            openTicketCountsPromise={openTicketCountsPromise}
+                        />
+                    </Suspense>
+                </ErrorBoundary>
             </div>
         </div>
     )
