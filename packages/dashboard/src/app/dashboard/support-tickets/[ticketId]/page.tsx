@@ -120,10 +120,12 @@ export default async function SupportTicketDetailsPage(props: SupportTicketDetai
                                 </div>
                             </div>
                             <div>
-                                <div className="text-sm font-medium text-muted-foreground">Email</div>
+                                <div className="text-sm font-medium text-muted-foreground">User's Email</div>
                                 <div className="mt-1 flex items-center gap-2">
                                     <MailIcon className="h-4 w-4 text-muted-foreground" />
-                                    <span className="text-sm">{ticketData.email}</span>
+                                    <span className="text-sm hover:underline">
+                                        <a href={`mailto:${ticketData.email}`}>{ticketData.email}</a>
+                                    </span>
                                 </div>
                             </div>
                             <div>
@@ -190,7 +192,7 @@ export default async function SupportTicketDetailsPage(props: SupportTicketDetai
                     )}
 
                     {/* Summary Card */}
-                    <Card className="md:col-span-2 2xl:col-span-3">
+                    <Card className="md:col-span-1 md:row-span-2">
                         <CardHeader>
                             <CardTitle>Summary</CardTitle>
                             <CardDescription>Problem description provided by the user</CardDescription>
@@ -206,7 +208,7 @@ export default async function SupportTicketDetailsPage(props: SupportTicketDetai
 
                     {/* Context Card */}
                     {ticketData.context && (
-                        <Card className="md:col-span-2 2xl:col-span-3">
+                        <Card className="md:col-span-2 ">
                             <CardHeader>
                                 <CardTitle>Context</CardTitle>
                                 <CardDescription>Additional context about the user's project and setup</CardDescription>

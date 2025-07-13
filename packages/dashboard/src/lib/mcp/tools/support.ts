@@ -1,6 +1,5 @@
+import { db, schema } from 'database'
 import z from 'zod'
-import { inngest } from '../../inngest/client'
-import type { RequestDashboardSupportEvent } from '../../inngest/functions'
 import type { McpServer, StaticMcpServerConfig } from '../types'
 
 /**
@@ -87,14 +86,25 @@ function registerSupportToolWithEmail(mcpServer: McpServer, staticConfig: Static
                     ]
                 }
             }
-            await createDashboardSupportTicket({
-                title: title,
-                summary: problemDescription,
-                context: context,
-                email,
-                staticConfig,
-                mcpServerId: staticConfig.id
-            })
+
+            // update the database
+            await Promise.all([
+                db.insert(schema.toolCalls).values({
+                    toolName: 'get_support',
+                    input: { context, problemDescription, email, title },
+                    output: 'support_ticket_created',
+                    mcpServerId: staticConfig.id
+                }),
+                db.insert(schema.supportRequests).values({
+                    title: title,
+                    conciseSummary: problemDescription,
+                    context: context,
+                    email: email,
+                    organizationId: staticConfig.organizationId,
+                    mcpServerId: staticConfig.id
+                })
+            ])
+
             return {
                 content: [
                     {
@@ -105,25 +115,4 @@ function registerSupportToolWithEmail(mcpServer: McpServer, staticConfig: Static
             }
         }
     )
-}
-
-async function createDashboardSupportTicket(data: {
-    title: string
-    summary: string
-    context?: string
-    email: string
-    staticConfig: StaticMcpServerConfig
-    mcpServerId: string
-}) {
-    await inngest.send({
-        name: 'mcp-server/support.requested.dashboard',
-        data: {
-            summary: data.summary,
-            context: data.context,
-            email: data.email,
-            organizationId: data.staticConfig.organizationId,
-            title: data.title,
-            mcpServerId: data.mcpServerId
-        } satisfies RequestDashboardSupportEvent
-    })
 }

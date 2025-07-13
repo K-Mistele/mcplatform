@@ -276,21 +276,6 @@ export function SupportTicketsClient({ supportTicketsPromise, mcpServersPromise 
                                                     </Link>
                                                 </TableCell>
                                             </TableRow>
-                                            <TableRow className="">
-                                                <TableCell colSpan={5} className="pt-0 pb-4">
-                                                    <Link
-                                                        href={`/dashboard/support-tickets/${ticket.id}`}
-                                                        className="block text-sm text-muted-foreground hover:text-foreground"
-                                                    >
-                                                        <div className="line-clamp-2">
-                                                            <span className="font-bold">Summary:</span>&nbsp;
-                                                            {ticket.conciseSummary
-                                                                ? `${ticket.conciseSummary.slice(0, 100)}...`
-                                                                : 'No summary provided'}
-                                                        </div>
-                                                    </Link>
-                                                </TableCell>
-                                            </TableRow>
                                         </Fragment>
                                     ))}
                                 </TableBody>
