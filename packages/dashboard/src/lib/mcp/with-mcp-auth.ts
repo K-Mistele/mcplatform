@@ -93,23 +93,23 @@ export function withMcpAuth(
                         'Content-Type': 'application/json'
                     }
                 })
-            } else if (error instanceof ServerError) {
+            }
+            if (error instanceof ServerError) {
                 return new Response(JSON.stringify(error.toResponseObject()), {
                     status: 500,
                     headers: {
                         'Content-Type': 'application/json'
                     }
                 })
-            } else {
-                console.error('Unexpected error authenticating bearer token:', error)
-                const serverError = new ServerError('Internal Server Error')
-                return new Response(JSON.stringify(serverError.toResponseObject()), {
-                    status: 500,
-                    headers: {
-                        'Content-Type': 'application/json'
-                    }
-                })
             }
+            console.error('Unexpected error authenticating bearer token:', error)
+            const serverError = new ServerError('Internal Server Error')
+            return new Response(JSON.stringify(serverError.toResponseObject()), {
+                status: 500,
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            })
         }
     }
 }
