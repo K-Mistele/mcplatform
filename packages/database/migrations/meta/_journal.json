@@ -50,6 +50,48 @@
       "when": 1752378979875,
       "tag": "0006_youthful_darkhawk",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1752383342885,
+      "tag": "0007_reflective_tarantula",
+      "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1752385000472,
+      "tag": "0008_sharp_ultimates",
+      "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1752385067745,
+      "tag": "0009_harsh_wraith",
+      "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1752385091187,
+      "tag": "0010_flawless_norman_osborn",
+      "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "7",
+      "when": 1752385310638,
+      "tag": "0011_calm_bloodstorm",
+      "breakpoints": true
+    },
+    {
+      "idx": 12,
+      "version": "7",
+      "when": 1752385352409,
+      "tag": "0012_living_sunset_bain",
+      "breakpoints": true
     }
   ]
 }

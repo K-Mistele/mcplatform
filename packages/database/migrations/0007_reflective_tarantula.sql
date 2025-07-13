@@ -1,0 +1,1 @@
+ALTER TABLE "support_requests" ADD COLUMN "email" text NOT NULL;

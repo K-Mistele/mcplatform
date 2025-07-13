@@ -1,0 +1,1 @@
+ALTER TABLE "support_requests" ALTER COLUMN "mcp_server_id" DROP NOT NULL;

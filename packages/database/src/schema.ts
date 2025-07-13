@@ -11,13 +11,20 @@ export const supportRequestMethod = pgEnum('support_request_method', supportRequ
 export const mcpServerAuthType = pgEnum('mcp_server_auth_type', mcpServerAuthTypeValues)
 
 export const supportRequests = pgTable('support_requests', {
-    id: text('id').$defaultFn(() => `sr_${nanoid(8)}`),
+    id: text('id')
+        .primaryKey()
+        .$defaultFn(() => `sr_${nanoid(8)}`),
     createdAt: bigint('created_at', { mode: 'number' }).$defaultFn(() => Date.now()),
     conciseSummary: text('concise_summary'),
     context: text('context'),
     status: supportRequestStatus('status').default('pending'),
     supportRequestMethod: supportRequestMethod('support_request_method').default('dashboard'),
-    resolvedAt: bigint('resolved_at', { mode: 'number' })
+    resolvedAt: bigint('resolved_at', { mode: 'number' }),
+    email: text('email').notNull(),
+    organizationId: text('organization_id')
+        .references(() => organization.id, { onDelete: 'cascade' })
+        .notNull(),
+    mcpServerId: text('mcp_server_id').references(() => mcpServers.id, { onDelete: 'cascade' })
 })
 
 export type SupportRequest = typeof supportRequests.$inferSelect
@@ -27,7 +34,7 @@ export const mcpServers = pgTable('mcp_servers', {
         .primaryKey()
         .$defaultFn(() => `${nanoid(8)}`),
     organizationId: text('organization_id')
-        .references(() => organization.id)
+        .references(() => organization.id, { onDelete: 'cascade' })
         .notNull(),
     name: text('name').notNull(),
     productPlatformOrTool: text('product_platform_or_tool').notNull(),

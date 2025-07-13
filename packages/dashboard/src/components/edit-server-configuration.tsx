@@ -31,8 +31,10 @@ interface EditServerConfigurationProps {
 
 function getAuthTypeLabel(authType: string): string {
     switch (authType) {
-        case 'oauth':
-            return 'OAuth'
+        case 'platform_oauth':
+            return 'Platform OAuth'
+        case 'custom_oauth':
+            return 'Custom OAuth'
         case 'collect_email':
             return 'Collect Email'
         default:
@@ -140,7 +142,8 @@ export function EditServerConfiguration({
                                             </FormControl>
                                             <SelectContent>
                                                 <SelectItem value="none">None</SelectItem>
-                                                <SelectItem value="oauth">OAuth</SelectItem>
+                                                <SelectItem value="platform_oauth">Platform OAuth</SelectItem>
+                                                <SelectItem value="custom_oauth">Custom OAuth</SelectItem>
                                                 <SelectItem value="collect_email">Collect Email</SelectItem>
                                             </SelectContent>
                                         </Select>

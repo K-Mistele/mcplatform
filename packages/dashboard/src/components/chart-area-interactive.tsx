@@ -11,6 +11,39 @@ import { useIsMobile } from '@/hooks/use-mobile'
 
 export const description = 'An interactive area chart'
 
+// Generate hourly data for past hour
+const generateHourlyData = () => {
+    const data = []
+    const now = new Date()
+    for (let i = 23; i >= 0; i--) {
+        const time = new Date(now.getTime() - i * 60 * 60 * 1000)
+        data.push({
+            date: time.toISOString(),
+            desktop: Math.floor(Math.random() * 50) + 10,
+            mobile: Math.floor(Math.random() * 30) + 5
+        })
+    }
+    return data
+}
+
+// Generate daily data for past week and month
+const generateDailyData = () => {
+    const data = []
+    const now = new Date()
+    for (let i = 29; i >= 0; i--) {
+        const date = new Date(now.getTime() - i * 24 * 60 * 60 * 1000)
+        data.push({
+            date: date.toISOString().split('T')[0],
+            desktop: Math.floor(Math.random() * 500) + 50,
+            mobile: Math.floor(Math.random() * 400) + 30
+        })
+    }
+    return data
+}
+
+const hourlyData = generateHourlyData()
+const dailyData = generateDailyData()
+
 const chartData = [
     { date: '2024-04-01', desktop: 222, mobile: 150 },
     { date: '2024-04-02', desktop: 97, mobile: 180 },
@@ -121,35 +154,47 @@ const chartConfig = {
 
 export function ChartAreaInteractive() {
     const isMobile = useIsMobile()
-    const [timeRange, setTimeRange] = React.useState('90d')
+    const [timeRange, setTimeRange] = React.useState('1d')
 
     React.useEffect(() => {
         if (isMobile) {
-            setTimeRange('7d')
+            setTimeRange('1h')
         }
     }, [isMobile])
 
-    const filteredData = chartData.filter((item) => {
-        const date = new Date(item.date)
-        const referenceDate = new Date('2024-06-30')
-        let daysToSubtract = 90
-        if (timeRange === '30d') {
-            daysToSubtract = 30
-        } else if (timeRange === '7d') {
-            daysToSubtract = 7
+    const getFilteredData = () => {
+        const now = new Date()
+
+        if (timeRange === '1h') {
+            // Use hourly data for past hour
+            return hourlyData
         }
-        const startDate = new Date(referenceDate)
-        startDate.setDate(startDate.getDate() - daysToSubtract)
-        return date >= startDate
-    })
+        if (timeRange === '1d') {
+            // Use the most recent day from dailyData
+            return dailyData.slice(-1)
+        }
+        if (timeRange === '1w') {
+            // Use past 7 days from dailyData
+            return dailyData.slice(-7)
+        }
+        if (timeRange === '1m') {
+            // Use all dailyData (30 days)
+            return dailyData
+        }
+
+        // Fallback to existing data
+        return chartData.slice(-7)
+    }
+
+    const filteredData = getFilteredData()
 
     return (
         <Card className="@container/card">
             <CardHeader>
                 <CardTitle>Total Visitors</CardTitle>
                 <CardDescription>
-                    <span className="hidden @[540px]/card:block">Total for the last 3 months</span>
-                    <span className="@[540px]/card:hidden">Last 3 months</span>
+                    <span className="hidden @[540px]/card:block">Recent visitor activity</span>
+                    <span className="@[540px]/card:hidden">Recent activity</span>
                 </CardDescription>
                 <CardAction>
                     <ToggleGroup
@@ -159,9 +204,10 @@ export function ChartAreaInteractive() {
                         variant="outline"
                         className="hidden *:data-[slot=toggle-group-item]:!px-4 @[767px]/card:flex"
                     >
-                        <ToggleGroupItem value="90d">Last 3 months</ToggleGroupItem>
-                        <ToggleGroupItem value="30d">Last 30 days</ToggleGroupItem>
-                        <ToggleGroupItem value="7d">Last 7 days</ToggleGroupItem>
+                        <ToggleGroupItem value="1h">Past hour</ToggleGroupItem>
+                        <ToggleGroupItem value="1d">Past day</ToggleGroupItem>
+                        <ToggleGroupItem value="1w">Past week</ToggleGroupItem>
+                        <ToggleGroupItem value="1m">Past month</ToggleGroupItem>
                     </ToggleGroup>
                     <Select value={timeRange} onValueChange={setTimeRange}>
                         <SelectTrigger
@@ -169,17 +215,20 @@ export function ChartAreaInteractive() {
                             size="sm"
                             aria-label="Select a value"
                         >
-                            <SelectValue placeholder="Last 3 months" />
+                            <SelectValue placeholder="Past day" />
                         </SelectTrigger>
                         <SelectContent className="rounded-xl">
-                            <SelectItem value="90d" className="rounded-lg">
-                                Last 3 months
+                            <SelectItem value="1h" className="rounded-lg">
+                                Past hour
                             </SelectItem>
-                            <SelectItem value="30d" className="rounded-lg">
-                                Last 30 days
+                            <SelectItem value="1d" className="rounded-lg">
+                                Past day
                             </SelectItem>
-                            <SelectItem value="7d" className="rounded-lg">
-                                Last 7 days
+                            <SelectItem value="1w" className="rounded-lg">
+                                Past week
+                            </SelectItem>
+                            <SelectItem value="1m" className="rounded-lg">
+                                Past month
                             </SelectItem>
                         </SelectContent>
                     </Select>
@@ -207,6 +256,12 @@ export function ChartAreaInteractive() {
                             minTickGap={32}
                             tickFormatter={(value) => {
                                 const date = new Date(value)
+                                if (timeRange === '1h') {
+                                    return date.toLocaleTimeString('en-US', {
+                                        hour: 'numeric',
+                                        hour12: true
+                                    })
+                                }
                                 return date.toLocaleDateString('en-US', {
                                     month: 'short',
                                     day: 'numeric'

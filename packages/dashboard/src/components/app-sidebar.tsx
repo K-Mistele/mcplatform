@@ -6,6 +6,7 @@ import {
     IconDatabase,
     IconFileWord,
     IconHelp,
+    IconHelpCircle,
     IconReport,
     IconSearch,
     IconServer2,
@@ -37,6 +38,11 @@ const data = {
             title: 'MCP Servers',
             url: '/dashboard/mcp-servers',
             icon: IconServer2
+        },
+        {
+            title: 'Support Tickets',
+            url: '/dashboard/support-tickets',
+            icon: IconHelpCircle
         }
         // {
         //     title: 'Analytics',
