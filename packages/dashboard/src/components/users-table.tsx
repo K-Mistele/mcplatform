@@ -6,8 +6,7 @@ import {
     IconChevronRight,
     IconChevronsLeft,
     IconChevronsRight,
-    IconLayoutColumns,
-    IconUser
+    IconLayoutColumns
 } from '@tabler/icons-react'
 import {
     type ColumnDef,
@@ -54,7 +53,8 @@ interface UserWithServers {
     email: string
     image?: string | null
     createdAt: Date
-    role: string
+    lifetimeSupportTickets: number
+    openSupportTickets: number
     connectedServers: ConnectedServer[]
 }
 
@@ -79,18 +79,22 @@ const columns: ColumnDef<UserWithServers>[] = [
     {
         id: 'select',
         header: ({ table }) => (
-            <Checkbox
-                checked={table.getIsAllPageRowsSelected() || (table.getIsSomePageRowsSelected() && 'indeterminate')}
-                onCheckedChange={(value) => table.toggleAllPageRowsSelected(!!value)}
-                aria-label="Select all"
-            />
+            <div className="flex items-center justify-center">
+                <Checkbox
+                    checked={table.getIsAllPageRowsSelected() || (table.getIsSomePageRowsSelected() && 'indeterminate')}
+                    onCheckedChange={(value) => table.toggleAllPageRowsSelected(!!value)}
+                    aria-label="Select all"
+                />
+            </div>
         ),
         cell: ({ row }) => (
-            <Checkbox
-                checked={row.getIsSelected()}
-                onCheckedChange={(value) => row.toggleSelected(!!value)}
-                aria-label="Select row"
-            />
+            <div className="flex items-center justify-center">
+                <Checkbox
+                    checked={row.getIsSelected()}
+                    onCheckedChange={(value) => row.toggleSelected(!!value)}
+                    aria-label="Select row"
+                />
+            </div>
         ),
         enableSorting: false,
         enableHiding: false
@@ -120,14 +124,32 @@ const columns: ColumnDef<UserWithServers>[] = [
                     </div>
                 </div>
             )
+        },
+        enableHiding: false,
+        filterFn: (row, id, value) => {
+            const user = row.original
+            const searchValue = value.toLowerCase()
+            return (
+                user.name.toLowerCase().includes(searchValue) ||
+                user.email.toLowerCase().includes(searchValue) ||
+                user.distinctId.toLowerCase().includes(searchValue)
+            )
         }
     },
     {
-        accessorKey: 'role',
-        header: 'Role',
+        accessorKey: 'lifetimeSupportTickets',
+        header: 'Lifetime Support Tickets',
         cell: ({ row }) => {
-            const role = row.getValue('role') as string
-            return <Badge variant="outline">{role}</Badge>
+            const tickets = row.getValue('lifetimeSupportTickets') as number
+            return <Badge variant="outline">{tickets}</Badge>
+        }
+    },
+    {
+        accessorKey: 'openSupportTickets',
+        header: 'Open Support Tickets',
+        cell: ({ row }) => {
+            const tickets = row.getValue('openSupportTickets') as number
+            return <Badge variant="outline">{tickets}</Badge>
         }
     },
     {
@@ -165,7 +187,7 @@ const columns: ColumnDef<UserWithServers>[] = [
         header: 'First Seen',
         cell: ({ row }) => {
             const date = row.getValue('createdAt') as Date
-            return formatDate(date)
+            return <span className="text-muted-foreground text-sm">{formatDate(date)}</span>
         }
     }
 ]
@@ -175,56 +197,62 @@ interface UsersTableProps {
 }
 
 export function UsersTable({ data }: UsersTableProps) {
-    const [sorting, setSorting] = React.useState<SortingState>([])
-    const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>([])
-    const [columnVisibility, setColumnVisibility] = React.useState<VisibilityState>({})
     const [rowSelection, setRowSelection] = React.useState({})
+    const [columnVisibility, setColumnVisibility] = React.useState<VisibilityState>({})
+    const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>([])
+    const [sorting, setSorting] = React.useState<SortingState>([])
+    const [pagination, setPagination] = React.useState({
+        pageIndex: 0,
+        pageSize: 10
+    })
 
     const table = useReactTable({
         data,
         columns,
-        onSortingChange: setSorting,
-        onColumnFiltersChange: setColumnFilters,
-        getCoreRowModel: getCoreRowModel(),
-        getPaginationRowModel: getPaginationRowModel(),
-        getSortedRowModel: getSortedRowModel(),
-        getFilteredRowModel: getFilteredRowModel(),
-        onColumnVisibilityChange: setColumnVisibility,
-        onRowSelectionChange: setRowSelection,
         state: {
             sorting,
-            columnFilters,
             columnVisibility,
-            rowSelection
-        }
+            rowSelection,
+            columnFilters,
+            pagination
+        },
+        getRowId: (row) => row.id,
+        enableRowSelection: true,
+        onRowSelectionChange: setRowSelection,
+        onSortingChange: setSorting,
+        onColumnFiltersChange: setColumnFilters,
+        onColumnVisibilityChange: setColumnVisibility,
+        onPaginationChange: setPagination,
+        getCoreRowModel: getCoreRowModel(),
+        getFilteredRowModel: getFilteredRowModel(),
+        getPaginationRowModel: getPaginationRowModel(),
+        getSortedRowModel: getSortedRowModel()
     })
 
     return (
-        <div className="w-full">
-            <div className="flex items-center py-4">
+        <div className="flex flex-col gap-4">
+            <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
-                    <IconUser className="h-5 w-5 text-muted-foreground" />
-                    <h2 className="text-lg font-semibold">Users</h2>
-                </div>
-                <div className="ml-auto flex items-center gap-2">
                     <Input
-                        placeholder="Filter users..."
+                        placeholder="Search users by name, email, or ID..."
                         value={(table.getColumn('name')?.getFilterValue() as string) ?? ''}
                         onChange={(event) => table.getColumn('name')?.setFilterValue(event.target.value)}
                         className="max-w-sm"
                     />
+                </div>
+                <div className="flex items-center gap-2">
                     <DropdownMenu>
                         <DropdownMenuTrigger asChild>
-                            <Button variant="outline" className="ml-auto">
-                                <IconLayoutColumns className="h-4 w-4" />
-                                Columns
-                                <IconChevronDown className="ml-2 h-4 w-4" />
+                            <Button variant="outline" size="sm">
+                                <IconLayoutColumns />
+                                <span className="hidden lg:inline">Columns</span>
+                                <IconChevronDown />
                             </Button>
                         </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
+                        <DropdownMenuContent align="end" className="w-56">
                             {table
                                 .getAllColumns()
-                                .filter((column) => column.getCanHide())
+                                .filter((column) => typeof column.accessorFn !== 'undefined' && column.getCanHide())
                                 .map((column) => {
                                     return (
                                         <DropdownMenuCheckboxItem
@@ -241,14 +269,15 @@ export function UsersTable({ data }: UsersTableProps) {
                     </DropdownMenu>
                 </div>
             </div>
-            <div className="rounded-md border">
+
+            <div className="overflow-hidden rounded-lg border">
                 <Table>
-                    <TableHeader>
+                    <TableHeader className="bg-muted">
                         {table.getHeaderGroups().map((headerGroup) => (
                             <TableRow key={headerGroup.id}>
                                 {headerGroup.headers.map((header) => {
                                     return (
-                                        <TableHead key={header.id}>
+                                        <TableHead key={header.id} colSpan={header.colSpan}>
                                             {header.isPlaceholder
                                                 ? null
                                                 : flexRender(header.column.columnDef.header, header.getContext())}
@@ -279,13 +308,14 @@ export function UsersTable({ data }: UsersTableProps) {
                     </TableBody>
                 </Table>
             </div>
-            <div className="flex items-center justify-between space-x-2 py-4">
-                <div className="flex-1 text-sm text-muted-foreground">
+
+            <div className="flex items-center justify-between px-4">
+                <div className="text-muted-foreground hidden flex-1 text-sm lg:flex">
                     {table.getFilteredSelectedRowModel().rows.length} of {table.getFilteredRowModel().rows.length}{' '}
                     row(s) selected.
                 </div>
-                <div className="flex items-center space-x-6 lg:space-x-8">
-                    <div className="flex items-center space-x-2">
+                <div className="flex w-full items-center gap-8 lg:w-fit">
+                    <div className="hidden items-center gap-2 lg:flex">
                         <Label htmlFor="rows-per-page" className="text-sm font-medium">
                             Rows per page
                         </Label>
@@ -295,7 +325,7 @@ export function UsersTable({ data }: UsersTableProps) {
                                 table.setPageSize(Number(value))
                             }}
                         >
-                            <SelectTrigger id="rows-per-page" className="h-8 w-[70px]">
+                            <SelectTrigger size="sm" className="w-20" id="rows-per-page">
                                 <SelectValue placeholder={table.getState().pagination.pageSize} />
                             </SelectTrigger>
                             <SelectContent side="top">
@@ -307,10 +337,10 @@ export function UsersTable({ data }: UsersTableProps) {
                             </SelectContent>
                         </Select>
                     </div>
-                    <div className="flex w-[100px] items-center justify-center text-sm font-medium">
+                    <div className="flex w-fit items-center justify-center text-sm font-medium">
                         Page {table.getState().pagination.pageIndex + 1} of {table.getPageCount()}
                     </div>
-                    <div className="flex items-center space-x-2">
+                    <div className="ml-auto flex items-center gap-2 lg:ml-0">
                         <Button
                             variant="outline"
                             className="hidden h-8 w-8 p-0 lg:flex"
@@ -318,34 +348,37 @@ export function UsersTable({ data }: UsersTableProps) {
                             disabled={!table.getCanPreviousPage()}
                         >
                             <span className="sr-only">Go to first page</span>
-                            <IconChevronsLeft className="h-4 w-4" />
+                            <IconChevronsLeft />
                         </Button>
                         <Button
                             variant="outline"
-                            className="h-8 w-8 p-0"
+                            className="size-8"
+                            size="icon"
                             onClick={() => table.previousPage()}
                             disabled={!table.getCanPreviousPage()}
                         >
                             <span className="sr-only">Go to previous page</span>
-                            <IconChevronLeft className="h-4 w-4" />
+                            <IconChevronLeft />
                         </Button>
                         <Button
                             variant="outline"
-                            className="h-8 w-8 p-0"
+                            className="size-8"
+                            size="icon"
                             onClick={() => table.nextPage()}
                             disabled={!table.getCanNextPage()}
                         >
                             <span className="sr-only">Go to next page</span>
-                            <IconChevronRight className="h-4 w-4" />
+                            <IconChevronRight />
                         </Button>
                         <Button
                             variant="outline"
-                            className="hidden h-8 w-8 p-0 lg:flex"
+                            className="hidden size-8 lg:flex"
+                            size="icon"
                             onClick={() => table.setPageIndex(table.getPageCount() - 1)}
                             disabled={!table.getCanNextPage()}
                         >
                             <span className="sr-only">Go to last page</span>
-                            <IconChevronsRight className="h-4 w-4" />
+                            <IconChevronsRight />
                         </Button>
                     </div>
                 </div>

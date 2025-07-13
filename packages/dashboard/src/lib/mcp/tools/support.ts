@@ -118,6 +118,7 @@ function registerSupportToolWithEmail(mcpServer: McpServer, staticConfig: Static
                         .set({ email })
                         .where(eq(schema.mcpServerUser.distinctId, distinctId))
                 )
+
                 console.log('distinctId', distinctId)
                 console.log('email', email)
             }

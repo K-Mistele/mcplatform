@@ -69,7 +69,7 @@ export function ChartAreaInteractive() {
         // Add tool names
         for (const [index, toolName] of toolNames.entries()) {
             config[toolName] = {
-                label: `Tool: ${toolName}`,
+                label: `${toolName}`,
                 color: chartColors[index % chartColors.length]
             }
         }
@@ -77,7 +77,7 @@ export function ChartAreaInteractive() {
         // Add connection types
         for (const [index, connectionType] of connectionTypes.entries()) {
             config[connectionType] = {
-                label: connectionType === 'mcp_connections' ? 'Unq. Connections' : connectionType,
+                label: connectionType === 'mcp_connections' ? 'users' : connectionType,
                 color: chartColors[(toolNames.length + index) % chartColors.length]
             }
         }

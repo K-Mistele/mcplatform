@@ -1,18 +1,25 @@
 'use client'
 
-import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import { Badge } from '@/components/ui/badge'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
-import { CalendarIcon, MailIcon, ServerIcon, TicketIcon, UserIcon, WrenchIcon } from 'lucide-react'
+import { CalendarIcon, ClockIcon, MailIcon, ServerIcon, TicketIcon, UserIcon, WrenchIcon } from 'lucide-react'
 import Link from 'next/link'
-import { use, useState } from 'react'
+import { use, useMemo, useState } from 'react'
 
 interface UserDetailClientProps {
     userPromise: Promise<any>
     connectionsPromise: Promise<any[]>
     toolCallsPromise: Promise<any[]>
     supportRequestsPromise: Promise<any[]>
+}
+
+interface TimelineEvent {
+    id: string
+    type: 'tool_call' | 'connection' | 'support_request'
+    timestamp: number
+    title: string
+    subtitle: string
+    data: any
 }
 
 function formatDate(timestamp: number | null): string {
@@ -26,6 +33,18 @@ function formatDate(timestamp: number | null): string {
     })
 }
 
+function formatRelativeTime(timestamp: number): string {
+    const now = Date.now()
+    const diff = now - timestamp
+    const minutes = Math.floor(diff / (1000 * 60))
+    const hours = Math.floor(diff / (1000 * 60 * 60))
+    const days = Math.floor(diff / (1000 * 60 * 60 * 24))
+
+    if (minutes < 60) return `${minutes}m ago`
+    if (hours < 24) return `${hours}h ago`
+    return `${days}d ago`
+}
+
 function getInitials(email: string): string {
     if (!email) return 'U'
     const parts = email.split('@')[0].split('.')
@@ -33,6 +52,32 @@ function getInitials(email: string): string {
         return `${parts[0][0]}${parts[1][0]}`.toUpperCase()
     }
     return email[0].toUpperCase()
+}
+
+function getEventIcon(type: string) {
+    switch (type) {
+        case 'tool_call':
+            return <WrenchIcon className="h-4 w-4" />
+        case 'connection':
+            return <ServerIcon className="h-4 w-4" />
+        case 'support_request':
+            return <TicketIcon className="h-4 w-4" />
+        default:
+            return <ClockIcon className="h-4 w-4" />
+    }
+}
+
+function getEventColor(type: string) {
+    switch (type) {
+        case 'tool_call':
+            return 'text-blue-500'
+        case 'connection':
+            return 'text-green-500'
+        case 'support_request':
+            return 'text-orange-500'
+        default:
+            return 'text-gray-500'
+    }
 }
 
 export function UserDetailClient({
@@ -46,11 +91,55 @@ export function UserDetailClient({
     const toolCalls = use(toolCallsPromise)
     const supportRequests = use(supportRequestsPromise)
 
-    const [selectedToolCall, setSelectedToolCall] = useState<any>(null)
+    const [selectedEvent, setSelectedEvent] = useState<TimelineEvent | null>(null)
+
+    // Create unified timeline of all events
+    const timelineEvents = useMemo((): TimelineEvent[] => {
+        const events: TimelineEvent[] = []
+
+        // Add tool calls
+        for (const call of toolCalls) {
+            events.push({
+                id: `tool_call_${call.id}`,
+                type: 'tool_call',
+                timestamp: call.createdAt,
+                title: call.toolName,
+                subtitle: `from ${call.serverName}`,
+                data: call
+            })
+        }
+
+        // Add connections
+        for (const connection of connections) {
+            events.push({
+                id: `connection_${connection.serverId}_${connection.createdAt}`,
+                type: 'connection',
+                timestamp: connection.createdAt,
+                title: `Connected to ${connection.serverName}`,
+                subtitle: `via ${connection.transport}`,
+                data: connection
+            })
+        }
+
+        // Add support requests
+        for (const request of supportRequests) {
+            events.push({
+                id: `support_request_${request.id}`,
+                type: 'support_request',
+                timestamp: request.createdAt,
+                title: request.title,
+                subtitle: `from ${request.serverName}`,
+                data: request
+            })
+        }
+
+        // Sort by timestamp (most recent first)
+        return events.sort((a, b) => b.timestamp - a.timestamp)
+    }, [toolCalls, connections, supportRequests])
 
     return (
-        <div className="flex flex-col gap-4 py-4 md:gap-6 md:py-6">
-            <div className="px-4 lg:px-6">
+        <div className="flex flex-col gap-4">
+            {/* <div className="px-4 lg:px-6">
                 <div className="flex items-center gap-3 mb-2">
                     <Avatar className="h-12 w-12">
                         <AvatarFallback className="text-lg">{getInitials(user.email || '')}</AvatarFallback>
@@ -60,139 +149,93 @@ export function UserDetailClient({
                         <p className="text-muted-foreground">User Details</p>
                     </div>
                 </div>
-            </div>
+            </div> */}
 
             <div className="px-4 lg:px-6">
-                <div className="grid gap-6 md:grid-cols-2">
-                    {/* Basic Information Card */}
-                    <Card>
-                        <CardHeader>
-                            <CardTitle className="flex items-center gap-2">
-                                <UserIcon className="h-5 w-5" />
-                                Basic Information
-                            </CardTitle>
-                            <CardDescription>Core details about this user</CardDescription>
-                        </CardHeader>
-                        <CardContent className="space-y-4">
+                {/* Basic Information Card */}
+                <Card className="mb-6">
+                    <CardHeader>
+                        <CardTitle className="flex items-center gap-2">
+                            <UserIcon className="h-5 w-5" />
+                            Basic Information
+                        </CardTitle>
+                        <CardDescription>Core details about this user</CardDescription>
+                    </CardHeader>
+                    <CardContent className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                        <div>
+                            <div className="text-sm font-medium text-muted-foreground">User ID</div>
+                            <div className="mt-1">
+                                <Badge variant="outline" className="font-mono text-xs">
+                                    {user.id}
+                                </Badge>
+                            </div>
+                        </div>
+                        {user.distinctId && (
                             <div>
-                                <div className="text-sm font-medium text-muted-foreground">User ID</div>
+                                <div className="text-sm font-medium text-muted-foreground">Distinct ID</div>
                                 <div className="mt-1">
-                                    <Badge variant="outline" className="font-mono text-xs">
-                                        {user.id}
+                                    <Badge variant="secondary" className="font-mono text-xs">
+                                        {user.distinctId}
                                     </Badge>
                                 </div>
                             </div>
-                            {user.distinctId && (
-                                <div>
-                                    <div className="text-sm font-medium text-muted-foreground">Distinct ID</div>
-                                    <div className="mt-1">
-                                        <Badge variant="secondary" className="font-mono text-xs">
-                                            {user.distinctId}
-                                        </Badge>
-                                    </div>
-                                </div>
-                            )}
-                            {user.email && (
-                                <div>
-                                    <div className="text-sm font-medium text-muted-foreground">Email</div>
-                                    <div className="mt-1 flex items-center gap-2">
-                                        <MailIcon className="h-4 w-4 text-muted-foreground" />
-                                        <span className="text-sm">{user.email}</span>
-                                    </div>
-                                </div>
-                            )}
+                        )}
+                        {user.email && (
                             <div>
-                                <div className="text-sm font-medium text-muted-foreground">First Seen</div>
+                                <div className="text-sm font-medium text-muted-foreground">Email</div>
                                 <div className="mt-1 flex items-center gap-2">
-                                    <CalendarIcon className="h-4 w-4 text-muted-foreground" />
-                                    <span className="text-sm">{formatDate(user.firstSeenAt)}</span>
+                                    <MailIcon className="h-4 w-4 text-muted-foreground" />
+                                    <span className="text-sm">{user.email}</span>
                                 </div>
                             </div>
-                        </CardContent>
-                    </Card>
+                        )}
+                        <div>
+                            <div className="text-sm font-medium text-muted-foreground">First Seen</div>
+                            <div className="mt-1 flex items-center gap-2">
+                                <CalendarIcon className="h-4 w-4 text-muted-foreground" />
+                                <span className="text-sm">{formatDate(user.firstSeenAt)}</span>
+                            </div>
+                        </div>
+                    </CardContent>
+                </Card>
 
-                    {/* Connection Events Card */}
+                <div className="grid gap-6 md:grid-cols-2">
+                    {/* Timeline Card */}
                     <Card>
                         <CardHeader>
                             <CardTitle className="flex items-center gap-2">
-                                <ServerIcon className="h-5 w-5" />
-                                Connection Events
+                                <ClockIcon className="h-5 w-5" />
+                                Activity Timeline
                             </CardTitle>
-                            <CardDescription>Server connections for this user</CardDescription>
+                            <CardDescription>All user events in chronological order</CardDescription>
                         </CardHeader>
                         <CardContent>
-                            {connections.length === 0 ? (
+                            {timelineEvents.length === 0 ? (
                                 <div className="text-center py-8">
-                                    <ServerIcon className="h-8 w-8 text-muted-foreground mx-auto mb-2" />
-                                    <p className="text-sm text-muted-foreground">No connections found</p>
+                                    <ClockIcon className="h-8 w-8 text-muted-foreground mx-auto mb-2" />
+                                    <p className="text-sm text-muted-foreground">No activity found</p>
                                 </div>
                             ) : (
-                                <div className="space-y-3 max-h-60 overflow-y-auto">
-                                    {connections.map((connection) => (
-                                        <div
-                                            key={`${connection.serverId}-${connection.createdAt}`}
-                                            className="flex items-center gap-3 p-3 rounded-lg border bg-card"
-                                        >
-                                            <ServerIcon className="h-5 w-5 text-muted-foreground" />
-                                            <div className="flex-1 min-w-0">
-                                                <div className="font-medium text-sm truncate">
-                                                    <Link
-                                                        href={`/dashboard/mcp-servers/${connection.serverId}`}
-                                                        className="hover:underline"
-                                                    >
-                                                        {connection.serverName}
-                                                    </Link>
-                                                </div>
-                                                <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                                                    <CalendarIcon className="h-3 w-3" />
-                                                    <span>{formatDate(connection.createdAt)}</span>
-                                                </div>
-                                            </div>
-                                            {connection.transport && (
-                                                <Badge variant="outline" className="text-xs">
-                                                    {connection.transport}
-                                                </Badge>
-                                            )}
-                                        </div>
-                                    ))}
-                                </div>
-                            )}
-                        </CardContent>
-                    </Card>
-
-                    {/* All Tool Calls Card */}
-                    <Card>
-                        <CardHeader>
-                            <CardTitle className="flex items-center gap-2">
-                                <WrenchIcon className="h-5 w-5" />
-                                All Tool Calls
-                            </CardTitle>
-                            <CardDescription>Click a tool call to view details</CardDescription>
-                        </CardHeader>
-                        <CardContent>
-                            {toolCalls.length === 0 ? (
-                                <div className="text-center py-8">
-                                    <WrenchIcon className="h-8 w-8 text-muted-foreground mx-auto mb-2" />
-                                    <p className="text-sm text-muted-foreground">No tool calls found</p>
-                                </div>
-                            ) : (
-                                <div className="space-y-2 max-h-60 overflow-y-auto">
-                                    {toolCalls.map((call) => (
+                                <div className="space-y-2 max-h-96 overflow-y-auto">
+                                    {timelineEvents.map((event, index) => (
                                         <button
-                                            key={call.id}
+                                            key={event.id}
                                             type="button"
-                                            onClick={() => setSelectedToolCall(call)}
-                                            className={`flex items-center gap-2 p-2 rounded-lg border cursor-pointer hover:bg-accent transition-colors ${
-                                                selectedToolCall?.id === call.id
-                                                    ? 'bg-accent border-primary'
-                                                    : 'bg-card'
+                                            onClick={() => setSelectedEvent(event)}
+                                            className={`w-full text-left flex items-start gap-3 p-3 rounded-lg border hover:bg-accent transition-colors ${
+                                                selectedEvent?.id === event.id ? 'bg-accent border-primary' : 'bg-card'
                                             }`}
                                         >
-                                            <WrenchIcon className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+                                            <div className={`flex-shrink-0 mt-1 ${getEventColor(event.type)}`}>
+                                                {getEventIcon(event.type)}
+                                            </div>
                                             <div className="flex-1 min-w-0">
-                                                <div className="font-medium text-sm truncate">{call.toolName}</div>
+                                                <div className="font-medium text-sm truncate">{event.title}</div>
                                                 <div className="text-xs text-muted-foreground truncate">
-                                                    from {call.serverName}
+                                                    {event.subtitle}
+                                                </div>
+                                                <div className="text-xs text-muted-foreground">
+                                                    {formatRelativeTime(event.timestamp)}
                                                 </div>
                                             </div>
                                         </button>
@@ -202,138 +245,149 @@ export function UserDetailClient({
                         </CardContent>
                     </Card>
 
-                    {/* Tool Call Details Card */}
+                    {/* Event Details Card */}
                     <Card>
                         <CardHeader>
                             <CardTitle className="flex items-center gap-2">
-                                <WrenchIcon className="h-5 w-5" />
-                                Tool Call Details
+                                {selectedEvent ? getEventIcon(selectedEvent.type) : <ClockIcon className="h-5 w-5" />}
+                                Event Details
                             </CardTitle>
                             <CardDescription>
-                                {selectedToolCall
-                                    ? 'Details for selected tool call'
-                                    : 'Select a tool call to view details'}
+                                {selectedEvent ? 'Details for selected event' : 'Select an event to view details'}
                             </CardDescription>
                         </CardHeader>
                         <CardContent>
-                            {selectedToolCall ? (
+                            {selectedEvent ? (
                                 <div className="space-y-4">
                                     <div>
-                                        <div className="text-sm font-medium text-muted-foreground">Tool Name</div>
+                                        <div className="text-sm font-medium text-muted-foreground">Event Type</div>
                                         <div className="mt-1">
-                                            <Badge variant="outline">{selectedToolCall.toolName}</Badge>
+                                            <Badge variant="outline" className={getEventColor(selectedEvent.type)}>
+                                                {selectedEvent.type.replace('_', ' ')}
+                                            </Badge>
                                         </div>
                                     </div>
                                     <div>
-                                        <div className="text-sm font-medium text-muted-foreground">Server</div>
-                                        <div className="mt-1">
-                                            <Link
-                                                href={`/dashboard/mcp-servers/${selectedToolCall.serverId}`}
-                                                className="text-sm hover:underline"
-                                            >
-                                                {selectedToolCall.serverName}
-                                            </Link>
-                                        </div>
+                                        <div className="text-sm font-medium text-muted-foreground">Title</div>
+                                        <div className="mt-1 font-medium">{selectedEvent.title}</div>
                                     </div>
                                     <div>
                                         <div className="text-sm font-medium text-muted-foreground">Timestamp</div>
                                         <div className="mt-1 flex items-center gap-2">
                                             <CalendarIcon className="h-4 w-4 text-muted-foreground" />
-                                            <span className="text-sm">{formatDate(selectedToolCall.createdAt)}</span>
+                                            <span className="text-sm">{formatDate(selectedEvent.timestamp)}</span>
                                         </div>
                                     </div>
-                                    <div>
-                                        <div className="text-sm font-medium text-muted-foreground">Input</div>
-                                        <div className="mt-1">
-                                            <pre className="text-xs bg-muted p-2 rounded overflow-x-auto">
-                                                {JSON.stringify(selectedToolCall.input, null, 2)}
-                                            </pre>
-                                        </div>
-                                    </div>
-                                    <div>
-                                        <div className="text-sm font-medium text-muted-foreground">Output</div>
-                                        <div className="mt-1">
-                                            <pre className="text-xs bg-muted p-2 rounded overflow-x-auto">
-                                                {JSON.stringify(selectedToolCall.output, null, 2)}
-                                            </pre>
-                                        </div>
-                                    </div>
-                                </div>
-                            ) : (
-                                <div className="text-center py-8">
-                                    <WrenchIcon className="h-8 w-8 text-muted-foreground mx-auto mb-2" />
-                                    <p className="text-sm text-muted-foreground">Select a tool call to view details</p>
-                                </div>
-                            )}
-                        </CardContent>
-                    </Card>
-                </div>
 
-                {/* Support Requests Section */}
-                <div className="mt-6">
-                    <Card>
-                        <CardHeader>
-                            <CardTitle className="flex items-center gap-2">
-                                <TicketIcon className="h-5 w-5" />
-                                Support Requests
-                            </CardTitle>
-                            <CardDescription>Support tickets submitted by this user</CardDescription>
-                        </CardHeader>
-                        <CardContent>
-                            {supportRequests.length === 0 ? (
-                                <div className="text-center py-8">
-                                    <TicketIcon className="h-8 w-8 text-muted-foreground mx-auto mb-2" />
-                                    <p className="text-sm text-muted-foreground">No support requests found</p>
-                                </div>
-                            ) : (
-                                <Table>
-                                    <TableHeader>
-                                        <TableRow>
-                                            <TableHead>Title</TableHead>
-                                            <TableHead>Server</TableHead>
-                                            <TableHead>Status</TableHead>
-                                            <TableHead>Date</TableHead>
-                                            <TableHead>Summary</TableHead>
-                                        </TableRow>
-                                    </TableHeader>
-                                    <TableBody>
-                                        {supportRequests.map((request) => (
-                                            <TableRow key={request.id}>
-                                                <TableCell>
+                                    {/* Tool Call Details */}
+                                    {selectedEvent.type === 'tool_call' && (
+                                        <>
+                                            <div>
+                                                <div className="text-sm font-medium text-muted-foreground">Server</div>
+                                                <div className="mt-1">
                                                     <Link
-                                                        href={`/dashboard/support-tickets/${request.id}`}
-                                                        className="hover:underline font-medium"
+                                                        href={`/dashboard/mcp-servers/${selectedEvent.data.serverId}`}
+                                                        className="text-sm hover:underline"
                                                     >
-                                                        {request.title}
+                                                        {selectedEvent.data.serverName}
                                                     </Link>
-                                                </TableCell>
-                                                <TableCell>
+                                                </div>
+                                            </div>
+                                            <div>
+                                                <div className="text-sm font-medium text-muted-foreground">Input</div>
+                                                <div className="mt-1">
+                                                    <pre className="text-xs bg-muted p-2 rounded overflow-x-auto">
+                                                        {JSON.stringify(selectedEvent.data.input, null, 2)}
+                                                    </pre>
+                                                </div>
+                                            </div>
+                                            <div>
+                                                <div className="text-sm font-medium text-muted-foreground">Output</div>
+                                                <div className="mt-1">
+                                                    <pre className="text-xs bg-muted p-2 rounded overflow-x-auto">
+                                                        {JSON.stringify(selectedEvent.data.output, null, 2)}
+                                                    </pre>
+                                                </div>
+                                            </div>
+                                        </>
+                                    )}
+
+                                    {/* Connection Details */}
+                                    {selectedEvent.type === 'connection' && (
+                                        <>
+                                            <div>
+                                                <div className="text-sm font-medium text-muted-foreground">Server</div>
+                                                <div className="mt-1">
                                                     <Link
-                                                        href={`/dashboard/mcp-servers/${request.serverId}`}
-                                                        className="hover:underline"
+                                                        href={`/dashboard/mcp-servers/${selectedEvent.data.serverId}`}
+                                                        className="text-sm hover:underline"
                                                     >
-                                                        {request.serverName}
+                                                        {selectedEvent.data.serverName}
                                                     </Link>
-                                                </TableCell>
-                                                <TableCell>
+                                                </div>
+                                            </div>
+                                            <div>
+                                                <div className="text-sm font-medium text-muted-foreground">
+                                                    Transport
+                                                </div>
+                                                <div className="mt-1">
+                                                    <Badge variant="secondary">{selectedEvent.data.transport}</Badge>
+                                                </div>
+                                            </div>
+                                        </>
+                                    )}
+
+                                    {/* Support Request Details */}
+                                    {selectedEvent.type === 'support_request' && (
+                                        <>
+                                            <div>
+                                                <div className="text-sm font-medium text-muted-foreground">Server</div>
+                                                <div className="mt-1">
+                                                    <Link
+                                                        href={`/dashboard/mcp-servers/${selectedEvent.data.serverId}`}
+                                                        className="text-sm hover:underline"
+                                                    >
+                                                        {selectedEvent.data.serverName}
+                                                    </Link>
+                                                </div>
+                                            </div>
+                                            <div>
+                                                <div className="text-sm font-medium text-muted-foreground">Status</div>
+                                                <div className="mt-1">
                                                     <Badge
                                                         variant={
-                                                            request.status === 'resolved' ? 'default' : 'secondary'
+                                                            selectedEvent.data.status === 'resolved'
+                                                                ? 'default'
+                                                                : 'secondary'
                                                         }
                                                     >
-                                                        {request.status}
+                                                        {selectedEvent.data.status}
                                                     </Badge>
-                                                </TableCell>
-                                                <TableCell>{formatDate(request.createdAt)}</TableCell>
-                                                <TableCell className="max-w-md">
-                                                    <div className="truncate" title={request.conciseSummary}>
-                                                        {request.conciseSummary}
-                                                    </div>
-                                                </TableCell>
-                                            </TableRow>
-                                        ))}
-                                    </TableBody>
-                                </Table>
+                                                </div>
+                                            </div>
+                                            <div>
+                                                <div className="text-sm font-medium text-muted-foreground">Summary</div>
+                                                <div className="mt-1 text-sm">{selectedEvent.data.conciseSummary}</div>
+                                            </div>
+                                            <div>
+                                                <div className="text-sm font-medium text-muted-foreground">Actions</div>
+                                                <div className="mt-1">
+                                                    <Link
+                                                        href={`/dashboard/support-tickets/${selectedEvent.data.id}`}
+                                                        className="text-sm text-primary hover:underline"
+                                                    >
+                                                        View full ticket →
+                                                    </Link>
+                                                </div>
+                                            </div>
+                                        </>
+                                    )}
+                                </div>
+                            ) : (
+                                <div className="text-center py-8">
+                                    <ClockIcon className="h-8 w-8 text-muted-foreground mx-auto mb-2" />
+                                    <p className="text-sm text-muted-foreground">Select an event to view details</p>
+                                </div>
                             )}
                         </CardContent>
                     </Card>

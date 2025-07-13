@@ -30,7 +30,7 @@ async function mcpServerHandler(
 
     const handler = createMcpHandler(
         async (server) => {
-            configureMcpServer(server, mcpServerConfiguration)
+            configureMcpServer(server, mcpServerConfiguration, nanoid)
 
             await db
                 .insert(schema.mcpServerUser)
