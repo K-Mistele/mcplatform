@@ -1,5 +1,7 @@
+import { auth } from '@/lib/auth/subtenant/auth'
 import { db, schema } from 'database'
 import { eq } from 'drizzle-orm'
+import { headers } from 'next/headers'
 import z from 'zod'
 import type { McpServer, StaticMcpServerConfig } from '../types'
 
@@ -62,10 +64,12 @@ export async function registerSupportTool(
         throw new Error('Linear support tickets are not implemented yet')
     }
 
-    if (staticConfig.authType === 'collect_email') {
-        registerSupportToolWithEmail(mcpServer, staticConfig, distinctId)
-    } else {
-        throw new Error('Support tickets are not implemented for this MCP server')
+    if (staticConfig.supportTicketType === 'dashboard') {
+        if (staticConfig.authType === 'collect_email') {
+            registerSupportToolWithEmail(mcpServer, staticConfig, distinctId)
+        } else {
+            registerSupportToolWithOAuth(mcpServer, staticConfig, distinctId)
+        }
     }
 
     return {}
@@ -74,7 +78,7 @@ export async function registerSupportTool(
 function registerSupportToolWithEmail(mcpServer: McpServer, staticConfig: StaticMcpServerConfig, distinctId?: string) {
     const inputSchema = inputSchemaWithEmail(staticConfig)
     mcpServer.registerTool(
-        'get support',
+        'get_support',
         {
             title: `Get support about ${staticConfig.productPlatformOrTool}`,
             description: `Use this tool to get support about ${staticConfig.productPlatformOrTool}. Call this tool when there is an error you are unable to resolve, or if the user expresses frustration about ${staticConfig.productPlatformOrTool}, or while attempting to use/implement it, in order to get speedy expert help!.`,
@@ -135,6 +139,89 @@ function registerSupportToolWithEmail(mcpServer: McpServer, staticConfig: Static
 
             await Promise.all(promises)
 
+            return {
+                content: [
+                    {
+                        type: 'text',
+                        text: 'Support ticket created successfully. The user will be notified via email.'
+                    }
+                ]
+            }
+        }
+    )
+}
+
+function registerSupportToolWithOAuth(mcpServer: McpServer, staticConfig: StaticMcpServerConfig, distinctId?: string) {
+    const inputSchema = inputSchemaWithoutEmail(staticConfig)
+    mcpServer.registerTool(
+        'get_support',
+        {
+            title: `Get support about ${staticConfig.productPlatformOrTool}`,
+            description: `Use this tool to get support about ${staticConfig.productPlatformOrTool}. Call this tool when there is an error you are unable to resolve, or if the user expresses frustration about ${staticConfig.productPlatformOrTool}, or while attempting to use/implement it, in order to get speedy expert help!.`,
+            inputSchema: inputSchema.shape
+        },
+        async ({ context, problemDescription, title }) => {
+            console.log('trying to get session for oauth support tool')
+            const session = await auth.api.getMcpSession({
+                headers: await headers()
+            })
+            if (!session) {
+                console.log('no session found')
+                return { content: [{ type: 'text', text: 'You must be logged in to get support' }] }
+            }
+            console.log('session found', session)
+
+            const [mcpUser] = await db
+                .select()
+                .from(schema.mcpOAuthUser)
+                .where(eq(schema.mcpOAuthUser.id, session.userId))
+            if (!mcpUser) {
+                console.log('no mcp user found')
+                return { content: [{ type: 'text', text: 'You must be logged in to get support' }] }
+            }
+            const email = mcpUser.email
+
+            const promises: Array<Promise<any>> = [
+                db.insert(schema.toolCalls).values({
+                    toolName: 'get_support',
+                    input: { context, problemDescription, email, title },
+                    output: 'support_ticket_created',
+                    mcpServerId: staticConfig.id
+                }),
+                db.insert(schema.supportRequests).values({
+                    title: title,
+                    conciseSummary: problemDescription,
+                    context: context,
+                    email: email,
+                    organizationId: staticConfig.organizationId,
+                    mcpServerId: staticConfig.id,
+                    status: 'pending'
+                })
+            ]
+
+            if (distinctId) {
+                promises.push(
+                    db
+                        .update(schema.mcpServerUser)
+                        .set({ email })
+                        .where(eq(schema.mcpServerUser.distinctId, distinctId))
+                )
+
+                console.log('distinctId', distinctId)
+                console.log('email', email)
+            }
+            if (!distinctId) {
+                promises.push(
+                    db.insert(schema.mcpServerUser).values({
+                        distinctId: null,
+                        email: email
+                    })
+                )
+                console.log('distinctId', distinctId)
+                console.log('email', email)
+            }
+
+            await Promise.all(promises)
             return {
                 content: [
                     {

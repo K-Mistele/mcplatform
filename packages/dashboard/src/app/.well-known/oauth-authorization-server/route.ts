@@ -54,11 +54,11 @@ export async function GET(request: NextRequest) {
 
 const oauthDiscoveryMetadata = (origin: string) => ({
     issuer: origin,
-    authorization_endpoint: `${origin}/api/auth/mcp/authorize`,
-    token_endpoint: `${origin}/api/auth/mcp/token`,
-    userinfo_endpoint: `${origin}/api/auth/mcp/userinfo`,
-    jwks_uri: `${origin}/api/auth/mcp/jwks`,
-    registration_endpoint: `${origin}/api/auth/mcp/register`,
+    authorization_endpoint: `${origin}/authtenant/auth/mcp/authorize`,
+    token_endpoint: `${origin}/authtenant/auth/mcp/token`,
+    userinfo_endpoint: `${origin}/authtenant/auth/mcp/userinfo`,
+    jwks_uri: `${origin}/authtenant/auth/mcp/jwks`,
+    registration_endpoint: `${origin}/authtenant/auth/mcp/register`,
     scopes_supported: ['openid', 'profile', 'email', 'offline_access'],
     response_types_supported: ['code'],
     response_modes_supported: ['query'],

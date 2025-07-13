@@ -15,6 +15,13 @@
       "when": 1752399303658,
       "tag": "0001_round_lily_hollister",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1752429441458,
+      "tag": "0002_equal_toad",
+      "breakpoints": true
     }
   ]
 }

@@ -1,3 +1,4 @@
+import { auth } from '@/lib/auth/subtenant/auth'
 import { configureMcpServer, withMcpAuth } from '@/lib/mcp'
 import { db, schema } from 'database'
 import { eq } from 'drizzle-orm'
@@ -30,7 +31,47 @@ async function mcpServerHandler(
     // Now we create the MCP server
 
     console.log('mcpServerConfiguration', mcpServerConfiguration)
-    const handler = createMcpHandler(
+
+    console.log('request.headers.get(host)', request.headers.get('host'))
+
+    if (mcpServerConfiguration.authType === 'platform_oauth' || mcpServerConfiguration.authType === 'custom_oauth') {
+        console.log('auth required')
+        // make authorization required
+        const authHandler = withMcpAuth(auth, (req, session) => {
+            return createMcpHandler(
+                async (server) => {
+                    configureMcpServer(server, mcpServerConfiguration, nanoid)
+
+                    await db
+                        .insert(schema.mcpServerUser)
+                        .values({
+                            distinctId: nanoid
+                        })
+                        .onConflictDoNothing()
+                    await db.insert(schema.mcpServerConnection).values({
+                        distinctId: nanoid,
+                        slug: slug,
+                        transport: transport
+                    })
+                },
+                {
+                    serverInfo: {
+                        name: mcpServerConfiguration.name,
+                        version: '1.0.0'
+                    }
+                },
+                {
+                    redisUrl: process.env.REDIS_URL,
+                    basePath: `/api/i/${nanoid}`,
+                    verboseLogs: true
+                }
+            )(req)
+        })
+        return await authHandler(request)
+    }
+    console.log('auth not required, ', mcpServerConfiguration.authType)
+
+    return await createMcpHandler(
         async (server) => {
             configureMcpServer(server, mcpServerConfiguration, nanoid)
 
@@ -56,48 +97,7 @@ async function mcpServerHandler(
             redisUrl: process.env.REDIS_URL,
             basePath: `/api/i/${nanoid}`
         }
-    )
-
-    console.log('request.headers.get(host)', request.headers.get('host'))
-
-    // TODO need a fork of `withMcpAuth` that works off the host header instead of the request url's origin
-
-    if (mcpServerConfiguration.authType === 'platform_oauth' || mcpServerConfiguration.authType === 'custom_oauth') {
-        console.log('auth required')
-        // make authorization required
-        const authHandler = withMcpAuth(handler, verifyToken, {
-            required: true, // Make auth required for all requests
-            requiredScopes: ['email', 'profile', 'openid'], // Optional: Require specific scopes
-            resourceMetadataPath: '/.well-known/oauth-protected-resource'
-        })
-        return await authHandler(request)
-    }
-    console.log('auth not required, ', mcpServerConfiguration.authType)
-
-    return await handler(request)
-}
-
-// Wrap your handler with authorization
-async function verifyToken(req: Request, bearerToken?: string): Promise<any | undefined> {
-    if (!bearerToken) return undefined
-
-    console.log('bearerToken', bearerToken)
-
-    // Replace this example with actual token verification logic
-    // Return an AuthInfo object if verification succeeds
-    // Otherwise, return undefined
-    const isValid = bearerToken.startsWith('TEST')
-
-    if (!isValid) return undefined
-
-    return {
-        token: bearerToken,
-        scopes: ['email', 'profile', 'openid'], // Add relevant scopes
-        clientId: 'user123', // Add user/client identifier
-        extra: {
-            // Optional extra information like user id
-        }
-    }
+    )(request)
 }
 
 export { mcpServerHandler as GET, mcpServerHandler as POST }
