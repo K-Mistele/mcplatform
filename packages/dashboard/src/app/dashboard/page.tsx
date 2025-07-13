@@ -1,11 +1,27 @@
 import { ChartAreaInteractive } from '@/components/chart-area-interactive'
 import { DataTable } from '@/components/data-table'
+import { ErrorBoundary } from '@/components/error-boundary'
 import { SectionCards } from '@/components/section-cards'
+import { Suspense } from 'react'
 
 import { requireSession } from '@/lib/auth/auth'
 import { db, schema } from 'database'
 import { count, eq } from 'drizzle-orm'
 import data from './data.json'
+
+function ChartLoading() {
+    return (
+        <div className="px-4 lg:px-6">
+            <div className="@container/card">
+                <div className="p-6">
+                    <div className="h-[250px] flex items-center justify-center">
+                        <div className="text-muted-foreground">Loading chart...</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    )
+}
 
 export default async function DashboardPage() {
     const session = await requireSession()
@@ -42,9 +58,14 @@ export default async function DashboardPage() {
                 activeUsersPromise={activeUsersPromise}
             />
 
-            <div className="px-4 lg:px-6">
-                <ChartAreaInteractive />
-            </div>
+            <ErrorBoundary>
+                <Suspense fallback={<ChartLoading />}>
+                    <div className="px-4 lg:px-6">
+                        <ChartAreaInteractive />
+                    </div>
+                </Suspense>
+            </ErrorBoundary>
+
             <DataTable data={data} />
         </div>
     )

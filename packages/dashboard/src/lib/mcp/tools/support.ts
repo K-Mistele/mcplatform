@@ -101,7 +101,8 @@ function registerSupportToolWithEmail(mcpServer: McpServer, staticConfig: Static
                     context: context,
                     email: email,
                     organizationId: staticConfig.organizationId,
-                    mcpServerId: staticConfig.id
+                    mcpServerId: staticConfig.id,
+                    status: 'pending'
                 })
             ])
 

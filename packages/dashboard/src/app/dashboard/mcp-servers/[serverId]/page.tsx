@@ -1,3 +1,4 @@
+import { CursorInstallLink } from '@/components/cursor-install-link'
 import { EditServerConfiguration } from '@/components/edit-server-configuration'
 import { ServerUrlDisplay } from '@/components/server-url-display'
 import { Badge } from '@/components/ui/badge'
@@ -115,6 +116,9 @@ export default async function McpServerDetailsPage(props: McpServerDetailsPagePr
                         currentAuthType={server.authType || 'none'}
                         currentSupportTicketType={server.supportTicketType || 'dashboard'}
                     />
+
+                    {/* Cursor Install Link Card */}
+                    <CursorInstallLink serverName={server.name} serverUrl={url} />
                 </div>
             </div>
         </div>
