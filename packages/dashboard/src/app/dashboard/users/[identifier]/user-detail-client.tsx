@@ -109,8 +109,16 @@ export function UserDetailClient({
             })
         }
 
-        // Add connections
+        // Add connections (de-duplicate by serverId + createdAt)
+        const uniqueConnections = new Map<string, any>()
         for (const connection of connections) {
+            const key = `${connection.serverId}_${connection.createdAt}`
+            if (!uniqueConnections.has(key)) {
+                uniqueConnections.set(key, connection)
+            }
+        }
+
+        for (const connection of uniqueConnections.values()) {
             events.push({
                 id: `connection_${connection.serverId}_${connection.createdAt}`,
                 type: 'connection',

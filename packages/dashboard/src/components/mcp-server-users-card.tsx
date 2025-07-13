@@ -32,9 +32,9 @@ function getInitials(email: string): string {
 }
 
 export async function McpServerUsersCard({ serverId, serverSlug }: McpServerUsersCardProps) {
-    // Query to get users connected to this MCP server
+    // Query to get distinct users connected to this MCP server (most recent connection per user)
     const connections = await db
-        .select({
+        .selectDistinctOn([schema.mcpServerConnection.distinctId], {
             email: schema.mcpServerConnection.email,
             createdAt: schema.mcpServerConnection.createdAt,
             distinctId: schema.mcpServerConnection.distinctId,
@@ -42,7 +42,7 @@ export async function McpServerUsersCard({ serverId, serverSlug }: McpServerUser
         })
         .from(schema.mcpServerConnection)
         .where(eq(schema.mcpServerConnection.slug, serverSlug))
-        .orderBy(desc(schema.mcpServerConnection.createdAt))
+        .orderBy(schema.mcpServerConnection.distinctId, desc(schema.mcpServerConnection.createdAt))
 
     return (
         <Card>

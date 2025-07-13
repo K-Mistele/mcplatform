@@ -165,7 +165,7 @@ const columns: ColumnDef<UserWithServers>[] = [
             return (
                 <div className="flex flex-wrap gap-1">
                     {servers.map((server) => (
-                        <Badge key={server.distinctId} variant="secondary" className="flex items-center gap-1">
+                        <Badge key={server.serverSlug} variant="secondary" className="flex items-center gap-1">
                             <ServerIcon className="h-3 w-3" />
                             {server.serverSlug}
                         </Badge>
