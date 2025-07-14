@@ -19,8 +19,11 @@
                 "@upstash/context7-mcp"
             ]
         },
-        "kyles_server_tracking22": {
+        "kyles_server_tracking24": {
             "url": "http://test-oauth-server.localhost:3000/api/i/fdafda/mcp"
+        },
+        "drizzle": {
+            "url": "http://drizzle-orm-server.localhost:3000/api/i/fdafdsaasse/mcp"
         }
     }
 }
