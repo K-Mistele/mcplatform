@@ -15,7 +15,7 @@ export const withMcpAuth = <
             headers: req.headers
         })
         const host = req.headers.get('host')
-        const wwwAuthenticateValue = `Bearer resource_metadata=${host?.includes('localhost') ? 'http' : 'https'}://${host}/authtenant/auth/.well-known/oauth-authorization-server`
+        const wwwAuthenticateValue = `Bearer resource_metadata=${host?.includes('localhost') ? 'http' : 'https'}://${host}/mcp-oidc/auth/.well-known/oauth-authorization-server`
         if (!session) {
             return Response.json(
                 {

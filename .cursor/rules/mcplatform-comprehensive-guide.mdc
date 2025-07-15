@@ -33,11 +33,15 @@ src/
 │   ├── api/            # API routes
 │   │   ├── auth/       # Better Auth routes
 │   │   ├── inngest/    # Inngest webhook
+│   │   ├── i/[nanoid]/ # MCP server instances
 │   │   └── [transport]/# RPC transport
+│   ├── authtenant/     # Subtenant auth pages
 │   ├── dashboard/      # Dashboard pages
 │   │   ├── mcp-servers/# MCP server management
-│   │   └── page.tsx    # Dashboard home
+│   │   ├── support-tickets/# Support ticket system
+│   │   └── users/      # User management
 │   ├── login/          # Login page
+│   ├── login-for-claude/# Auto-login for testing
 │   ├── signup/         # Signup page
 │   ├── organization/   # Organization setup
 │   ├── rpc/            # RPC endpoints
@@ -49,17 +53,20 @@ src/
 │   └── *.tsx          # Feature components
 ├── lib/               # Utility functions
 │   ├── auth/          # Authentication config
+│   │   └── subtenant/ # Subtenant auth
+│   ├── mcp/           # MCP tools and auth
 │   ├── orpc/          # RPC configuration
 │   └── utils.ts       # Utility functions
 ├── hooks/             # Custom React hooks
 ├── assets/            # Static assets
-└── instrumentation.ts # Instrumentation setup
+└── middleware.ts      # Next.js middleware
 ```
 
 #### packages/database/
 ```
 src/
 ├── auth-schema.ts     # Better Auth schema
+├── mcp-auth-schema.ts # MCP OAuth schema  
 └── schema.ts          # Application schema
 migrations/            # Drizzle migrations
 index.ts              # Database exports
@@ -90,8 +97,7 @@ index.ts              # Common exports
 - **Next.js 15** with App Router (React Server Components)
 - **React 19** with modern hooks and patterns
 - **TypeScript** for type safety throughout
-- **Bun** as the package manager and runtime
-- **ORPC** for server actions and RPC (packages/dashboard/src/lib/orpcactions.ts, packages/dashboard/src/lib/orpc)
+- **Bun** as the package manager and runtime (per workspace rules)
 
 ### Database & ORM
 - **PostgreSQL** database
@@ -101,8 +107,10 @@ index.ts              # Common exports
 ### Authentication
 - **Better Auth** with OAuth support
 - **Organization plugin** for multi-tenant support
+- **MCP plugin** for OAuth server functionality
 - **Email/password** authentication
 - **GitHub & Google OAuth** providers
+- **Dual auth systems**: Platform auth + MCP subtenant auth
 
 ### UI & Styling
 - **Tailwind CSS** for utility-first styling
@@ -128,46 +136,79 @@ index.ts              # Common exports
 ```
 /                           # Landing page
 /login                      # Login page
+/login-for-claude           # Auto-login for testing
 /signup                     # Signup page
 /dashboard                  # Dashboard home
 /dashboard/mcp-servers      # MCP servers list
 /dashboard/mcp-servers/[id] # MCP server details
+/dashboard/support-tickets  # Support tickets
+/dashboard/users            # User management
 /organization/new           # Create organization
 /organization/select        # Select organization
+/mcp-oidc/auth/[...all]  # Subtenant auth routes
+/mcp-oidc/login          # Subtenant login
 /api/auth/[...all]         # Better Auth routes
 /api/inngest               # Inngest webhook
+/api/i/[nanoid]/[transport]# MCP server instances
 /api/[transport]           # RPC transport
 /rpc/[...rest]             # RPC endpoints
+/.well-known/oauth-*       # OAuth discovery endpoints
 ```
 
-### Page Components Pattern
-All pages follow this pattern:
-1. **Async server component** for auth checks and data fetching
-2. **Authentication validation** using `requireSession()`
-3. **Error boundaries** and suspense wrappers
-4. **Pass promises** to client components (don't await in page)
+### Page Components Pattern (CRITICAL)
+**All pages MUST follow this async server component pattern:**
 
 ```typescript
-// Example page structure
+// ✅ CORRECT: Async server component with auth and data fetching
 export default async function Page() {
+    // 1. Check authentication on server
     const session = await requireSession()
-    const dataPromise = getData(session.user.id)
     
+    // 2. Do ALL data fetching in the top-level page
+    // Use promises but don't await them - pass to client components
+    const dataPromise = db.select().from(...)
+    
+    // 3. Wrap in ErrorBoundary and Suspense
     return (
-        <ErrorBoundary>
-            <Suspense fallback={<Loading />}>
+        <ErrorBoundary fallback={<ErrorFallback />}>
+            <Suspense fallback={<LoadingFallback />}>
                 <ClientComponent dataPromise={dataPromise} />
             </Suspense>
         </ErrorBoundary>
     )
 }
+
+// ✅ CORRECT: Client component that uses the 'use' hook
+'use client'
+import { use } from 'react'
+
+export function ClientComponent({ dataPromise }: { dataPromise: Promise<Data[]> }) {
+    // Use React 19 'use' hook to unwrap the promise
+    const data = use(dataPromise)
+    
+    return <div>{/* Render UI with resolved data */}</div>
+}
 ```
+
+**Key Requirements:**
+1. **Pages are async server components** - perform auth checks and data fetching
+2. **Authentication on server** - use `requireSession()`
+3. **Pass promises to client components** - don't await in the page component
+4. **Wrap in ErrorBoundary and Suspense** - with appropriate fallback components
+5. **Client components use 'use' hook** - to unwrap promises and suspend
+
+**❌ NEVER DO:**
+- Client components with useEffect for auth checks
+- Awaiting promises in page components that pass data to client components
+- Missing ErrorBoundary or Suspense wrappers
+- Authentication checks in client components
 
 ## Database Schema
 
 ### Core Tables
 
 #### Auth Schema (Better Auth)
+_Auto-generated; do not edit without asking!_
 - `user` - User accounts
 - `session` - User sessions with organization context
 - `account` - OAuth account links
@@ -175,29 +216,57 @@ export default async function Page() {
 - `member` - Organization memberships
 - `invitation` - Organization invitations
 - `verification` - Email verification tokens
-- `oauth_*` - OAuth application data
+
+#### MCP Auth Schema (Subtenant OAuth)
+_Auto-generated; do not edit without asking!_
+- `mcp_oauth_user` - MCP OAuth users
+- `mcp_oauth_session` - MCP OAuth sessions
+- `mcp_oauth_account` - MCP OAuth accounts
+- `mcp_oauth_verification` - MCP OAuth verification
+- `mcp_oauth_application` - OAuth applications
+- `mcp_oauth_access_token` - OAuth access tokens
+- `mcp_oauth_consent` - OAuth consent records
 
 #### Application Schema
 - `mcp_servers` - MCP server configurations
+- `mcp_server_user` - MCP server users
+- `mcp_server_connection` - MCP server connections
 - `support_requests` - Support ticket system
 
 ### Schema Patterns
 - **Primary keys**: Text with nanoid generation
-- **Timestamps**: bigint for created_at, timestamp for auth tables
+- **Timestamps**: bigint for created_at, timestamp for auth tables. do not use the `timestamp` type.
 - **Foreign keys**: Proper cascading relationships
 - **Enums**: PostgreSQL enums for status fields
 - **Validation**: Zod schemas for input validation
 
+### Schema Locations
+- `packages/database/src/schema.ts`: Application schemas
+- `packages/database/src/auth-schema.ts`: Better Auth schemas
+- `packages/database/src/mcp-auth-schema.ts`: MCP OAuth schemas
+
 ## Authentication Flow
 
-### Better Auth Configuration
+### Platform Authentication (Better Auth)
 ```typescript
-// Authentication setup
+// Main dashboard authentication
 export const auth = betterAuth({
     database: drizzleAdapter(db, { provider: 'pg', schema: authSchema }),
-    plugins: [organization()],
+    plugins: [organization(), mcp({ loginPage: '/login' })],
     emailAndPassword: { enabled: true },
     socialProviders: { github: {...}, google: {...} }
+})
+```
+
+### Subtenant Authentication (MCP OAuth)
+```typescript
+// Per-MCP-server authentication
+export const auth = betterAuth({
+    basePath: '/mcp-oidc/auth',
+    database: drizzleAdapter(db, { provider: 'pg', schema: mcpAuthSchema }),
+    plugins: [mcp({ loginPage: '/mcp-oidc/login' })],
+    emailAndPassword: { enabled: true },
+    socialProviders: { google: {...} }
 })
 ```
 
@@ -206,6 +275,8 @@ export const auth = betterAuth({
 - **Organization context**: Sessions include `activeOrganizationId`
 - **Redirect logic**: Automatic redirects for auth/org selection
 - **Client-side auth**: `authClient` for React components
+- **MCP OAuth**: Separate OAuth flow for each MCP server
+
 
 ## Component Architecture
 
@@ -248,37 +319,40 @@ export const actionName = base
     .handler(async ({ input, errors }) => {
         const session = await requireSession()
         // Business logic
+        const records = await db.insert(...)
+
+        // revalidate paths with affected data that's loaded in page server component
         revalidatePath('/relevant-path')
         return result
     })
-    .actionable({})
+    .actionable({}) // converts the oRPC function into a server action.
 ```
 
 ### RPC Router Structure
 ```typescript
-// Router configuration
-export const router = {
-    example: {
-        execute: executeExample
-    }
-}
-
-// Base with error definitions
+// Error definitions - can add new ones! Used for strongly-typing errors.
 export const base = os.errors({
     UNAUTHORIZED: {},
     RESOURCE_NOT_FOUND: {},
     INVALID_SUBDOMAIN: {},
     SUBDOMAIN_ALREADY_EXISTS: {}
 })
+
+// Router configuration for RPC calls that are NOT used as server actions
+export const router = {
+    example: { execute: executeExample },
+    toolCalls: { getChart: getToolCallsChart }
+}
 ```
 
 ### Client Usage
 ```typescript
-// Client-side RPC calls
+// Client-side server action RPC calls (only for `.actionable()` RPCs in actions.ts)
 const { execute, status } = useServerAction(actionName, {
     interceptors: [
         onError((error) => {
             if (isDefinedError(error)) {
+                // error will match the error types
                 toast.error(error.message)
             }
         }),
@@ -288,6 +362,38 @@ const { execute, status } = useServerAction(actionName, {
     ]
 })
 ```
+
+### Critical Rule: API Routes vs Server Actions
+```typescript
+// ❌ WRONG: Never call server actions from API routes
+export async function POST(request: NextRequest) {
+    await createDocument(data) // Don't do this
+}
+
+// ✅ CORRECT: Use direct database operations in API routes
+export async function POST(request: NextRequest) {
+    const result = await db.insert(documents).values(data).returning()
+}
+```
+
+## MCP Server Configuration
+
+### Subdomain Structure
+- Each MCP server gets a unique subdomain
+- Format: `{slug}.{host}/api/i/{nanoid}/mcp` (nanoid path param is optional)
+- OAuth configurations per customer MCP server
+- Support for platform OAuth and custom OAuth
+
+### MCP Authentication Types
+- `none` - No authentication required
+- `platform_oauth` - Use platform's OAuth system
+- `custom_oauth` - Use customer's OAuth provider
+- `collect_email` - Collect email for identification
+
+### MCP Tools
+- **Documentation Search**: Search tool for customer docs
+- **Support System**: Create support tickets
+- **Custom Tools**: Per-server tool configurations
 
 ## Data Flow Patterns
 
@@ -303,67 +409,19 @@ const { execute, status } = useServerAction(actionName, {
 3. **Client components** use promises via `use()` hook
 4. **Cache revalidation** with `revalidatePath()`
 
-## Development Commands
-
-### Root Level
-```bash
-# No dev script at root - use individual packages
-bun install                    # Install dependencies
-```
-
-### Dashboard Package
-```bash
-cd packages/dashboard
-bun run dev                    # Development server
-bun run build                  # Production build
-bun run start                  # Production server
-bun run lint                   # Linting
-```
-
-### Database Package
-```bash
-cd packages/database
-bun run db:generate           # Generate migrations
-bun run db:migrate            # Apply migrations
-bun run db:studio             # Drizzle Studio
-bun run db:auth:migrate       # Better Auth migrations
-```
-
-## Environment Variables
-
-### Required Variables
-```env
-DATABASE_URL=              # PostgreSQL connection string
-GITHUB_CLIENT_ID=          # GitHub OAuth
-GITHUB_CLIENT_SECRET=      # GitHub OAuth
-GOOGLE_CLIENT_ID=          # Google OAuth
-GOOGLE_CLIENT_SECRET=      # Google OAuth
-NEXT_PUBLIC_BETTER_AUTH_URL= # Auth URL
-```
-
-## MCP Server Configuration
-
-### Subdomain Structure
-- Each MCP server gets a unique subdomain
-- Format: `{slug}.{host}/api/mcp`
-- OAuth configurations per customer
-
-### Server Types
-- **dashboard**: Main dashboard app (port 3000)
-- **mcpserver**: MCP server implementation
-
 ## Testing Patterns
 
 ### UI Testing with Puppeteer
-- **Headless mode**: Always use headless: true
+- **Headless mode**: Always use `headless: true`
 - **Resolution**: 1920x1080 for consistency
-- **Test credentials**: `claude@example.com` / `supersecurepassword`
-- **Chrome profile**: Use specified user data dir
+- **User data dir**: "/Users/kyle/Library/Application Support/Google/Chrome/Default"
+- **Test login**: Navigate to `/login-for-claude` for auto-login
+- **Test credentials**: `claude@claude.com` / `supersecurepassword`
 
 ### Development Testing
-- **Test user**: Pre-configured test account
+- **Test user**: Pre-configured test account with organization
 - **Database**: Local PostgreSQL instance
-- **Migrations**: Run before testing
+- **MCP servers**: Test configurations in `.cursor/mcp.json`
 
 ## Error Handling
 
@@ -381,260 +439,49 @@ try {
 
 ### Client Components
 ```typescript
-// Error boundaries for resilience
-<ErrorBoundary>
-    <Component />
-</ErrorBoundary>
-```
-
-## Best Practices
-
-### DO:
-- Use Bun for all package management
-- Follow kebab-case for component files
-- Always validate authentication in server actions
-- Use TypeScript interfaces for all props
-- Implement proper error boundaries
-- Use shadcn/ui components consistently
-- Include proper loading states
-- Validate all inputs with Zod
-
-### DON'T:
-- Use npm, pnpm, or yarn (use Bun)
-- Call server actions from API routes
-- Use Radix UI directly (use shadcn/ui)
-- Skip authentication checks in mutations
-- Use `any` type without justification
-- Mix different icon libraries
-- Ignore error handling in async operations
-
-## Styling Conventions
-
-### Tailwind CSS
-- **Utility-first** approach
-- **CSS Variables** for theming
-- **Responsive design** mobile-first
-- **Dark mode** support via CSS variables
-
-### Component Styling
-```typescript
-// Use cn() for conditional classes
-const className = cn(
-    "base-classes",
-    variant === "primary" && "variant-classes",
-    className // Allow prop overrides
-)
-```
-
-## Docker Configuration
-
-### docker-compose.yml
-- **Database**: PostgreSQL service
-- **Redis**: For caching/sessions
-- **Development**: Hot reload support
-
-## Security Considerations
-
-### Authentication
-- **Session validation** on every protected route
-- **CSRF protection** via Better Auth
-- **OAuth integration** with proper scopes
-- **Password hashing** with bcryptjs
-
-### Data Protection
-- **Input validation** on all user inputs
-- **SQL injection prevention** via Drizzle ORM
-- **XSS prevention** in data rendering
-- **Environment variables** for secrets
-
-## Performance Optimization
-
-### Next.js Features
-- **App Router** for modern routing
-- **Server Components** by default
-- **Streaming** for better loading states
-- **Image optimization** built-in
-
-### Database Optimization
-- **Indexed queries** for common operations
-- **Foreign key constraints** for data integrity
-- **Query optimization** with Drizzle
-- **Connection pooling** via PostgreSQL
-
-## Deployment Considerations
-
-### Build Process
-- **Type checking** during build
-- **Asset optimization** automatic
-- **Environment validation** required
-- **Database migrations** must be run
-
-### Production Setup
-- **Environment variables** properly configured
-- **Database** migrated and seeded
-- **SSL** enabled for production
-- **Monitoring** configured for errors
-
-This comprehensive guide covers the complete structure, stack, routing, and conventions of the MCPlatform monorepo. Use this as your reference for understanding and working with the codebase.
-# MCPlatform Monorepo Comprehensive Guide
-
-## Project Overview
-MCPlatform is a **Bun monorepo** for building MCP (Model Context Protocol) based platform for enhancing conversion, onboarding, and activation with per-server subdomain OAuth configurations for devtools companies.
-
-## Repository Structure
-
-### Root Level
-```
-mcplatform/
-├── packages/
-│   ├── dashboard/       # Main Next.js dashboard app
-│   ├── mcpserver/       # MCP server implementation
-│   ├── database/        # Database schema and migrations
-│   └── common/          # Shared utilities and types
-├── .cursor/
-│   └── mcp.json         # MCP server configurations
-├── docker-compose.yml   # Docker setup
-├── package.json         # Root workspace configuration
-└── README.md
-```
-
-### Package Structure
-
-#### packages/dashboard/ (Main App)
-```
-src/
-├── app/                 # Next.js App Router
-│   ├── api/            # API routes
-│   │   ├── auth/       # Better Auth routes
-│   │   ├── inngest/    # Inngest webhook
-│   │   └── [transport]/# RPC transport
-│   ├── dashboard/      # Dashboard pages
-│   │   ├── mcp-servers/# MCP server management
-│   │   └── page.tsx    # Dashboard home
-│   ├── login/          # Login page
-│   ├── signup/         # Signup page
-│   ├── organization/   # Organization setup
-│   ├── rpc/            # RPC endpoints
-│   ├── layout.tsx      # Root layout
-│   └── page.tsx        # Home page
-├── components/         # React components
-│   ├── ui/            # shadcn/ui components
-│   ├── onboarding/    # Onboarding flow
-│   └── *.tsx          # Feature components
-├── lib/               # Utility functions
-│   ├── auth/          # Authentication config
-│   ├── orpc/          # RPC configuration
-│   └── utils.ts       # Utility functions
-├── hooks/             # Custom React hooks
-├── assets/            # Static assets
-└── instrumentation.ts # Instrumentation setup
-```
-
-#### packages/database/
-```
-src/
-├── auth-schema.ts     # Better Auth schema
-└── schema.ts          # Application schema
-migrations/            # Drizzle migrations
-index.ts              # Database exports
-drizzle.config.ts     # Drizzle configuration
-```
-
-#### packages/mcpserver/
-```
-src/
-├── app/
-│   ├── [serverId]/
-│   │   └── mcp/
-│   │       └── route.ts  # MCP endpoint
-│   └── layout.tsx
-└── lib/
-    └── auth.ts
-```
-
-#### packages/common/
-```
-nanoid.ts             # ID generation utility
-index.ts              # Common exports
-```
-
-## Tech Stack
-
-### Core Framework
-- **Next.js 15** with App Router (React Server Components)
-- **React 19** with modern hooks and patterns
-- **TypeScript** for type safety throughout
-- **Bun** as the package manager and runtime
-
-### Database & ORM
-- **PostgreSQL** database
-- **Drizzle ORM** for type-safe database operations
-- **Drizzle Kit** for database migrations
-
-### Authentication
-- **Better Auth** with OAuth support
-- **Organization plugin** for multi-tenant support
-- **Email/password** authentication
-- **GitHub & Google OAuth** providers
-
-### UI & Styling
-- **Tailwind CSS** for utility-first styling
-- **shadcn/ui** for pre-built accessible components
-- **Lucide React** for icons (use `SomethingIcon` import pattern)
-- **class-variance-authority** for component variants
-- **CSS Variables** for theming (light/dark mode)
-
-### State Management & Data Fetching
-- **oRPC** for type-safe RPC calls
-- **React Hook Form** for form handling
-- **Zod** for schema validation
-- **Next.js Cache** for server-side caching
-
-### Development Tools
-- **Biome** for linting and formatting (NOT ESLint/Prettier)
-- **Puppeteer** for E2E testing
-- **Inngest** for background jobs
-
-## Routing Patterns
-
-### App Router Structure
-```
-/                           # Landing page
-/login                      # Login page
-/signup                     # Signup page
-/dashboard                  # Dashboard home
-/dashboard/mcp-servers      # MCP servers list
-/dashboard/mcp-servers/[id] # MCP server details
-/organization/new           # Create organization
-/organization/select        # Select organization
-/api/auth/[...all]         # Better Auth routes
-/api/inngest               # Inngest webhook
-/api/[transport]           # RPC transport
-/rpc/[...rest]             # RPC endpoints
-```
-
-### Page Components Pattern
-All pages follow this pattern:
-1. **Async server component** for auth checks and data fetching
-2. **Authentication validation** using `requireSession()`
-3. **Error boundaries** and suspense wrappers
-4. **Pass promises** to client components (don't await in page)
-
-```typescript
-// Example page structure
+// ✅ CORRECT: Async server component with auth and data fetching
 export default async function Page() {
+    // 1. Check authentication on server
     const session = await requireSession()
+    
+    // 2. Do ALL data fetching in the top-level page
+    // Use promises but don't await them - pass to client components
     const dataPromise = getData(session.user.id)
     
+    // 3. Wrap in ErrorBoundary and Suspense
     return (
-        <ErrorBoundary>
-            <Suspense fallback={<Loading />}>
+        <ErrorBoundary fallback={<ErrorFallback />}>
+            <Suspense fallback={<LoadingFallback />}>
                 <ClientComponent dataPromise={dataPromise} />
             </Suspense>
         </ErrorBoundary>
     )
 }
+
+// ✅ CORRECT: Client component that uses the 'use' hook
+'use client'
+import { use } from 'react'
+
+export function ClientComponent({ dataPromise }: { dataPromise: Promise<Data[]> }) {
+    // Use React 19 'use' hook to unwrap the promise
+    const data = use(dataPromise)
+    
+    return <div>{/* Render UI with resolved data */}</div>
+}
 ```
+
+**Key Requirements:**
+1. **Pages are async server components** - perform auth checks and data fetching
+2. **Authentication on server** - use `requireSession()`
+3. **Pass promises to client components** - don't await in the page component
+4. **Wrap in ErrorBoundary and Suspense** - with appropriate fallback components
+5. **Client components use 'use' hook** - to unwrap promises and suspend
+
+**❌ NEVER DO:**
+- Client components with useEffect for auth checks
+- Awaiting promises in page components that pass data to client components
+- Missing ErrorBoundary or Suspense wrappers
+- Authentication checks in client components
 
 ## Database Schema
 
@@ -648,10 +495,20 @@ export default async function Page() {
 - `member` - Organization memberships
 - `invitation` - Organization invitations
 - `verification` - Email verification tokens
-- `oauth_*` - OAuth application data
+
+#### MCP Auth Schema (Subtenant OAuth)
+- `mcp_oauth_user` - MCP OAuth users
+- `mcp_oauth_session` - MCP OAuth sessions
+- `mcp_oauth_account` - MCP OAuth accounts
+- `mcp_oauth_verification` - MCP OAuth verification
+- `mcp_oauth_application` - OAuth applications
+- `mcp_oauth_access_token` - OAuth access tokens
+- `mcp_oauth_consent` - OAuth consent records
 
 #### Application Schema
 - `mcp_servers` - MCP server configurations
+- `mcp_server_user` - MCP server users
+- `mcp_server_connection` - MCP server connections
 - `support_requests` - Support ticket system
 
 ### Schema Patterns
@@ -661,291 +518,10 @@ export default async function Page() {
 - **Enums**: PostgreSQL enums for status fields
 - **Validation**: Zod schemas for input validation
 
-## Authentication Flow
+### Schema Locations
+- `packages/database/src/schema.ts`: Application schemas
+- `packages/database/src/auth-schema.ts`: Better Auth schemas
+- `packages/database/src/mcp-auth-schema.ts`: MCP OAuth schemas
 
-### Better Auth Configuration
-```typescript
-// Authentication setup
-export const auth = betterAuth({
-    database: drizzleAdapter(db, { provider: 'pg', schema: authSchema }),
-    plugins: [organization()],
-    emailAndPassword: { enabled: true },
-    socialProviders: { github: {...}, google: {...} }
-})
+
 ```
-
-### Session Management
-- **Session validation**: `requireSession()` helper
-- **Organization context**: Sessions include `activeOrganizationId`
-- **Redirect logic**: Automatic redirects for auth/org selection
-- **Client-side auth**: `authClient` for React components
-
-## Component Architecture
-
-### File Naming Conventions
-- **Components**: `kebab-case.tsx` (e.g., `mcp-servers-table.tsx`)
-- **Pages**: `page.tsx` in route folders
-- **Layouts**: `layout.tsx` in route folders
-- **Client components**: Must include `'use client'` directive
-
-### Component Patterns
-```typescript
-// Component structure
-interface ComponentProps {
-    // Always define proper TypeScript interfaces
-}
-
-export function Component({ ...props }: ComponentProps) {
-    // Component implementation
-}
-```
-
-### shadcn/ui Integration
-- **Installation**: `bunx shadcn@canary add [component]` (canary for Next.js 15)
-- **Never use Radix UI directly** - always use shadcn/ui
-- **Icon imports**: `import { SomethingIcon } from 'lucide-react'`
-- **Consistent styling**: Use `cn()` utility for conditional classes
-
-## RPC System (oRPC)
-
-### Server Actions Pattern
-```typescript
-// Server actions must:
-// 1. Include 'use server' directive
-// 2. Validate authentication
-// 3. Use proper error handling
-// 4. Call revalidatePath for updates
-
-export const actionName = base
-    .input(zodSchema)
-    .handler(async ({ input, errors }) => {
-        const session = await requireSession()
-        // Business logic
-        revalidatePath('/relevant-path')
-        return result
-    })
-    .actionable({})
-```
-
-### RPC Router Structure
-```typescript
-// Router configuration
-export const router = {
-    example: {
-        execute: executeExample
-    }
-}
-
-// Base with error definitions
-export const base = os.errors({
-    UNAUTHORIZED: {},
-    RESOURCE_NOT_FOUND: {},
-    INVALID_SUBDOMAIN: {},
-    SUBDOMAIN_ALREADY_EXISTS: {}
-})
-```
-
-### Client Usage
-```typescript
-// Client-side RPC calls
-const { execute, status } = useServerAction(actionName, {
-    interceptors: [
-        onError((error) => {
-            if (isDefinedError(error)) {
-                toast.error(error.message)
-            }
-        }),
-        onSuccess(() => {
-            toast.success('Success')
-        })
-    ]
-})
-```
-
-## Data Flow Patterns
-
-### Form Handling
-1. **React Hook Form** with zod validation
-2. **Server actions** for mutations
-3. **Optimistic updates** where appropriate
-4. **Error handling** with toast notifications
-
-### Data Fetching
-1. **Server components** for initial data
-2. **Database queries** in server components
-3. **Client components** use promises via `use()` hook
-4. **Cache revalidation** with `revalidatePath()`
-
-## Development Commands
-
-### Root Level
-```bash
-# No dev script at root - use individual packages
-bun install                    # Install dependencies
-```
-
-### Dashboard Package
-```bash
-cd packages/dashboard
-bun run dev                    # Development server
-bun run build                  # Production build
-bun run start                  # Production server
-bun run lint                   # Linting
-```
-
-### Database Package
-```bash
-cd packages/database
-bun run db:generate           # Generate migrations
-bun run db:migrate            # Apply migrations
-bun run db:studio             # Drizzle Studio
-bun run db:auth:migrate       # Better Auth migrations
-```
-
-## Environment Variables
-
-### Required Variables
-```env
-DATABASE_URL=              # PostgreSQL connection string
-GITHUB_CLIENT_ID=          # GitHub OAuth
-GITHUB_CLIENT_SECRET=      # GitHub OAuth
-GOOGLE_CLIENT_ID=          # Google OAuth
-GOOGLE_CLIENT_SECRET=      # Google OAuth
-NEXT_PUBLIC_BETTER_AUTH_URL= # Auth URL
-```
-
-## MCP Server Configuration
-
-### Subdomain Structure
-- Each MCP server gets a unique subdomain
-- Format: `{slug}.{host}/api/mcp`
-- OAuth configurations per customer
-
-### Server Types
-- **dashboard**: Main dashboard app (port 3000)
-- **mcpserver**: MCP server implementation
-
-## Testing Patterns
-
-### UI Testing with Puppeteer
-- **Headless mode**: Always use headless: true
-- **Resolution**: 1920x1080 for consistency
-- **Test credentials**: `claude@example.com` / `supersecurepassword`
-- **Chrome profile**: Use specified user data dir
-
-### Development Testing
-- **Test user**: Pre-configured test account
-- **Database**: Local PostgreSQL instance
-- **Migrations**: Run before testing
-
-## Error Handling
-
-### Server Actions
-```typescript
-// Consistent error handling
-try {
-    // Operation
-} catch (error) {
-    throw errors.SPECIFIC_ERROR({
-        message: 'User-friendly message'
-    })
-}
-```
-
-### Client Components
-```typescript
-// Error boundaries for resilience
-<ErrorBoundary>
-    <Component />
-</ErrorBoundary>
-```
-
-## Best Practices
-
-### DO:
-- Use Bun for all package management
-- Follow kebab-case for component files
-- Always validate authentication in server actions
-- Use TypeScript interfaces for all props
-- Implement proper error boundaries
-- Use shadcn/ui components consistently
-- Include proper loading states
-- Validate all inputs with Zod
-
-### DON'T:
-- Use npm, pnpm, or yarn (use Bun)
-- Call server actions from API routes
-- Use Radix UI directly (use shadcn/ui)
-- Skip authentication checks in mutations
-- Use `any` type without justification
-- Mix different icon libraries
-- Ignore error handling in async operations
-
-## Styling Conventions
-
-### Tailwind CSS
-- **Utility-first** approach
-- **CSS Variables** for theming
-- **Responsive design** mobile-first
-- **Dark mode** support via CSS variables
-
-### Component Styling
-```typescript
-// Use cn() for conditional classes
-const className = cn(
-    "base-classes",
-    variant === "primary" && "variant-classes",
-    className // Allow prop overrides
-)
-```
-
-## Docker Configuration
-
-### docker-compose.yml
-- **Database**: PostgreSQL service
-- **Redis**: For caching/sessions
-- **Development**: Hot reload support
-
-## Security Considerations
-
-### Authentication
-- **Session validation** on every protected route
-- **CSRF protection** via Better Auth
-- **OAuth integration** with proper scopes
-- **Password hashing** with bcryptjs
-
-### Data Protection
-- **Input validation** on all user inputs
-- **SQL injection prevention** via Drizzle ORM
-- **XSS prevention** in data rendering
-- **Environment variables** for secrets
-
-## Performance Optimization
-
-### Next.js Features
-- **App Router** for modern routing
-- **Server Components** by default
-- **Streaming** for better loading states
-- **Image optimization** built-in
-
-### Database Optimization
-- **Indexed queries** for common operations
-- **Foreign key constraints** for data integrity
-- **Query optimization** with Drizzle
-- **Connection pooling** via PostgreSQL
-
-## Deployment Considerations
-
-### Build Process
-- **Type checking** during build
-- **Asset optimization** automatic
-- **Environment validation** required
-- **Database migrations** must be run
-
-### Production Setup
-- **Environment variables** properly configured
-- **Database** migrated and seeded
-- **SSL** enabled for production
-- **Monitoring** configured for errors
-
-This comprehensive guide covers the complete structure, stack, routing, and conventions of the MCPlatform monorepo. Use this as your reference for understanding and working with the codebase.

@@ -4,7 +4,7 @@ import { mcp } from 'better-auth/plugins'
 import { db, mcpAuthSchema } from 'database'
 
 export const auth = betterAuth({
-    basePath: '/authtenant/auth',
+    basePath: '/mcp-oidc/auth',
     database: drizzleAdapter(db, {
         provider: 'pg', // or "pg" or "mysql"
         schema: {
@@ -19,7 +19,7 @@ export const auth = betterAuth({
     }),
     plugins: [
         mcp({
-            loginPage: '/authtenant/login'
+            loginPage: '/mcp-oidc/login'
         })
     ],
     emailAndPassword: {

@@ -45,5 +45,5 @@ export function middleware(request: NextRequest) {
 }
 
 export const config = {
-    matcher: ['/api/:path*', '/authtenant/:path*']
+    matcher: ['/api/:path*', '/mcp-oidc/:path*']
 }

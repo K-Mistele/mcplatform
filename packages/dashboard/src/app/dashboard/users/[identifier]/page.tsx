@@ -1,10 +1,10 @@
-import { ErrorBoundary } from '@/components/error-boundary'
 import { Button } from '@/components/ui/button'
 import { requireSession } from '@/lib/auth/auth'
 import { ArrowLeftIcon } from 'lucide-react'
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import { Suspense } from 'react'
+import { ErrorBoundary } from 'react-error-boundary'
 import { getUserConnections, getUserData, getUserSupportRequests, getUserToolCalls } from './data'
 import { UserDetailClient } from './user-detail-client'
 
@@ -73,7 +73,7 @@ export default async function UserDetailsPage(props: UserDetailsPageProps) {
                 </div>
             </div>
 
-            <ErrorBoundary>
+            <ErrorBoundary fallback={<div>Error</div>}>
                 <Suspense fallback={<UserDetailSkeleton />}>
                     <UserDetailClient
                         userPromise={userPromise}

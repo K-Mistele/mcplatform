@@ -29,7 +29,7 @@ export default function LoginSuccessPage() {
                     <CardContent>
                         <div className="flex flex-col gap-4">
                             <Button variant="outline" asChild className="w-full">
-                                <Link href="/authtenant/login">Back to Login</Link>
+                                <Link href="/mcp-oidc/login">Back to Login</Link>
                             </Button>
                         </div>
                     </CardContent>

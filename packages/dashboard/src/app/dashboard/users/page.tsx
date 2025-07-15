@@ -1,8 +1,8 @@
-import { ErrorBoundary } from '@/components/error-boundary'
 import { requireSession } from '@/lib/auth/auth'
 import { db, schema } from 'database'
 import { and, count, eq } from 'drizzle-orm'
 import { Suspense } from 'react'
+import { ErrorBoundary } from 'react-error-boundary'
 import { UsersClient } from './users-client'
 
 function UsersLoading() {
@@ -65,7 +65,7 @@ export default async function UsersPage() {
     return (
         <div className="flex flex-col gap-4 py-4 md:gap-6 md:py-6">
             <div className="px-4 lg:px-6">
-                <ErrorBoundary>
+                <ErrorBoundary fallback={<div>Error</div>}>
                     <Suspense fallback={<UsersLoading />}>
                         <UsersClient
                             mcpUsersPromise={mcpUsersPromise}

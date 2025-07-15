@@ -3,7 +3,7 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { authClient } from '@/lib/auth/subtenant/auth.client'
+import { authClient } from '@/lib/auth/mcp/auth.client'
 import { cn } from '@/lib/utils'
 import { LoaderCircle } from 'lucide-react'
 import { useRouter, useSearchParams } from 'next/navigation'
@@ -36,7 +36,7 @@ export function SubtenantLoginForm({ className, ...props }: React.ComponentProps
         const { data, error } = await authClient.signIn.email({
             email: username,
             password: password
-            //callbackURL: '/authtenant/auth/mcp/authorize'
+            //callbackURL: '/mcp-oidc/auth/mcp/authorize'
         })
         if (error) {
             toast.error('Invalid username or password')
@@ -57,7 +57,7 @@ export function SubtenantLoginForm({ className, ...props }: React.ComponentProps
     const socialLogin = async (provider: 'google') => {
         const { data, error } = await authClient.signIn.social({
             provider,
-            callbackURL: `/authtenant/auth/mcp/authorize?${searchParams?.toString()}`
+            callbackURL: `/mcp-oidc/auth/mcp/authorize?${searchParams?.toString()}`
         })
         console.log('error', error)
 

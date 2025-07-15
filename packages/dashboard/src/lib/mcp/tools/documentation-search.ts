@@ -1,4 +1,4 @@
-import { auth } from '@/lib/auth/subtenant/auth'
+import { auth } from '@/lib/auth/mcp/auth'
 import { db, schema } from 'database'
 import { eq } from 'drizzle-orm'
 import { headers } from 'next/headers'

@@ -1,4 +1,4 @@
-import { auth } from '@/lib/auth/subtenant/auth'
+import { auth } from '@/lib/auth/mcp/auth'
 import { configureMcpServer, withMcpAuth } from '@/lib/mcp'
 import { db, schema } from 'database'
 import { eq } from 'drizzle-orm'

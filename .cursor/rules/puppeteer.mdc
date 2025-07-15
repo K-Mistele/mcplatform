@@ -1,8 +1,19 @@
 ---
-description: 
-globs: 
 alwaysApply: true
 ---
+
+
+# UI Testing with Puppeteer
+You should use the connected Puppeteer tools to validate UI additions and changes you have made.
+
+* use 1920x1080 as the screen resolution.
+* Always use puppeteer for testing UIs that you have built
+* always launch in headless mode
+* the user data dir is "/Users/kyle/Library/Application Support/Google/Chrome/Default", make sure to always use this
+
+If you are prompted to login you can navigate to `/login-for-claude` to be automatically logged in
+
+
 # UI Testing with Puppeteer
 You should use the connected Puppeteer tools to validate UI additions and changes you have made.
 

@@ -12,16 +12,6 @@
                 "CHROME_USER_DATA_DIR": "/Users/kyle/Library/Application Support/Google/Chrome/Default"
             }
         },
-        "context7": {
-            "command": "npx",
-            "args": [
-                "-y",
-                "@upstash/context7-mcp"
-            ]
-        },
-        "kyles_server_tracking24": {
-            "url": "http://test-oauth-server.localhost:3000/api/i/fdafda/mcp"
-        },
         "drizzle": {
             "url": "http://drizzle-orm-server.localhost:3000/api/i/fdafdsaasse/mcp"
         }
