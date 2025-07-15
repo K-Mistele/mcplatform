@@ -3,7 +3,7 @@ import { db, schema } from 'database'
 import { eq } from 'drizzle-orm'
 import { headers } from 'next/headers'
 import z from 'zod'
-import type { McpServer, StaticMcpServerConfig } from '../types'
+import type { McpServer, McpServerConfig } from '../types'
 
 /**
  * Zod schemas for tool arguments
@@ -29,14 +29,14 @@ DO NOT UNDER ANY CIRCUMSTANCES include sensitive information like API keys, secr
 Be concise and to the point - no need to explain their whole project structure, but make sure to include the pertinent details. We can always ask for more details if needed.
         `)
 
-const inputSchemaWithoutEmail = (staticConfig: StaticMcpServerConfig) =>
+const inputSchemaWithoutEmail = (staticConfig: McpServerConfig) =>
     z.object({
         title: z.string().describe('A very concise title for the support ticket'),
         problemDescription: problemDescriptionSchema(staticConfig.productPlatformOrTool),
         context: contextSchema(staticConfig.productPlatformOrTool)
     })
 
-const inputSchemaWithEmail = (staticConfig: StaticMcpServerConfig) =>
+const inputSchemaWithEmail = (staticConfig: McpServerConfig) =>
     inputSchemaWithoutEmail(staticConfig).extend({
         email: z.string().email().optional().describe('The email address of the user requesting support, if provided')
     })
@@ -49,8 +49,8 @@ const inputSchemaWithEmail = (staticConfig: StaticMcpServerConfig) =>
  */
 export async function registerSupportTool(
     mcpServer: McpServer,
-    staticConfig: StaticMcpServerConfig,
-    distinctId?: string
+    staticConfig: McpServerConfig,
+    trackingId: string | null
 ) {
     if (staticConfig.supportTicketType === 'none') {
         return
@@ -66,16 +66,16 @@ export async function registerSupportTool(
 
     if (staticConfig.supportTicketType === 'dashboard') {
         if (staticConfig.authType === 'collect_email') {
-            registerSupportToolWithEmail(mcpServer, staticConfig, distinctId)
+            registerSupportToolWithEmail(mcpServer, staticConfig, trackingId)
         } else {
-            registerSupportToolWithOAuth(mcpServer, staticConfig, distinctId)
+            registerSupportToolWithOAuth(mcpServer, staticConfig, trackingId)
         }
     }
 
     return {}
 }
 
-function registerSupportToolWithEmail(mcpServer: McpServer, staticConfig: StaticMcpServerConfig, distinctId?: string) {
+function registerSupportToolWithEmail(mcpServer: McpServer, staticConfig: McpServerConfig, trackingId: string | null) {
     const inputSchema = inputSchemaWithEmail(staticConfig)
     mcpServer.registerTool(
         'get_support',
@@ -115,25 +115,25 @@ function registerSupportToolWithEmail(mcpServer: McpServer, staticConfig: Static
                 })
             ]
 
-            if (distinctId) {
+            if (trackingId) {
                 promises.push(
                     db
                         .update(schema.mcpServerUser)
                         .set({ email })
-                        .where(eq(schema.mcpServerUser.distinctId, distinctId))
+                        .where(eq(schema.mcpServerUser.distinctId, trackingId))
                 )
 
-                console.log('distinctId', distinctId)
+                console.log('trackingId', trackingId)
                 console.log('email', email)
             }
-            if (!distinctId) {
+            if (!trackingId) {
                 promises.push(
                     db.insert(schema.mcpServerUser).values({
                         distinctId: null,
                         email: email
                     })
                 )
-                console.log('distinctId', distinctId)
+                console.log('trackingId', trackingId)
                 console.log('email', email)
             }
 
@@ -151,7 +151,7 @@ function registerSupportToolWithEmail(mcpServer: McpServer, staticConfig: Static
     )
 }
 
-function registerSupportToolWithOAuth(mcpServer: McpServer, staticConfig: StaticMcpServerConfig, distinctId?: string) {
+function registerSupportToolWithOAuth(mcpServer: McpServer, staticConfig: McpServerConfig, trackingId: string | null) {
     const inputSchema = inputSchemaWithoutEmail(staticConfig)
     mcpServer.registerTool(
         'get_support',
@@ -199,25 +199,25 @@ function registerSupportToolWithOAuth(mcpServer: McpServer, staticConfig: Static
                 })
             ]
 
-            if (distinctId) {
+            if (trackingId) {
                 promises.push(
                     db
                         .update(schema.mcpServerUser)
                         .set({ email })
-                        .where(eq(schema.mcpServerUser.distinctId, distinctId))
+                        .where(eq(schema.mcpServerUser.distinctId, trackingId))
                 )
 
-                console.log('distinctId', distinctId)
+                console.log('trackingId', trackingId)
                 console.log('email', email)
             }
-            if (!distinctId) {
+            if (!trackingId) {
                 promises.push(
                     db.insert(schema.mcpServerUser).values({
                         distinctId: null,
                         email: email
                     })
                 )
-                console.log('distinctId', distinctId)
+                console.log('trackingId', trackingId)
                 console.log('email', email)
             }
 

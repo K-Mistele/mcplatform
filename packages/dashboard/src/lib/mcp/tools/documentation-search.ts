@@ -3,7 +3,7 @@ import { db, schema } from 'database'
 import { eq } from 'drizzle-orm'
 import { headers } from 'next/headers'
 import z from 'zod'
-import type { McpServer, StaticMcpServerConfig } from '../types'
+import type { McpServer, McpServerConfig } from '../types'
 
 import { Exa } from 'exa-js'
 
@@ -11,8 +11,8 @@ const exa = new Exa(process.env.EXA_API_KEY)
 
 export function registerDocumentationSearchTool(
     server: McpServer,
-    serverStaticConfiguration: StaticMcpServerConfig,
-    distinctId?: string
+    serverStaticConfiguration: McpServerConfig,
+    trackingId: string | null
 ) {
     const documentationSearchToolInputSchema = z.object({
         query: z.string().optional().describe('A natural-language query to search the documentation for'),
@@ -110,25 +110,25 @@ export function registerDocumentationSearchTool(
                 })
             ]
 
-            if (distinctId) {
+            if (trackingId) {
                 promises.push(
                     db
                         .update(schema.mcpServerUser)
                         .set({ email })
-                        .where(eq(schema.mcpServerUser.distinctId, distinctId))
+                        .where(eq(schema.mcpServerUser.distinctId, trackingId))
                 )
 
-                console.log('distinctId', distinctId)
+                console.log('trackingId', trackingId)
                 console.log('email', email)
             }
-            if (!distinctId) {
+            if (!trackingId) {
                 promises.push(
                     db.insert(schema.mcpServerUser).values({
                         distinctId: null,
                         email: email
                     })
                 )
-                console.log('distinctId', distinctId)
+                console.log('trackingId', trackingId)
                 console.log('email', email)
             }
 

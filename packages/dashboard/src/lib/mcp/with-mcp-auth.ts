@@ -8,7 +8,7 @@ export const withMcpAuth = <
     }
 >(
     auth: Auth,
-    handler: (req: Request, sesssion: OAuthAccessToken) => Response | Promise<Response>
+    handler: (req: Request, session: OAuthAccessToken) => Response | Promise<Response>
 ) => {
     return async (req: Request) => {
         const session = await auth.api.getMcpSession({
@@ -35,6 +35,6 @@ export const withMcpAuth = <
                 }
             )
         }
-        return handler(req, session)
+        return await Promise.resolve(handler(req, session))
     }
 }
