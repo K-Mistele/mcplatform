@@ -1,11 +1,13 @@
 'use client'
-import { GithubIcon, LoaderCircle } from 'lucide-react'
-
+import appIcon from '@/assets/appicon.png'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { authClient } from '@/lib/auth/auth.client'
 import { cn } from '@/lib/utils'
+import { GithubIcon, LoaderCircle } from 'lucide-react'
+import Image from 'next/image'
+import { useRouter } from 'next/navigation'
 import { useState } from 'react'
 import { useKey } from 'react-use'
 import { toast } from 'sonner'
@@ -17,6 +19,7 @@ export function RegisterForm({ className, ...props }: React.ComponentProps<'div'
     const [domain, setDomain] = useState('')
     const [isLoading, setIsLoading] = useState(false)
 
+    const router = useRouter()
     const credentialRegister = async () => {
         setIsLoading(true)
         const { data, error } = await authClient.signUp.email({
@@ -32,6 +35,7 @@ export function RegisterForm({ className, ...props }: React.ComponentProps<'div'
         }
         toast.success('Account created successfully')
         setIsLoading(false)
+        router.push('/dashboard')
     }
     const socialLogin = async (provider: 'google' | 'github') => {
         const { data, error } = await authClient.signIn.social({
@@ -55,14 +59,12 @@ export function RegisterForm({ className, ...props }: React.ComponentProps<'div'
             <form>
                 <div className="flex flex-col gap-6">
                     <div className="flex flex-col items-center gap-2">
-                        {email.length && password.length && (
-                            <img
-                                src={`https://img.logo.dev/${email.split('@')[1]}?token=pk_TFdOakUKSHuYLhmUlWaSbQ`}
-                                alt="logo"
-                                className="size-8 rounded-full"
-                            />
-                        )}
-                        <h1 className="text-xl font-bold">Welcome to Acme Inc.</h1>
+                        <div className="flex items-center justify-center gap-2">
+                            <Image src={appIcon} alt="McPlatform" height={40} width={40} />
+                            <a href="https://naptha.ai" className="flex items-center gap-2 self-center font-black">
+                                McPlatform by Naptha.ai
+                            </a>
+                        </div>
                     </div>
                     <div className="flex flex-col gap-6">
                         <div className="grid gap-3">

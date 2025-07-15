@@ -11,7 +11,7 @@ export default function LoginForClaudePage() {
         authClient.signIn
             .email(
                 {
-                    email: 'claude@example.com',
+                    email: 'claude@claude.com',
                     password: 'supersecurepassword'
                 },
                 {
