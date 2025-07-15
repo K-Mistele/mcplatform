@@ -1,5 +1,5 @@
 import { auth } from '@/lib/auth/mcp/auth'
-import { configureMcpServer, withMcpAuth } from '@/lib/mcp'
+import { registerMcpServerToolsFromConfig, withMcpAuth } from '@/lib/mcp'
 import { db, schema } from 'database'
 import { eq } from 'drizzle-orm'
 import { createMcpHandler } from 'mcp-handler'
@@ -40,7 +40,7 @@ async function mcpServerHandler(
         const authHandler = withMcpAuth(auth, (req, session) => {
             return createMcpHandler(
                 async (server) => {
-                    configureMcpServer(server, mcpServerConfiguration, nanoid)
+                    registerMcpServerToolsFromConfig(server, mcpServerConfiguration, nanoid)
 
                     await db
                         .insert(schema.mcpServerUser)
@@ -73,7 +73,7 @@ async function mcpServerHandler(
 
     return await createMcpHandler(
         async (server) => {
-            configureMcpServer(server, mcpServerConfiguration, nanoid)
+            registerMcpServerToolsFromConfig(server, mcpServerConfiguration, nanoid)
 
             await db
                 .insert(schema.mcpServerUser)

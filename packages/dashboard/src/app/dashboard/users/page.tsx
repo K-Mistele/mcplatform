@@ -1,21 +1,10 @@
+import { UsersLoading } from '@/components/users-loading'
 import { requireSession } from '@/lib/auth/auth'
 import { db, schema } from 'database'
-import { and, count, eq } from 'drizzle-orm'
+import { and, count, eq, sql } from 'drizzle-orm'
 import { Suspense } from 'react'
 import { ErrorBoundary } from 'react-error-boundary'
 import { UsersClient } from './users-client'
-
-function UsersLoading() {
-    return (
-        <div className="flex flex-col gap-4 py-4 md:gap-6 md:py-6">
-            <div className="px-4 lg:px-6">
-                <div className="h-[400px] flex items-center justify-center">
-                    <div className="text-muted-foreground">Loading users...</div>
-                </div>
-            </div>
-        </div>
-    )
-}
 
 export default async function UsersPage() {
     const session = await requireSession()
@@ -23,20 +12,21 @@ export default async function UsersPage() {
     // Create promises without awaiting them - run concurrently
     const mcpUsersPromise = db
         .select({
-            distinctId: schema.mcpServerUser.distinctId,
+            distinctId: schema.mcpServerUser.trackingId,
             email: schema.mcpServerUser.email,
             firstSeenAt: schema.mcpServerUser.firstSeenAt,
-            connectionCreatedAt: schema.mcpServerConnection.createdAt,
+            connectionCreatedAt: sql<
+                number | null
+            >`CASE WHEN ${schema.mcpServerConnection.connectionDate} IS NOT NULL THEN EXTRACT(EPOCH FROM ${schema.mcpServerConnection.connectionDate}) * 1000 ELSE NULL END`.as(
+                'connectionCreatedAt'
+            ),
             serverName: schema.mcpServers.name,
             serverSlug: schema.mcpServers.slug,
-            transport: schema.mcpServerConnection.transport
+            transport: sql<string | null>`NULL`.as('transport') // Transport was removed in migrations
         })
-        .from(schema.mcpServerUser)
-        .leftJoin(
-            schema.mcpServerConnection,
-            eq(schema.mcpServerUser.distinctId, schema.mcpServerConnection.distinctId)
-        )
-        .leftJoin(schema.mcpServers, eq(schema.mcpServerConnection.slug, schema.mcpServers.slug))
+        .from(schema.mcpServerConnection)
+        .innerJoin(schema.mcpServerUser, eq(schema.mcpServerConnection.mcpServerUserId, schema.mcpServerUser.id))
+        .innerJoin(schema.mcpServers, eq(schema.mcpServerConnection.slug, schema.mcpServers.slug))
         .where(eq(schema.mcpServers.organizationId, session.session.activeOrganizationId))
 
     const supportTicketCountsPromise = db

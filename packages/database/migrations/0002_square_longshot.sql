@@ -1,0 +1,1 @@
+ALTER TABLE "mcp_server_connect" DROP COLUMN "transport";

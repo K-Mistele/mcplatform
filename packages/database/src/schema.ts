@@ -1,5 +1,5 @@
 import { nanoid } from 'common/nanoid'
-import { bigint, jsonb, pgEnum, pgTable, text } from 'drizzle-orm/pg-core'
+import { bigint, date, jsonb, pgEnum, pgTable, text } from 'drizzle-orm/pg-core'
 import { organization } from './auth-schema'
 
 const supportRequestStatusValues = ['needs_email', 'pending', 'in_progress', 'resolved', 'closed'] as const
@@ -50,7 +50,7 @@ export const mcpServerUser = pgTable('mcp_server_user', {
     id: text('id')
         .primaryKey()
         .$defaultFn(() => `mcpu_${nanoid(12)}`),
-    distinctId: text('distinct_id').unique('mcp_server_user_distinct_id_unique', { nulls: 'not distinct' }),
+    trackingId: text('distinct_id').unique('mcp_server_user_distinct_id_unique', { nulls: 'not distinct' }),
     email: text('email'),
     firstSeenAt: bigint('first_seen_at', { mode: 'number' }).$defaultFn(() => Date.now())
 })
@@ -70,9 +70,9 @@ export const toolCalls = pgTable('mcp_tool_calls', {
 })
 
 export const mcpServerConnection = pgTable('mcp_server_connect', {
-    transport: text('transport'),
     slug: text('slug').references(() => mcpServers.slug),
-    email: text('email'),
-    createdAt: bigint('created_at', { mode: 'number' }).$defaultFn(() => Date.now()),
-    distinctId: text('mcp_server_distinct_id')
+    connectionDate: date('connection_date')
+        .notNull()
+        .$defaultFn(() => new Date().toISOString()),
+    mcpServerUserId: text('mcp_server_user_id').references(() => mcpServerUser.id, { onDelete: 'cascade' })
 })

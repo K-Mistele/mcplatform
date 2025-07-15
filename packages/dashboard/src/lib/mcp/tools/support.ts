@@ -120,7 +120,7 @@ function registerSupportToolWithEmail(mcpServer: McpServer, staticConfig: McpSer
                     db
                         .update(schema.mcpServerUser)
                         .set({ email })
-                        .where(eq(schema.mcpServerUser.distinctId, trackingId))
+                        .where(eq(schema.mcpServerUser.trackingId, trackingId))
                 )
 
                 console.log('trackingId', trackingId)
@@ -204,7 +204,7 @@ function registerSupportToolWithOAuth(mcpServer: McpServer, staticConfig: McpSer
                     db
                         .update(schema.mcpServerUser)
                         .set({ email })
-                        .where(eq(schema.mcpServerUser.distinctId, trackingId))
+                        .where(eq(schema.mcpServerUser.trackingId, trackingId))
                 )
 
                 console.log('trackingId', trackingId)

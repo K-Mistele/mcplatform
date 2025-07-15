@@ -7,6 +7,7 @@ export async function GET(request: NextRequest) {
     if (!host) {
         return new Response('Invalid host; host not found', { status: 404 })
     }
+    const requestUrl = new URL(request.url)
 
     const parts = host.split('.')
     if ((host.includes('localhost') && parts.length < 2) || (!host.includes('localhost') && parts.length < 3)) {
@@ -28,18 +29,15 @@ export async function GET(request: NextRequest) {
     // Use BetterAuth's OAuth discovery metadata IFF they want to use platform OAuth
     if (mcpServerConfiguration.authType === 'platform_oauth') {
         console.log('Using platform OAuth for server', mcpServerConfiguration.name)
-        return new Response(
-            JSON.stringify(oauthDiscoveryMetadata(`${host.includes('localhost') ? 'http' : 'https'}://${host}`)),
-            {
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Access-Control-Allow-Origin': '*',
-                    'Access-Control-Allow-Methods': 'POST, OPTIONS',
-                    'Access-Control-Allow-Headers': 'Content-Type, Authorization',
-                    'Access-Control-Max-Age': '86400'
-                }
+        return new Response(JSON.stringify(oauthDiscoveryMetadata(`${requestUrl.protocol}//${host}`)), {
+            headers: {
+                'Content-Type': 'application/json',
+                'Access-Control-Allow-Origin': '*',
+                'Access-Control-Allow-Methods': 'POST, OPTIONS',
+                'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+                'Access-Control-Max-Age': '86400'
             }
-        )
+        })
     }
 
     // TODO - support custom oauth / openid connect

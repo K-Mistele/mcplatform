@@ -1,25 +1,83 @@
 import { db, schema } from 'database'
 import { eq } from 'drizzle-orm'
 import { createMcpHandler } from 'mcp-handler'
+import { auth } from '../auth/mcp/auth'
 import { registerDocumentationSearchTool } from './tools/documentation-search'
 import { registerSupportTool } from './tools/support'
 import type { McpServer, McpServerConfig } from './types'
+import { withMcpAuth } from './with-mcp-auth'
 export { protectedResourceHandler } from './protected-resource-handler'
-export { withMcpAuth } from './with-mcp-auth'
+
+/**
+ * Create a route handler for the MCP server based on things like if it needs oauth or not.
+ * @param serverConfig
+ */
+export function createHandlerForServer({
+    serverConfig,
+    trackingId,
+    email,
+    mcpServerUserId
+}: {
+    serverConfig: McpServerConfig
+    trackingId: string | null
+    email: string | null
+    mcpServerUserId: string | null
+}): (req: Request) => Promise<Response> {
+    const mcpHandler = createMcpHandler(
+        async (server) => {
+            registerMcpServerToolsFromConfig({
+                server,
+                serverConfig,
+                trackingId,
+                email,
+                mcpServerUserId
+            })
+        },
+        {
+            serverInfo: {
+                name: serverConfig.name,
+                version: '1.0.0'
+            }
+        },
+        {
+            redisUrl: process.env.REDIS_URL,
+            // This sets the base path for other MCP server routes; because of the variadic URL param we need to set the tracking ID
+            //  here if it's set in this request; otherwise we can't
+            basePath: trackingId ? `/api/mcpserver/${trackingId}` : `/api/mcpserver`,
+            verboseLogs: true,
+            onEvent(event) {
+                if (event.type === 'ERROR') {
+                    console.error(`MCP ERROR:`, event)
+                    // TODO we should track errors somehow
+                }
+            }
+        }
+    )
+
+    if (!serverConfig.authType?.includes('oauth')) {
+        return mcpHandler
+    }
+
+    return withMcpAuth(auth, mcpHandler)
+}
 
 /**
  * This function is called by the route handler to configure the MCP server object based on the static configuration from the database.
  * @param server - the MCP server instance
  * @param serverStaticConfiguration - the static configuration for the MCP server from the database
  */
-export function configureMcpServer({
+export function registerMcpServerToolsFromConfig({
     server,
     serverConfig,
-    trackingId
+    trackingId,
+    email,
+    mcpServerUserId
 }: {
     server: McpServer
     serverConfig: McpServerConfig
     trackingId: string | null
+    email: string | null
+    mcpServerUserId: string | null
 }) {
     registerSupportTool(server, serverConfig, trackingId)
     registerDocumentationSearchTool(server, serverConfig, trackingId)
@@ -36,13 +94,17 @@ export async function getMcpServerConfiguration(request: Request) {
     const thisUrl = new URL(process.env.NEXT_PUBLIC_BETTER_AUTH_URL)
 
     // Convert the URL from the host header or the request URL; fall back on the request URL if the host header is not present.
-    const requestUrl = new URL(request.headers.get('host') ?? request.url)
+    console.log({
+        url: request.url,
+        host: request.headers.get('host')
+    })
+    const requestHost = request.headers.get('host') ?? new URL(request.url).host
+    const requestHostname = requestHost.split(':')[0]
 
     const thisUrlDomainSegments = thisUrl.hostname.split('.')
-    const requestUrlDomainSegments = requestUrl.hostname.split('.')
+    const requestUrlDomainSegments = requestHostname.split('.')
 
-    if (thisUrl.hostname === requestUrl.hostname)
-        throw new Error('MCP server connections must use the configured VHost')
+    if (thisUrl.hostname === requestHostname) throw new Error('MCP server connections must use the configured VHost')
 
     const requestIsOneLevelUnderApplicationOnSameDomain =
         requestUrlDomainSegments.length === thisUrlDomainSegments.length + 1 &&
@@ -50,6 +112,10 @@ export async function getMcpServerConfiguration(request: Request) {
 
     // TODO support arbitrary domains for customers
     if (!requestIsOneLevelUnderApplicationOnSameDomain) {
+        console.log({
+            thisUrlDomainSegments,
+            requestUrlDomainSegments
+        })
         throw new Error('MCP server must be accessed via a direct subdomain of the application')
     }
 
@@ -64,24 +130,4 @@ export async function getMcpServerConfiguration(request: Request) {
         .limit(1)
 
     return serverConfig ?? null // return null if not found, return config if found; throw error for bad request.
-}
-
-/**
- * Create a route handler for the MCP server based on things like if it needs oauth or not.
- * @param serverConfig
- */
-export function createHandlerForServer({
-    serverConfig,
-    trackingId
-}: {
-    serverConfig: McpServerConfig
-    trackingId: string | null
-}) {
-    const mcpHandler = createMcpHandler(async (server) => {
-        configureMcpServer({
-            server,
-            serverConfig,
-            trackingId
-        })
-    })
 }

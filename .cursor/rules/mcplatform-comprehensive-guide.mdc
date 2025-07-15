@@ -376,25 +376,6 @@ export async function POST(request: NextRequest) {
 }
 ```
 
-## MCP Server Configuration
-
-### Subdomain Structure
-- Each MCP server gets a unique subdomain
-- Format: `{slug}.{host}/api/i/{nanoid}/mcp` (nanoid path param is optional)
-- OAuth configurations per customer MCP server
-- Support for platform OAuth and custom OAuth
-
-### MCP Authentication Types
-- `none` - No authentication required
-- `platform_oauth` - Use platform's OAuth system
-- `custom_oauth` - Use customer's OAuth provider
-- `collect_email` - Collect email for identification
-
-### MCP Tools
-- **Documentation Search**: Search tool for customer docs
-- **Support System**: Create support tickets
-- **Custom Tools**: Per-server tool configurations
-
 ## Data Flow Patterns
 
 ### Form Handling
@@ -525,3 +506,8 @@ export function ClientComponent({ dataPromise }: { dataPromise: Promise<Data[]> 
 
 
 ```
+
+# IMPORTANT:
+
+1. never run commands like `bun run dev` or `bun run build` or `bun run type-check`. type-check is not supported, and the dev server is always running on port 3000 - always check on this port with puppeteer.
+2. never try to generate or run migrations yourself. always ask the user. 

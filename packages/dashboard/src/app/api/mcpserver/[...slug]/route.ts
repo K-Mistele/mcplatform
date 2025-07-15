@@ -7,7 +7,8 @@
  * /api/mcpserver/{trackingid}/sse - SSE transport (with tracking ID)
  * /api/mcpserver/{trackingid}/mcp - Streamable HTTP transport (with tracking ID)
  */
-import { getMcpServerConfiguration } from '@/lib/mcp'
+import { createHandlerForServer, getMcpServerConfiguration } from '@/lib/mcp'
+import { getAndTrackMcpServerUser } from '@/lib/mcp/tracking'
 import type { McpServerConfig } from '@/lib/mcp/types'
 import { NextResponse } from 'next/server'
 
@@ -32,9 +33,22 @@ export async function GET(request: Request, context: { params: Promise<{ slug: s
         return NextResponse.json({ error: error.message }, { status: 400 })
     }
 
-    //
+    // Idempotently track the user based on tracking ID and/or email
+    const userData = await getAndTrackMcpServerUser({
+        email: trackingId ? null : undefined,
+        trackingId,
+        serverConfig: mcpServer
+    })
 
-    return NextResponse.json({ trackingId, slug })
+    // Create the MCP server handler
+    const requestHandler = createHandlerForServer({
+        serverConfig: mcpServer,
+        trackingId,
+        email: userData?.email ?? null,
+        mcpServerUserId: userData?.mcpServerUserId ?? null
+    })
+    // await the handler with the request.
+    return await requestHandler(request)
 }
 
 /**

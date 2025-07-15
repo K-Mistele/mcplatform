@@ -1,4 +1,4 @@
-import { configureMcpServer } from '@/lib/mcp'
+import { registerMcpServerToolsFromConfig } from '@/lib/mcp'
 import { db, schema } from 'database'
 import { eq } from 'drizzle-orm'
 import { createMcpHandler } from 'mcp-handler'
@@ -24,7 +24,7 @@ async function mcpServerHandler(request: NextRequest) {
     console.log('initializing MCP server with slug', slug)
     const handler = createMcpHandler(
         async (server) => {
-            configureMcpServer(server, mcpServerConfiguration)
+            registerMcpServerToolsFromConfig(server, mcpServerConfiguration)
         },
         {
             serverInfo: {

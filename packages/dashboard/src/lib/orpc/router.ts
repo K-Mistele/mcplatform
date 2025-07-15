@@ -77,7 +77,7 @@ export const getToolCallsChart = base
             // Query MCP connections - grouped by user per day to avoid counting reconnections
             const connectionsResult = await db
                 .select({
-                    distinctId: schema.mcpServerConnection.distinctId,
+                    distinctId: schema.mcpServerConnection.trackingId,
                     email: schema.mcpServerConnection.email,
                     createdAt: schema.mcpServerConnection.createdAt,
                     slug: schema.mcpServerConnection.slug

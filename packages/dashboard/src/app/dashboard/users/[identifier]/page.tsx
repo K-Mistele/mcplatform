@@ -56,7 +56,7 @@ export default async function UserDetailsPage(props: UserDetailsPageProps) {
 
     // Create promises for data fetching (don't await them)
     const userPromise = getUserData(identifier)
-    const connectionsPromise = getUserConnections(user.distinctId || '')
+    const connectionsPromise = getUserConnections(user.trackingId || '')
     const toolCallsPromise = getUserToolCalls(session.session.activeOrganizationId)
     const supportRequestsPromise = getUserSupportRequests(user.email || '')
 

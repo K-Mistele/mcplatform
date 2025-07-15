@@ -38,10 +38,10 @@ export default async function McpServerDetailsPage(props: McpServerDetailsPagePr
     }
 
     const slug = server.slug as string
-    const currentLoc = process.env.NEXT_PUBLIC_BETTER_AUTH_URL
-    const proto = currentLoc?.startsWith('https://') ? 'https://' : 'http://'
-    const host = currentLoc?.split('://')[1]
-    const url = `${proto}${slug}.${host}/api/mcp`
+    const currentLoc = new URL(process.env.NEXT_PUBLIC_BETTER_AUTH_URL as string)
+    const proto = currentLoc.protocol
+    const host = currentLoc.host
+    const url = `${proto}//${slug}.${host}/api/mcpserver/mcp`
 
     return (
         <div className="flex flex-col gap-4 py-4 md:gap-6 md:py-6">

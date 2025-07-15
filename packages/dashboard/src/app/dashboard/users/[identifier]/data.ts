@@ -11,7 +11,7 @@ export async function getUserData(identifier: string) {
         .where(
             or(
                 eq(schema.mcpServerUser.id, identifier),
-                eq(schema.mcpServerUser.distinctId, identifier),
+                eq(schema.mcpServerUser.trackingId, identifier),
                 eq(schema.mcpServerUser.email, identifier)
             )
         )
@@ -34,7 +34,7 @@ export async function getUserConnections(distinctId: string) {
         })
         .from(schema.mcpServerConnection)
         .leftJoin(schema.mcpServers, eq(schema.mcpServerConnection.slug, schema.mcpServers.slug))
-        .where(eq(schema.mcpServerConnection.distinctId, distinctId))
+        .where(eq(schema.mcpServerConnection.trackingId, distinctId))
         .orderBy(desc(schema.mcpServerConnection.createdAt))
 
     // Filter connections to only include servers that exist in our org

@@ -115,7 +115,7 @@ export function registerDocumentationSearchTool(
                     db
                         .update(schema.mcpServerUser)
                         .set({ email })
-                        .where(eq(schema.mcpServerUser.distinctId, trackingId))
+                        .where(eq(schema.mcpServerUser.trackingId, trackingId))
                 )
 
                 console.log('trackingId', trackingId)
