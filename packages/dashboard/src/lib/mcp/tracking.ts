@@ -27,7 +27,7 @@ export async function getAndTrackMcpServerUser(data: {
         const session = await auth.api.getMcpSession({
             headers: await headers()
         })
-        console.log(`ACCESS TOKEN:`, session?.accessToken)
+        console.log(`ACCESS TOKEN:`, session?.accessToken, `USER ID:`, session?.userId)
         if (session?.userId) {
             try {
                 const [user] = await db
@@ -59,20 +59,30 @@ export async function getAndTrackMcpServerUser(data: {
                     email: data.email
                 }
             })
+        } else {
+            query.onConflictDoNothing()
         }
         const [mcpServerUser] = await query.returning()
-        if (!mcpServerUser) {
-            console.error(`user not found after insertion   `)
+        let mcpServerUserId: string | undefined = mcpServerUser?.id
+        if (!mcpServerUserId && trackingId) {
+            console.warn(`user not found after insertion   `)
+            const [mcpServer] = await db
+                .select()
+                .from(schema.mcpServerUser)
+                .where(eq(schema.mcpServerUser.trackingId, trackingId ?? ''))
+                .limit(1)
+            mcpServerUserId = mcpServer?.id
+            console.log(`mcpServerUserId:`, mcpServerUserId)
         }
         await db.insert(schema.mcpServerConnection).values({
-            mcpServerUserId: mcpServerUser.id,
+            mcpServerUserId: mcpServerUserId,
             slug: serverConfig.slug
         })
 
         return {
             email,
             trackingId,
-            mcpServerUserId: mcpServerUser.id
+            mcpServerUserId: mcpServerUserId
         }
     }
     console.warn(`unable to identify user - no email, no tracking ID`)
