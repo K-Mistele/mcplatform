@@ -12,7 +12,7 @@
                 "CHROME_USER_DATA_DIR": "/Users/kyle/Library/Application Support/Google/Chrome/Default"
             }
         },
-        "drizzle3": {
+        "drizzle16": {
             "url": "http://drizzle-orm.localhost:3000/api/mcpserver/unq_hijo/mcp"
         }
     }

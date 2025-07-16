@@ -1,5 +1,5 @@
 import appIcon from '@/assets/appicon.png'
-import { SubtenantLoginForm } from '@/components/subtenant-login-form'
+import { OidcLoginForm } from '@/components/oidc-login-form'
 import Image from 'next/image'
 
 export default function AuthtenantLoginPage() {
@@ -13,7 +13,7 @@ export default function AuthtenantLoginPage() {
                     </a>
                 </div>
 
-                <SubtenantLoginForm />
+                <OidcLoginForm />
             </div>
         </div>
     )

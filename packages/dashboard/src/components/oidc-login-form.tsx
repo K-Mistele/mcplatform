@@ -3,7 +3,7 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { authClient } from '@/lib/auth/mcp/auth.client'
+import { authClient, useAuthClient } from '@/lib/auth/mcp/auth.client'
 import { cn } from '@/lib/utils'
 import { LoaderCircle } from 'lucide-react'
 import { useRouter, useSearchParams } from 'next/navigation'
@@ -11,15 +11,9 @@ import { useState } from 'react'
 import { useKey } from 'react-use'
 import { toast } from 'sonner'
 
-export function SubtenantLoginForm({ className, ...props }: React.ComponentProps<'div'>) {
+export function OidcLoginForm({ className, ...props }: React.ComponentProps<'div'>) {
     const searchParams = useSearchParams()
-
-    const {
-        data: session,
-        isPending, //loading state
-        error, //error object
-        refetch //refetch the session
-    } = authClient.useSession()
+    const getAuthClient = useAuthClient()
     const router = useRouter()
 
     const [username, setUsername] = useState('')
@@ -33,7 +27,7 @@ export function SubtenantLoginForm({ className, ...props }: React.ComponentProps
             return
         }
         setIsLoading(true)
-        const { data, error } = await authClient.signIn.email({
+        const { data, error } = await getAuthClient().signIn.email({
             email: username,
             password: password
             //callbackURL: '/mcp-oidc/auth/mcp/authorize'
