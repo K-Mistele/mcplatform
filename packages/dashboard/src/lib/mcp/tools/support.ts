@@ -213,7 +213,7 @@ function registerSupportToolWithOAuth(mcpServer: McpServer, staticConfig: McpSer
             if (!trackingId) {
                 promises.push(
                     db.insert(schema.mcpServerUser).values({
-                        distinctId: null,
+                        trackingId: null,
                         email: email
                     })
                 )

@@ -3,7 +3,7 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { authClient, useAuthClient } from '@/lib/auth/mcp/auth.client'
+import { authClient } from '@/lib/auth/mcp/auth.client'
 import { cn } from '@/lib/utils'
 import { LoaderCircle } from 'lucide-react'
 import { useRouter, useSearchParams } from 'next/navigation'
@@ -13,7 +13,6 @@ import { toast } from 'sonner'
 
 export function OidcLoginForm({ className, ...props }: React.ComponentProps<'div'>) {
     const searchParams = useSearchParams()
-    const getAuthClient = useAuthClient()
     const router = useRouter()
 
     const [username, setUsername] = useState('')
@@ -52,6 +51,7 @@ export function OidcLoginForm({ className, ...props }: React.ComponentProps<'div
         const { data, error } = await authClient.signIn.social({
             provider,
             callbackURL: `/mcp-oidc/auth/mcp/authorize?${searchParams?.toString()}`
+            //disableRedirect: true
         })
         console.log('error', error)
 
