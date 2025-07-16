@@ -65,7 +65,6 @@ export async function getAndTrackMcpServerUser(data: {
         const [mcpServerUser] = await query.returning()
         let mcpServerUserId: string | undefined = mcpServerUser?.id
         if (!mcpServerUserId && trackingId) {
-            console.warn(`user not found after insertion   `)
             const [mcpServer] = await db
                 .select()
                 .from(schema.mcpServerUser)

@@ -26,7 +26,7 @@ export function OidcLoginForm({ className, ...props }: React.ComponentProps<'div
             return
         }
         setIsLoading(true)
-        const { data, error } = await getAuthClient().signIn.email({
+        const { data, error } = await authClient.signIn.email({
             email: username,
             password: password
             //callbackURL: '/mcp-oidc/auth/mcp/authorize'

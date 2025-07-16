@@ -18,18 +18,13 @@ async function handler(request: Request) {
         console.log('Invalid host; subdomain not found or not valid', { host, parts })
         return new Response('Invalid host; subdomain not found or not valid', { status: 404 })
     }
-    console.log('host', host)
-    console.log('parts', parts)
 
     const subdomain = parts[0]
-    console.log('subdomain', subdomain)
     const [mcpServerConfiguration] = await db
         .select()
         .from(schema.mcpServers)
         .where(eq(schema.mcpServers.slug, subdomain))
         .limit(1)
-
-    console.log('mcpServerConfiguration', mcpServerConfiguration)
 
     if (!mcpServerConfiguration) {
         return new Response('Invalid host; subdomain not found', { status: 404 })

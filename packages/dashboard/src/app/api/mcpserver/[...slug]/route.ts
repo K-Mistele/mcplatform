@@ -10,6 +10,7 @@
 import { createHandlerForServer, getMcpServerConfiguration } from '@/lib/mcp'
 import { getAndTrackMcpServerUser } from '@/lib/mcp/tracking'
 import type { McpServerConfig } from '@/lib/mcp/types'
+import { cloneResponse, safelyReadRequest } from '@/lib/utils'
 import { NextResponse } from 'next/server'
 
 /**
@@ -18,11 +19,22 @@ import { NextResponse } from 'next/server'
  * @param context
  * @returns
  */
-export async function GET(request: Request, context: { params: Promise<{ slug: string[] }> }) {
+async function streamableHttpServerHandler(request: Request, context: { params: Promise<{ slug: string[] }> }) {
     const { slug } = await context.params
+
+    // TODO set this properly
+    console.log(`MCP session ID:`, request.headers.get('Mcp-Session-Id'))
 
     // Check to see if the optional route parameter is present; which is the tracking ID.
     const trackingId = maybeGetTrackingId(slug)
+    let req: Request
+    if (request.body) {
+        const { request: newRequest, text: requestBody } = safelyReadRequest(request)
+        req = newRequest
+        requestBody.then((text) => console.log(`JSON RPC REQUEST:`, text))
+    } else {
+        req = request
+    }
 
     // Load the MCP server configuration matching the slug in the request Host
     let mcpServer: McpServerConfig
@@ -48,7 +60,13 @@ export async function GET(request: Request, context: { params: Promise<{ slug: s
         mcpServerUserId: userData?.mcpServerUserId ?? null
     })
     // await the handler with the request.
-    return await requestHandler(request)
+    const response = await requestHandler(req)
+    const { response: newResponse, text: responseText } = cloneResponse(response)
+    responseText.then((text) => console.log(`JSON RPC RESPONSE:`, text))
+
+    // TODO set this only when it's not in the request otherwise match
+    newResponse.headers.set('Mcp-Session-Id', userData?.mcpServerUserId ?? '')
+    return newResponse
 }
 
 /**
@@ -60,4 +78,12 @@ function maybeGetTrackingId(slug: string[]): string | null {
     if (slug.length === 1) return null
     if (slug.length === 2) return slug[0]
     return null
+}
+
+export {
+    streamableHttpServerHandler as DELETE,
+    streamableHttpServerHandler as GET,
+    streamableHttpServerHandler as PATCH,
+    streamableHttpServerHandler as POST,
+    streamableHttpServerHandler as PUT
 }

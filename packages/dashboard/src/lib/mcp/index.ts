@@ -45,10 +45,17 @@ export function createHandlerForServer({
             //  here if it's set in this request; otherwise we can't
             basePath: trackingId ? `/api/mcpserver/${trackingId}` : `/api/mcpserver`,
             verboseLogs: true,
+            disableSse: true,
             onEvent(event) {
                 if (event.type === 'ERROR') {
                     console.error(`MCP ERROR:`, event)
                     // TODO we should track errors somehow
+                } else if (event.type === 'REQUEST_RECEIVED') {
+                    console.log(`MCP REQUEST RECEIVED:`, event)
+                } else if (event.type === 'REQUEST_COMPLETED') {
+                    console.log(`MCP REQUEST COMPLETED:`, event)
+                } else {
+                    console.log(`MCP EVENT:`, event)
                 }
             }
         }
