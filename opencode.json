@@ -1,0 +1,47 @@
+{
+    "$schema": "https://opencode.ai/config.json",
+    "model": "anthropic/claude-sonnet-4-20250514",
+    "mcp": {
+        "puppeteer": {
+            "type": "local",
+            "command": ["npx", "-y", "@modelcontextprotocol/server-puppeteer"],
+            "enabled": true,
+            "environment": {
+                "PUPPETEER_LAUNCH_OPTIONS": "{ \"headless\": true}",
+                "ALLOW_DANGEROUS": "true",
+                "CHROME_USER_DATA_DIR": "/Users/kyle/Library/Application Support/Google/Chrome/Default"
+            }
+        },
+        "exa_web_search": {
+            "type": "remote",
+            "url": "https://mcp.exa.ai/mcp?exaApiKey=417448fe-ab7a-4cae-a642-6caf71dd081e",
+            "enabled": true
+        }
+    },
+    "theme": "tokyonight",
+    "layout": "stretch",
+    "mode": {
+        "build": {
+            "model": "anthropic/claude-sonnet-4-20250514"
+        },
+        "plan": {
+            "model": "google/gemini-2.5-pro-preview-06-05",
+            "tools": {
+                "write": false,
+                "edit": false,
+                "bash": false,
+                "patch": false
+            }
+        },
+        "commit": {
+            "model": "google/gemini-2.5-pro-preview-06-05",
+            "prompt": "{file:./prompts/commit.md}",
+            "tools": {
+                "write": false,
+                "edit": false,
+                "path": false,
+                "bash": false
+            }
+        }
+    }
+}
