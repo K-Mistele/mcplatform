@@ -1,6 +1,6 @@
 'use client'
 
-import * as React from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { Area, AreaChart, CartesianGrid, XAxis } from 'recharts'
 
 import { Card, CardAction, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
@@ -14,20 +14,14 @@ export const description = 'An interactive area chart'
 
 export function ChartAreaInteractive() {
     const isMobile = useIsMobile()
-    const [timeRange, setTimeRange] = React.useState<'1h' | '1d' | '1w' | '1m'>('1d')
-    const [chartData, setChartData] = React.useState<any[]>([])
-    const [toolNames, setToolNames] = React.useState<string[]>([])
-    const [connectionTypes, setConnectionTypes] = React.useState<string[]>([])
-    const [loading, setLoading] = React.useState(true)
-    const [error, setError] = React.useState<string | null>(null)
+    const [timeRange, setTimeRange] = useState<'1h' | '1d' | '1w' | '1m'>('1d')
+    const [chartData, setChartData] = useState<any[]>([])
+    const [toolNames, setToolNames] = useState<string[]>([])
+    const [connectionTypes, setConnectionTypes] = useState<string[]>([])
+    const [loading, setLoading] = useState(true)
+    const [error, setError] = useState<string | null>(null)
 
-    React.useEffect(() => {
-        if (isMobile) {
-            setTimeRange('1h')
-        }
-    }, [isMobile])
-
-    React.useEffect(() => {
+    useEffect(() => {
         const fetchData = async () => {
             try {
                 setLoading(true)
@@ -36,6 +30,7 @@ export function ChartAreaInteractive() {
                 const result = await client.toolCalls.getChart({
                     timeRange: timeRange
                 })
+                console.log('result', result)
 
                 setChartData(result.data)
                 setToolNames(result.toolNames)
@@ -51,7 +46,7 @@ export function ChartAreaInteractive() {
     }, [timeRange])
 
     // Generate chart config dynamically using theme colors
-    const chartConfig: ChartConfig = React.useMemo(() => {
+    const chartConfig: ChartConfig = useMemo(() => {
         const config: ChartConfig = {
             visitors: {
                 label: 'Activity'
@@ -216,13 +211,19 @@ export function ChartAreaInteractive() {
                             tickFormatter={(value) => {
                                 const date = new Date(value)
                                 if (timeRange === '1h') {
-                                    return date.toLocaleTimeString('en-US', {
+                                    return date.toLocaleTimeString(undefined, {
                                         hour: 'numeric',
                                         minute: '2-digit',
                                         hour12: true
                                     })
                                 }
-                                return date.toLocaleDateString('en-US', {
+                                if (timeRange === '1d') {
+                                    return date.toLocaleTimeString(undefined, {
+                                        hour: 'numeric',
+                                        hour12: true
+                                    })
+                                }
+                                return date.toLocaleDateString(undefined, {
                                     month: 'short',
                                     day: 'numeric'
                                 })
@@ -236,13 +237,21 @@ export function ChartAreaInteractive() {
                                     labelFormatter={(value) => {
                                         const date = new Date(value)
                                         if (timeRange === '1h') {
-                                            return date.toLocaleString('en-US', {
+                                            return date.toLocaleString(undefined, {
                                                 hour: 'numeric',
                                                 minute: '2-digit',
                                                 hour12: true
                                             })
                                         }
-                                        return date.toLocaleDateString('en-US', {
+                                        if (timeRange === '1d') {
+                                            return date.toLocaleString(undefined, {
+                                                month: 'short',
+                                                day: 'numeric',
+                                                hour: 'numeric',
+                                                hour12: true
+                                            })
+                                        }
+                                        return date.toLocaleDateString(undefined, {
                                             month: 'short',
                                             day: 'numeric'
                                         })

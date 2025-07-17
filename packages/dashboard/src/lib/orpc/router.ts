@@ -1,7 +1,7 @@
 import { requireSession } from '@/lib/auth/auth'
 import { os } from '@orpc/server'
 import { db, schema } from 'database'
-import { and, eq, gte } from 'drizzle-orm'
+import { and, eq, gte, or } from 'drizzle-orm'
 import { z } from 'zod'
 
 export const base = os.errors({
@@ -57,6 +57,16 @@ export const getToolCallsChart = base
 
             const startTimeMs = startTime.getTime()
 
+            // DEBUG for past hour only
+            if (input.timeRange === '1h') {
+                console.log('🔍 PAST HOUR DEBUG:', {
+                    now: now.toISOString(),
+                    startTime: startTime.toISOString(),
+                    startTimeMs,
+                    nowMs: now.getTime()
+                })
+            }
+
             // Query tool calls
             const toolCallsResult = await db
                 .select({
@@ -80,6 +90,7 @@ export const getToolCallsChart = base
                 .select({
                     distinctId: schema.mcpServerUser.trackingId,
                     email: schema.mcpServerUser.email,
+                    connectionTimestamp: schema.mcpServerSession.connectionTimestamp,
                     connectionDate: schema.mcpServerSession.connectionDate,
                     slug: schema.mcpServers.slug
                 })
@@ -89,10 +100,13 @@ export const getToolCallsChart = base
                 .where(
                     and(
                         eq(schema.mcpServers.organizationId, session.session.activeOrganizationId),
-                        gte(schema.mcpServerSession.connectionDate, startTime.toISOString().slice(0, 10))
+                        or(
+                            gte(schema.mcpServerSession.connectionTimestamp, startTimeMs),
+                            gte(schema.mcpServerSession.connectionDate, startTime.toISOString().slice(0, 10))
+                        )
                     )
                 )
-                .orderBy(schema.mcpServerSession.connectionDate)
+                .orderBy(schema.mcpServerSession.connectionTimestamp, schema.mcpServerSession.connectionDate)
 
             // Process tool calls data - filter out null createdAt values
             const validToolCalls = toolCallsResult.filter((r) => r.createdAt !== null) as Array<{
@@ -102,15 +116,40 @@ export const getToolCallsChart = base
             }>
             const toolNames = [...new Set(validToolCalls.map((r) => r.toolName))]
 
-            // Process connections data - convert connectionDate to timestamp for consistency
+            // DEBUG for past hour only
+            if (input.timeRange === '1h') {
+                console.log('🔗 CONNECTION RAW DATA:', {
+                    totalResults: connectionsResult.length,
+                    allConnections: connectionsResult.map((r) => ({
+                        connectionTimestamp: r.connectionTimestamp,
+                        connectionDate: r.connectionDate,
+                        timestampDate: r.connectionTimestamp ? new Date(r.connectionTimestamp).toISOString() : null,
+                        isWithinRange: r.connectionTimestamp ? r.connectionTimestamp >= startTimeMs : false
+                    }))
+                })
+            }
+
+            // Process connections data - use connectionTimestamp when available, fallback to connectionDate
             const validConnections = connectionsResult
-                .filter((r) => r.connectionDate !== null)
+                .filter((r) => r.connectionTimestamp !== null || r.connectionDate !== null)
                 .map((r) => ({
                     distinctId: r.distinctId,
                     email: r.email,
-                    createdAt: new Date(r.connectionDate!).getTime(),
+                    createdAt: r.connectionTimestamp || new Date(r.connectionDate!).getTime(),
                     slug: r.slug
                 }))
+
+            // DEBUG for past hour only
+            if (input.timeRange === '1h') {
+                console.log('📊 VALID CONNECTIONS:', {
+                    validCount: validConnections.length,
+                    validConnections: validConnections.map((c) => ({
+                        createdAt: c.createdAt,
+                        createdAtDate: new Date(c.createdAt).toISOString(),
+                        isWithinRange: c.createdAt >= startTimeMs
+                    }))
+                })
+            }
             const processedConnections = processConnectionsPerUserPerDay(validConnections, input.timeRange)
 
             // If no data at all, return empty structure
@@ -122,6 +161,18 @@ export const getToolCallsChart = base
                 }
             }
 
+            // DEBUG for past hour only
+            if (input.timeRange === '1h') {
+                console.log('⚙️ PROCESSED CONNECTIONS FOR TIME SERIES:', {
+                    processedCount: processedConnections.length,
+                    processedConnections: processedConnections.map((c) => ({
+                        dateKey: c.dateKey,
+                        timestamp: c.timestamp,
+                        timestampDate: c.timestamp ? new Date(c.timestamp).toISOString() : 'N/A'
+                    }))
+                })
+            }
+
             // Create time series data
             const timeSeriesData = createTimeSeriesData(
                 validToolCalls,
@@ -129,6 +180,22 @@ export const getToolCallsChart = base
                 input.timeRange,
                 toolNames
             )
+
+            // DEBUG for past hour only
+            if (input.timeRange === '1h') {
+                console.log('📈 FINAL TIME SERIES DATA:', {
+                    bucketCount: timeSeriesData.length,
+                    nonZeroBuckets: timeSeriesData
+                        .filter((bucket) =>
+                            Object.values(bucket).some((val, i) => i > 0 && typeof val === 'number' && val > 0)
+                        )
+                        .map((bucket) => ({
+                            date: bucket.date,
+                            dateFormatted: new Date(bucket.date).toISOString(),
+                            data: Object.fromEntries(Object.entries(bucket).filter(([k]) => k !== 'date'))
+                        }))
+                })
+            }
 
             return {
                 data: timeSeriesData,
@@ -145,27 +212,35 @@ function processConnectionsPerUserPerDay(
     connections: Array<{ distinctId: string | null; email: string | null; createdAt: number; slug: string | null }>,
     timeRange: '1h' | '1d' | '1w' | '1m'
 ) {
-    // Group connections by user and day to avoid counting reconnections
-    const userDayMap = new Map<string, Set<string>>()
+    // Group connections by user and time period to avoid counting reconnections
+    const userTimeMap = new Map<string, Set<string>>()
 
     for (const conn of connections) {
         const userId = conn.email || conn.distinctId || 'unknown'
         const date = new Date(conn.createdAt)
         const dateKey = formatDateForTimeRange(date, timeRange)
 
-        if (!userDayMap.has(dateKey)) {
-            userDayMap.set(dateKey, new Set())
+        if (!userTimeMap.has(dateKey)) {
+            userTimeMap.set(dateKey, new Set())
         }
-        userDayMap.get(dateKey)!.add(userId)
+        userTimeMap.get(dateKey)!.add(userId)
     }
 
-    // Convert to connection events (one per unique user per time period)
+    // Convert to connection events with both dateKey and timestamp for flexible matching
     const processedConnections = []
-    for (const [dateKey, users] of userDayMap.entries()) {
+    for (const [dateKey, users] of userTimeMap.entries()) {
         for (const userId of users) {
+            // Find the original connection to get the timestamp
+            const originalConn = connections.find(
+                (c) =>
+                    (c.email || c.distinctId || 'unknown') === userId &&
+                    formatDateForTimeRange(new Date(c.createdAt), timeRange) === dateKey
+            )
+
             processedConnections.push({
                 userId,
                 dateKey,
+                timestamp: originalConn?.createdAt || 0,
                 type: 'mcp_connections'
             })
         }
@@ -176,12 +251,13 @@ function processConnectionsPerUserPerDay(
 
 function createTimeSeriesData(
     toolCalls: Array<{ id: string; toolName: string; createdAt: number }>,
-    connections: Array<{ userId: string; dateKey: string; type: string }>,
+    connections: Array<{ userId: string; dateKey: string; timestamp: number; type: string }>,
     timeRange: '1h' | '1d' | '1w' | '1m',
     toolNames: string[]
 ) {
     const now = new Date()
-    const timeSeriesMap = new Map<string, Record<string, number>>()
+    const nowMs = now.getTime()
+    const timeSeriesMap = new Map<string, { timestamp: number; metrics: Record<string, number> }>()
 
     // Initialize time buckets
     let intervals: number
@@ -208,43 +284,53 @@ function createTimeSeriesData(
 
     // Create time buckets
     for (let i = intervals - 1; i >= 0; i--) {
-        const bucketTime = new Date(now.getTime() - i * intervalMs)
+        const bucketTime = new Date(nowMs - i * intervalMs)
         const bucketKey = formatDateForTimeRange(bucketTime, timeRange)
 
-        const bucket: Record<string, number> = {}
+        const metrics: Record<string, number> = {}
         // Initialize tool call counts
         for (const toolName of toolNames) {
-            bucket[toolName] = 0
+            metrics[toolName] = 0
         }
         // Initialize connection counts
-        bucket.mcp_connections = 0
+        metrics.mcp_connections = 0
 
-        timeSeriesMap.set(bucketKey, bucket)
+        timeSeriesMap.set(bucketKey, {
+            timestamp: bucketTime.getTime(),
+            metrics
+        })
     }
 
     // Fill buckets with tool call data
     for (const item of toolCalls) {
-        const itemTime = new Date(item.createdAt)
-        const bucketKey = formatDateForTimeRange(itemTime, timeRange)
+        const roundedTimestamp = roundToNearestBucket(item.createdAt, timeRange, nowMs)
+        const roundedTime = new Date(roundedTimestamp)
+        const bucketKey = formatDateForTimeRange(roundedTime, timeRange)
 
         const bucket = timeSeriesMap.get(bucketKey)
         if (bucket) {
-            bucket[item.toolName] = (bucket[item.toolName] || 0) + 1
+            bucket.metrics[item.toolName] = (bucket.metrics[item.toolName] || 0) + 1
         }
     }
 
-    // Fill buckets with connection data
+    // Fill buckets with connection data - use rounded timestamp for accurate bucket matching
     for (const conn of connections) {
-        const bucket = timeSeriesMap.get(conn.dateKey)
-        if (bucket) {
-            bucket.mcp_connections = (bucket.mcp_connections || 0) + 1
+        if (conn.timestamp) {
+            const roundedTimestamp = roundToNearestBucket(conn.timestamp, timeRange, nowMs)
+            const roundedTime = new Date(roundedTimestamp)
+            const bucketKey = formatDateForTimeRange(roundedTime, timeRange)
+            const bucket = timeSeriesMap.get(bucketKey)
+
+            if (bucket) {
+                bucket.metrics.mcp_connections = (bucket.metrics.mcp_connections || 0) + 1
+            }
         }
     }
 
     // Convert to array format
-    return Array.from(timeSeriesMap.entries()).map(([date, metrics]) => ({
-        date,
-        ...(metrics || {})
+    return Array.from(timeSeriesMap.values()).map(({ timestamp, metrics }) => ({
+        date: timestamp,
+        ...metrics
     }))
 }
 
@@ -258,6 +344,30 @@ function formatDateForTimeRange(date: Date, timeRange: '1h' | '1d' | '1w' | '1m'
         case '1m':
             return date.toISOString().slice(0, 10)
     }
+}
+
+function roundToNearestBucket(timestamp: number, timeRange: '1h' | '1d' | '1w' | '1m', referenceTime: number): number {
+    let intervalMs: number
+
+    switch (timeRange) {
+        case '1h':
+            intervalMs = 5 * 60 * 1000 // 5 minutes
+            break
+        case '1d':
+            intervalMs = 60 * 60 * 1000 // 1 hour
+            break
+        case '1w':
+        case '1m':
+            intervalMs = 24 * 60 * 60 * 1000 // 1 day
+            break
+    }
+
+    // Find which bucket this timestamp should belong to
+    const timeDiff = referenceTime - timestamp
+    const bucketIndex = Math.round(timeDiff / intervalMs)
+
+    // Return the bucket time
+    return referenceTime - bucketIndex * intervalMs
 }
 
 export const router = {

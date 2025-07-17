@@ -44,16 +44,17 @@ export async function getAndTrackMcpServerUser(data: {
     }
 
     if (email || trackingId) {
+        console.log(`email:`, email, `trackingId:`, trackingId)
         const query = db.insert(schema.mcpServerUser).values({
             trackingId,
             email
         })
 
-        if (data.email) {
+        if (email) {
             query.onConflictDoUpdate({
                 target: [schema.mcpServerUser.trackingId],
                 set: {
-                    email: data.email
+                    email: email
                 }
             })
         } else {
@@ -74,12 +75,15 @@ export async function getAndTrackMcpServerUser(data: {
         const headersAreNew: boolean = !serverSessionId
         if (headersAreNew || !serverSessionId) {
             serverSessionId = nanoid(12)
+            const date = new Date()
             await db
                 .insert(schema.mcpServerSession)
                 .values({
                     mcpServerUserId: mcpServerUserId,
                     mcpServerSessionId: serverSessionId,
-                    mcpServerSlug: serverConfig.slug
+                    mcpServerSlug: serverConfig.slug,
+                    connectionDate: date.toISOString(),
+                    connectionTimestamp: date.getTime()
                 })
                 .onConflictDoNothing()
         }
