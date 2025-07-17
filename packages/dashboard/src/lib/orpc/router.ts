@@ -75,22 +75,24 @@ export const getToolCallsChart = base
                 .orderBy(schema.toolCalls.createdAt)
 
             // Query MCP connections - grouped by user per day to avoid counting reconnections
+            // Join with mcpServerUser to get tracking info
             const connectionsResult = await db
                 .select({
-                    distinctId: schema.mcpServerConnection.trackingId,
-                    email: schema.mcpServerConnection.email,
-                    createdAt: schema.mcpServerConnection.createdAt,
-                    slug: schema.mcpServerConnection.slug
+                    distinctId: schema.mcpServerUser.trackingId,
+                    email: schema.mcpServerUser.email,
+                    connectionDate: schema.mcpServerSession.connectionDate,
+                    slug: schema.mcpServers.slug
                 })
-                .from(schema.mcpServerConnection)
-                .leftJoin(schema.mcpServers, eq(schema.mcpServerConnection.slug, schema.mcpServers.slug))
+                .from(schema.mcpServerSession)
+                .leftJoin(schema.mcpServers, eq(schema.mcpServerSession.mcpServerSlug, schema.mcpServers.slug))
+                .leftJoin(schema.mcpServerUser, eq(schema.mcpServerSession.mcpServerUserId, schema.mcpServerUser.id))
                 .where(
                     and(
                         eq(schema.mcpServers.organizationId, session.session.activeOrganizationId),
-                        gte(schema.mcpServerConnection.createdAt, startTimeMs)
+                        gte(schema.mcpServerSession.connectionDate, startTime.toISOString().slice(0, 10))
                     )
                 )
-                .orderBy(schema.mcpServerConnection.createdAt)
+                .orderBy(schema.mcpServerSession.connectionDate)
 
             // Process tool calls data - filter out null createdAt values
             const validToolCalls = toolCallsResult.filter((r) => r.createdAt !== null) as Array<{
@@ -100,13 +102,15 @@ export const getToolCallsChart = base
             }>
             const toolNames = [...new Set(validToolCalls.map((r) => r.toolName))]
 
-            // Process connections data - filter out null createdAt values
-            const validConnections = connectionsResult.filter((r) => r.createdAt !== null) as Array<{
-                distinctId: string | null
-                email: string | null
-                createdAt: number
-                slug: string | null
-            }>
+            // Process connections data - convert connectionDate to timestamp for consistency
+            const validConnections = connectionsResult
+                .filter((r) => r.connectionDate !== null)
+                .map((r) => ({
+                    distinctId: r.distinctId,
+                    email: r.email,
+                    createdAt: new Date(r.connectionDate!).getTime(),
+                    slug: r.slug
+                }))
             const processedConnections = processConnectionsPerUserPerDay(validConnections, input.timeRange)
 
             // If no data at all, return empty structure

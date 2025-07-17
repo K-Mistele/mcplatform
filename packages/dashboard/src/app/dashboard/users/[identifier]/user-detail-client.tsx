@@ -1,8 +1,18 @@
 'use client'
 
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Badge } from '@/components/ui/badge'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { CalendarIcon, ClockIcon, MailIcon, ServerIcon, TicketIcon, UserIcon, WrenchIcon } from 'lucide-react'
+import {
+    CalendarIcon,
+    CheckCircleIcon,
+    ClockIcon,
+    MailIcon,
+    ServerIcon,
+    TicketIcon,
+    UserIcon,
+    WrenchIcon
+} from 'lucide-react'
 import Link from 'next/link'
 import { use, useMemo, useState } from 'react'
 
@@ -45,13 +55,22 @@ function formatRelativeTime(timestamp: number): string {
     return `${days}d ago`
 }
 
-function getInitials(email: string): string {
-    if (!email) return 'U'
-    const parts = email.split('@')[0].split('.')
-    if (parts.length >= 2) {
-        return `${parts[0][0]}${parts[1][0]}`.toUpperCase()
+function getInitials(name: string | null, email: string | null): string {
+    if (name) {
+        const parts = name.split(' ')
+        if (parts.length >= 2) {
+            return `${parts[0][0]}${parts[parts.length - 1][0]}`.toUpperCase()
+        }
+        return name.slice(0, 2).toUpperCase()
     }
-    return email[0].toUpperCase()
+    if (email) {
+        const parts = email.split('@')[0].split('.')
+        if (parts.length >= 2) {
+            return `${parts[0][0]}${parts[1][0]}`.toUpperCase()
+        }
+        return email[0].toUpperCase()
+    }
+    return 'U'
 }
 
 function getEventIcon(type: string) {
@@ -147,17 +166,38 @@ export function UserDetailClient({
 
     return (
         <div className="flex flex-col gap-4">
-            {/* <div className="px-4 lg:px-6">
-                <div className="flex items-center gap-3 mb-2">
-                    <Avatar className="h-12 w-12">
-                        <AvatarFallback className="text-lg">{getInitials(user.email || '')}</AvatarFallback>
+            {/* User Profile Header */}
+            <div className="px-4 lg:px-6">
+                <div className="flex items-center gap-6 mb-6 p-6 bg-gradient-to-r from-background to-muted/20 rounded-lg border">
+                    <Avatar className="h-20 w-20 ring-2 ring-background shadow-lg">
+                        {user.image && <AvatarImage src={user.image} alt={user.name || user.email || 'User'} />}
+                        <AvatarFallback className="text-2xl font-semibold">
+                            {getInitials(user.name, user.email)}
+                        </AvatarFallback>
                     </Avatar>
-                    <div>
-                        <h1 className="text-3xl font-bold">{user.email || 'Unknown User'}</h1>
-                        <p className="text-muted-foreground">User Details</p>
+                    <div className="flex-1">
+                        <div className="flex items-center gap-3 mb-2">
+                            <h1 className="text-3xl font-bold">{user.name || user.email || 'Unknown User'}</h1>
+                            {user.emailVerified && (
+                                <Badge variant="secondary" className="flex items-center gap-1">
+                                    <CheckCircleIcon className="h-3 w-3" />
+                                    Verified
+                                </Badge>
+                            )}
+                        </div>
+                        {user.email && (
+                            <div className="flex items-center gap-2 text-lg text-muted-foreground mb-1">
+                                <MailIcon className="h-5 w-5" />
+                                <span className="font-medium">{user.email}</span>
+                            </div>
+                        )}
+                        <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                            <CalendarIcon className="h-4 w-4" />
+                            <span>First seen {formatDate(user.firstSeenAt)}</span>
+                        </div>
                     </div>
                 </div>
-            </div> */}
+            </div>
 
             <div className="px-4 lg:px-6">
                 {/* Basic Information Card */}
@@ -169,7 +209,7 @@ export function UserDetailClient({
                         </CardTitle>
                         <CardDescription>Core details about this user</CardDescription>
                     </CardHeader>
-                    <CardContent className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                    <CardContent className="grid grid-cols-1 md:grid-cols-3 gap-4">
                         <div>
                             <div className="text-sm font-medium text-muted-foreground">User ID</div>
                             <div className="mt-1">
@@ -178,32 +218,25 @@ export function UserDetailClient({
                                 </Badge>
                             </div>
                         </div>
-                        {user.distinctId && (
+                        {user.trackingId && (
                             <div>
-                                <div className="text-sm font-medium text-muted-foreground">Distinct ID</div>
+                                <div className="text-sm font-medium text-muted-foreground">Tracking ID</div>
                                 <div className="mt-1">
                                     <Badge variant="secondary" className="font-mono text-xs">
-                                        {user.distinctId}
+                                        {user.trackingId}
                                     </Badge>
                                 </div>
                             </div>
                         )}
-                        {user.email && (
+                        {user.name && (
                             <div>
-                                <div className="text-sm font-medium text-muted-foreground">Email</div>
+                                <div className="text-sm font-medium text-muted-foreground">Display Name</div>
                                 <div className="mt-1 flex items-center gap-2">
-                                    <MailIcon className="h-4 w-4 text-muted-foreground" />
-                                    <span className="text-sm">{user.email}</span>
+                                    <UserIcon className="h-4 w-4 text-muted-foreground" />
+                                    <span className="text-sm font-medium">{user.name}</span>
                                 </div>
                             </div>
                         )}
-                        <div>
-                            <div className="text-sm font-medium text-muted-foreground">First Seen</div>
-                            <div className="mt-1 flex items-center gap-2">
-                                <CalendarIcon className="h-4 w-4 text-muted-foreground" />
-                                <span className="text-sm">{formatDate(user.firstSeenAt)}</span>
-                            </div>
-                        </div>
                     </CardContent>
                 </Card>
 

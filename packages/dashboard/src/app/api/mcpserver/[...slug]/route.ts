@@ -22,9 +22,6 @@ import { NextResponse } from 'next/server'
 async function streamableHttpServerHandler(request: Request, context: { params: Promise<{ slug: string[] }> }) {
     const { slug } = await context.params
 
-    // TODO set this properly
-    console.log(`MCP session ID:`, request.headers.get('Mcp-Session-Id'))
-
     // Check to see if the optional route parameter is present; which is the tracking ID.
     const trackingId = maybeGetTrackingId(slug)
     let req: Request

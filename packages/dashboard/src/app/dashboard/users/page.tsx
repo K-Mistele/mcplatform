@@ -17,16 +17,16 @@ export default async function UsersPage() {
             firstSeenAt: schema.mcpServerUser.firstSeenAt,
             connectionCreatedAt: sql<
                 number | null
-            >`CASE WHEN ${schema.mcpServerConnection.connectionDate} IS NOT NULL THEN EXTRACT(EPOCH FROM ${schema.mcpServerConnection.connectionDate}) * 1000 ELSE NULL END`.as(
+            >`CASE WHEN ${schema.mcpServerSession.connectionDate} IS NOT NULL THEN EXTRACT(EPOCH FROM ${schema.mcpServerSession.connectionDate}) * 1000 ELSE NULL END`.as(
                 'connectionCreatedAt'
             ),
             serverName: schema.mcpServers.name,
             serverSlug: schema.mcpServers.slug,
             transport: sql<string | null>`NULL`.as('transport') // Transport was removed in migrations
         })
-        .from(schema.mcpServerConnection)
-        .innerJoin(schema.mcpServerUser, eq(schema.mcpServerConnection.mcpServerUserId, schema.mcpServerUser.id))
-        .innerJoin(schema.mcpServers, eq(schema.mcpServerConnection.slug, schema.mcpServers.slug))
+        .from(schema.mcpServerSession)
+        .innerJoin(schema.mcpServerUser, eq(schema.mcpServerSession.mcpServerUserId, schema.mcpServerUser.id))
+        .innerJoin(schema.mcpServers, eq(schema.mcpServerSession.mcpServerSlug, schema.mcpServers.slug))
         .where(eq(schema.mcpServers.organizationId, session.session.activeOrganizationId))
 
     const supportTicketCountsPromise = db

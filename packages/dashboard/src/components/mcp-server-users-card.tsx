@@ -2,7 +2,7 @@ import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import { Badge } from '@/components/ui/badge'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { db, schema } from 'database'
-import { desc, eq } from 'drizzle-orm'
+import { eq } from 'drizzle-orm'
 import { CalendarIcon, UsersIcon } from 'lucide-react'
 import Link from 'next/link'
 
@@ -34,15 +34,10 @@ function getInitials(email: string): string {
 export async function McpServerUsersCard({ serverId, serverSlug }: McpServerUsersCardProps) {
     // Query to get distinct users connected to this MCP server (most recent connection per user)
     const connections = await db
-        .selectDistinctOn([schema.mcpServerConnection.trackingId], {
-            email: schema.mcpServerConnection.email,
-            createdAt: schema.mcpServerConnection.createdAt,
-            distinctId: schema.mcpServerConnection.trackingId,
-            transport: schema.mcpServerConnection.transport
-        })
-        .from(schema.mcpServerConnection)
-        .where(eq(schema.mcpServerConnection.slug, serverSlug))
-        .orderBy(schema.mcpServerConnection.trackingId, desc(schema.mcpServerConnection.createdAt))
+        .selectDistinctOn([schema.mcpServerSession.mcpServerUserId])
+        .from(schema.mcpServerSession)
+        .leftJoin(schema.mcpServerUser, eq(schema.mcpServerSession.mcpServerUserId, schema.mcpServerUser.id))
+        .where(eq(schema.mcpServerSession.mcpServerSlug, serverSlug))
 
     return (
         <Card>
@@ -69,37 +64,39 @@ export async function McpServerUsersCard({ serverId, serverSlug }: McpServerUser
                         <div className="space-y-3 max-h-60 overflow-y-auto">
                             {connections.map((connection) => (
                                 <div
-                                    key={connection.distinctId}
+                                    key={connection.mcp_server_session.mcpServerUserId}
                                     className="flex items-center gap-3 p-3 rounded-lg border bg-card"
                                 >
                                     <Avatar className="h-8 w-8">
                                         <AvatarFallback className="text-xs">
-                                            {getInitials(connection.email || '')}
+                                            {getInitials(
+                                                connection.mcp_server_user?.email ||
+                                                    connection.mcp_server_session.mcpServerUserId ||
+                                                    ''
+                                            )}
                                         </AvatarFallback>
                                     </Avatar>
                                     <div className="flex-1 min-w-0">
                                         <div className="font-medium text-sm truncate">
-                                            {connection.distinctId ? (
+                                            {connection.mcp_server_session.mcpServerUserId ? (
                                                 <Link
-                                                    href={`/dashboard/users/${encodeURIComponent(connection.distinctId)}`}
+                                                    href={`/dashboard/users/${encodeURIComponent(connection.mcp_server_session.mcpServerUserId)}`}
                                                     className="hover:underline"
                                                 >
-                                                    {connection.email || 'Unknown user'}
+                                                    {connection.mcp_server_session.mcpServerUserId || 'Unknown user'}
                                                 </Link>
                                             ) : (
-                                                connection.email || 'Unknown user'
+                                                connection.mcp_server_session.mcpServerUserId || 'Unknown user'
                                             )}
                                         </div>
                                         <div className="flex items-center gap-2 text-xs text-muted-foreground">
                                             <CalendarIcon className="h-3 w-3" />
-                                            <span>Connected {formatDate(connection.createdAt)}</span>
+                                            <span>
+                                                Connected{' '}
+                                                {formatDate(connection.mcp_server_session.connectionTimestamp)}
+                                            </span>
                                         </div>
                                     </div>
-                                    {connection.transport && (
-                                        <Badge variant="outline" className="text-xs">
-                                            {connection.transport}
-                                        </Badge>
-                                    )}
                                 </div>
                             ))}
                         </div>

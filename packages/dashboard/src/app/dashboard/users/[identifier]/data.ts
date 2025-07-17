@@ -1,13 +1,25 @@
 import { db, schema } from 'database'
+import { mcpOAuthUser } from 'database/src/mcp-auth-schema'
 import { desc, eq, or } from 'drizzle-orm'
 
 /**
- * Get user by ID, distinct ID, or email
+ * Get user by ID, distinct ID, or email with MCP OAuth user data
  */
 export async function getUserData(identifier: string) {
     const [user] = await db
-        .select()
+        .select({
+            // MCP Server User fields
+            id: schema.mcpServerUser.id,
+            trackingId: schema.mcpServerUser.trackingId,
+            email: schema.mcpServerUser.email,
+            firstSeenAt: schema.mcpServerUser.firstSeenAt,
+            // MCP OAuth User fields (when available)
+            name: mcpOAuthUser.name,
+            image: mcpOAuthUser.image,
+            emailVerified: mcpOAuthUser.emailVerified
+        })
         .from(schema.mcpServerUser)
+        .leftJoin(mcpOAuthUser, eq(schema.mcpServerUser.email, mcpOAuthUser.email))
         .where(
             or(
                 eq(schema.mcpServerUser.id, identifier),
@@ -26,16 +38,15 @@ export async function getUserData(identifier: string) {
 export async function getUserConnections(distinctId: string) {
     const connections = await db
         .select({
-            transport: schema.mcpServerConnection.transport,
-            createdAt: schema.mcpServerConnection.createdAt,
+            createdAt: schema.mcpServerSession.connectionDate,
             serverName: schema.mcpServers.name,
             serverSlug: schema.mcpServers.slug,
             serverId: schema.mcpServers.id
         })
-        .from(schema.mcpServerConnection)
-        .leftJoin(schema.mcpServers, eq(schema.mcpServerConnection.slug, schema.mcpServers.slug))
-        .where(eq(schema.mcpServerConnection.trackingId, distinctId))
-        .orderBy(desc(schema.mcpServerConnection.createdAt))
+        .from(schema.mcpServerSession)
+        .leftJoin(schema.mcpServers, eq(schema.mcpServerSession.mcpServerSlug, schema.mcpServers.slug))
+        .where(eq(schema.mcpServerSession.mcpServerUserId, distinctId))
+        .orderBy(desc(schema.mcpServerSession.connectionDate))
 
     // Filter connections to only include servers that exist in our org
     return connections.filter((conn) => conn.serverId && conn.serverName)

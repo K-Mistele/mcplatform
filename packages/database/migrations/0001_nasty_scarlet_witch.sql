@@ -1,0 +1,1 @@
+ALTER TABLE "mcp_server_session" ADD COLUMN "connection_timestamp" bigint;

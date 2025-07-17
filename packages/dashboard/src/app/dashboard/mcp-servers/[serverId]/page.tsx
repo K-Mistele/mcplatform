@@ -38,6 +38,7 @@ export default async function McpServerDetailsPage(props: McpServerDetailsPagePr
     }
 
     const slug = server.slug as string
+    console.log('slug', slug)
     const currentLoc = new URL(process.env.NEXT_PUBLIC_BETTER_AUTH_URL as string)
     const proto = currentLoc.protocol
     const host = currentLoc.host

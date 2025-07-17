@@ -28,8 +28,6 @@ export const supportRequests = pgTable('support_requests', {
     mcpServerId: text('mcp_server_id').references(() => mcpServers.id, { onDelete: 'cascade' })
 })
 
-export type SupportRequest = typeof supportRequests.$inferSelect
-
 export const mcpServers = pgTable('mcp_servers', {
     id: text('id')
         .primaryKey()
@@ -65,14 +63,26 @@ export const toolCalls = pgTable('mcp_tool_calls', {
         .notNull(),
     toolName: text('tool_name').notNull(),
     mcpServerUserId: text('mcp_server_user_id').references(() => mcpServerUser.id, { onDelete: 'cascade' }),
+    mcpServerSessionId: text('mcp_server_session_id')
+        .references(() => mcpServerSession.mcpServerSessionId, { onDelete: 'cascade' })
+        .notNull(),
     input: jsonb('input'),
     output: jsonb('output')
 })
 
-export const mcpServerConnection = pgTable('mcp_server_connect', {
-    slug: text('slug').references(() => mcpServers.slug),
+export const mcpServerSession = pgTable('mcp_server_session', {
+    mcpServerSlug: text('mcp_server_slug')
+        .references(() => mcpServers.slug, { onDelete: 'cascade' })
+        .notNull(),
+    mcpServerSessionId: text('mcp_server_session_id').primaryKey().notNull(),
     connectionDate: date('connection_date')
         .notNull()
         .$defaultFn(() => new Date().toISOString()),
+    connectionTimestamp: bigint('connection_timestamp', { mode: 'number' }).$defaultFn(() => Date.now()),
     mcpServerUserId: text('mcp_server_user_id').references(() => mcpServerUser.id, { onDelete: 'cascade' })
 })
+
+export type McpServerSession = typeof mcpServerSession.$inferSelect
+export type McpServerUser = typeof mcpServerUser.$inferSelect
+export type SupportRequest = typeof supportRequests.$inferSelect
+export type McpServer = typeof mcpServers.$inferSelect

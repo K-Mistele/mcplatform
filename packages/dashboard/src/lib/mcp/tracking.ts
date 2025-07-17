@@ -1,3 +1,4 @@
+import { nanoid } from 'common/nanoid'
 /**
  * This is where behavioral tracking for MCP servers is implemented.
  * TODO this needs to user something faster than postgres.
@@ -41,10 +42,6 @@ export async function getAndTrackMcpServerUser(data: {
             }
         }
     }
-    console.log('idempotentTrackMcpUser', {
-        email,
-        trackingId
-    })
 
     if (email || trackingId) {
         const query = db.insert(schema.mcpServerUser).values({
@@ -71,17 +68,30 @@ export async function getAndTrackMcpServerUser(data: {
                 .where(eq(schema.mcpServerUser.trackingId, trackingId ?? ''))
                 .limit(1)
             mcpServerUserId = mcpServer?.id
-            console.log(`mcpServerUserId:`, mcpServerUserId)
         }
-        await db.insert(schema.mcpServerConnection).values({
-            mcpServerUserId: mcpServerUserId,
-            slug: serverConfig.slug
-        })
+
+        let serverSessionId: string | null = (await headers()).get('Mcp-Session-Id')
+        const headersAreNew: boolean = !serverSessionId
+        if (headersAreNew || !serverSessionId) {
+            serverSessionId = nanoid(12)
+            await db
+                .insert(schema.mcpServerSession)
+                .values({
+                    mcpServerUserId: mcpServerUserId,
+                    mcpServerSessionId: serverSessionId,
+                    mcpServerSlug: serverConfig.slug
+                })
+                .onConflictDoNothing()
+        }
 
         return {
             email,
             trackingId,
-            mcpServerUserId: mcpServerUserId
+            mcpServerUserId: mcpServerUserId,
+            session: {
+                id: serverSessionId,
+                isNew: headersAreNew
+            }
         }
     }
     console.warn(`unable to identify user - no email, no tracking ID`)
