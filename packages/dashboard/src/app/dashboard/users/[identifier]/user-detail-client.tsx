@@ -1,6 +1,6 @@
 'use client'
 
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
+import Jdenticon from '@/components/github-identicon'
 import { Badge } from '@/components/ui/badge'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import {
@@ -169,12 +169,9 @@ export function UserDetailClient({
             {/* User Profile Header */}
             <div className="px-4 lg:px-6">
                 <div className="flex items-center gap-6 mb-6 p-6 bg-gradient-to-r from-background to-muted/20 rounded-lg border">
-                    <Avatar className="h-20 w-20 ring-2 ring-background shadow-lg">
-                        {user.image && <AvatarImage src={user.image} alt={user.name || user.email || 'User'} />}
-                        <AvatarFallback className="text-2xl font-semibold">
-                            {getInitials(user.name, user.email)}
-                        </AvatarFallback>
-                    </Avatar>
+                    <div className="h-20 w-20 rounded-full overflow-hidden ring-2 ring-background shadow-lg">
+                        <Jdenticon value={user.trackingId || user.id} size="80px" />
+                    </div>
                     <div className="flex-1">
                         <div className="flex items-center gap-3 mb-2">
                             <h1 className="text-3xl font-bold">{user.name || user.email || 'Unknown User'}</h1>

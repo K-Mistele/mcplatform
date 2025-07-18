@@ -22,7 +22,7 @@ import {
 } from '@tanstack/react-table'
 import * as React from 'react'
 
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
+import Jdenticon from '@/components/github-identicon'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
@@ -106,12 +106,9 @@ const columns: ColumnDef<UserWithServers>[] = [
             const user = row.original
             return (
                 <div className="flex items-center gap-3">
-                    <Avatar className="h-8 w-8">
-                        <AvatarImage src={user.image || ''} alt={user.name} />
-                        <AvatarFallback>
-                            {user.email ? user.email.charAt(0).toUpperCase() : user.name.charAt(0).toUpperCase()}
-                        </AvatarFallback>
-                    </Avatar>
+                    <div className="h-8 w-8 rounded-full overflow-hidden">
+                        <Jdenticon value={user.distinctId} size="32px" />
+                    </div>
                     <div className="flex flex-col">
                         <Link
                             href={`/dashboard/users/${encodeURIComponent(user.distinctId)}`}

@@ -1,7 +1,8 @@
-import { Avatar, AvatarFallback } from '@/components/ui/avatar'
+import Jdenticon from '@/components/github-identicon'
 import { Badge } from '@/components/ui/badge'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { db, schema } from 'database'
+import { mcpOAuthUser } from 'database/src/mcp-auth-schema'
 import { eq } from 'drizzle-orm'
 import { CalendarIcon, UsersIcon } from 'lucide-react'
 import Link from 'next/link'
@@ -22,21 +23,37 @@ function formatDate(timestamp: number | null): string {
     })
 }
 
-function getInitials(email: string): string {
-    if (!email) return 'U'
-    const parts = email.split('@')[0].split('.')
-    if (parts.length >= 2) {
-        return `${parts[0][0]}${parts[1][0]}`.toUpperCase()
+function getInitials(name: string | null, email: string | null, id: string): string {
+    if (name) {
+        const parts = name.split(' ')
+        if (parts.length >= 2) {
+            return `${parts[0][0]}${parts[1][0]}`.toUpperCase()
+        }
+        return name[0].toUpperCase()
     }
-    return email[0].toUpperCase()
+    if (email) {
+        const parts = email.split('@')[0].split('.')
+        if (parts.length >= 2) {
+            return `${parts[0][0]}${parts[1][0]}`.toUpperCase()
+        }
+        return email[0].toUpperCase()
+    }
+    return id.substring(0, 2).toUpperCase()
+}
+
+function getDisplayName(name: string | null, email: string | null, id: string): string {
+    if (name) return name
+    if (email) return email
+    return id
 }
 
 export async function McpServerUsersCard({ serverId, serverSlug }: McpServerUsersCardProps) {
-    // Query to get distinct users connected to this MCP server (most recent connection per user)
+    // Query to get distinct users connected to this MCP server with OAuth profile data
     const connections = await db
         .selectDistinctOn([schema.mcpServerSession.mcpServerUserId])
         .from(schema.mcpServerSession)
         .leftJoin(schema.mcpServerUser, eq(schema.mcpServerSession.mcpServerUserId, schema.mcpServerUser.id))
+        .leftJoin(mcpOAuthUser, eq(schema.mcpServerUser.email, mcpOAuthUser.email))
         .where(eq(schema.mcpServerSession.mcpServerSlug, serverSlug))
 
     return (
@@ -62,43 +79,49 @@ export async function McpServerUsersCard({ serverId, serverSlug }: McpServerUser
                             </Badge>
                         </div>
                         <div className="space-y-3 max-h-60 overflow-y-auto">
-                            {connections.map((connection) => (
-                                <div
-                                    key={connection.mcp_server_session.mcpServerUserId}
-                                    className="flex items-center gap-3 p-3 rounded-lg border bg-card"
-                                >
-                                    <Avatar className="h-8 w-8">
-                                        <AvatarFallback className="text-xs">
-                                            {getInitials(
-                                                connection.mcp_server_user?.email ||
-                                                    connection.mcp_server_session.mcpServerUserId ||
-                                                    ''
-                                            )}
-                                        </AvatarFallback>
-                                    </Avatar>
-                                    <div className="flex-1 min-w-0">
-                                        <div className="font-medium text-sm truncate">
-                                            {connection.mcp_server_session.mcpServerUserId ? (
-                                                <Link
-                                                    href={`/dashboard/users/${encodeURIComponent(connection.mcp_server_session.mcpServerUserId)}`}
-                                                    className="hover:underline"
-                                                >
-                                                    {connection.mcp_server_session.mcpServerUserId || 'Unknown user'}
-                                                </Link>
-                                            ) : (
-                                                connection.mcp_server_session.mcpServerUserId || 'Unknown user'
-                                            )}
+                            {connections.map((connection) => {
+                                const userId = connection.mcp_server_session.mcpServerUserId || ''
+                                const userName = connection.mcp_oauth_user?.name || null
+                                const userEmail =
+                                    connection.mcp_server_user?.email || connection.mcp_oauth_user?.email || null
+                                const userImage = connection.mcp_oauth_user?.image || null
+                                const displayName = getDisplayName(userName, userEmail, userId)
+                                const initials = getInitials(userName, userEmail, userId)
+
+                                return (
+                                    <div key={userId} className="flex items-center gap-3 p-3 rounded-lg border bg-card">
+                                        <div className="h-10 w-10 rounded-full overflow-hidden">
+                                            <Jdenticon value={userId} size="40px" />
                                         </div>
-                                        <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                                            <CalendarIcon className="h-3 w-3" />
-                                            <span>
-                                                Connected{' '}
-                                                {formatDate(connection.mcp_server_session.connectionTimestamp)}
-                                            </span>
+                                        <div className="flex-1 min-w-0">
+                                            <div className="font-medium text-sm truncate">
+                                                {userId ? (
+                                                    <Link
+                                                        href={`/dashboard/users/${encodeURIComponent(userId)}`}
+                                                        className="hover:underline"
+                                                    >
+                                                        {userName || (userEmail ? userEmail.split('@')[0] : userId)}
+                                                    </Link>
+                                                ) : (
+                                                    displayName
+                                                )}
+                                            </div>
+                                            {userEmail && (
+                                                <div className="text-xs text-muted-foreground truncate">
+                                                    {userEmail}
+                                                </div>
+                                            )}
+                                            <div className="flex items-center gap-2 text-xs text-muted-foreground mt-1">
+                                                <CalendarIcon className="h-3 w-3" />
+                                                <span>
+                                                    Connected{' '}
+                                                    {formatDate(connection.mcp_server_session.connectionTimestamp)}
+                                                </span>
+                                            </div>
                                         </div>
                                     </div>
-                                </div>
-                            ))}
+                                )
+                            })}
                         </div>
                     </div>
                 )}

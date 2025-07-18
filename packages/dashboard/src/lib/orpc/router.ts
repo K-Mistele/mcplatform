@@ -57,16 +57,6 @@ export const getToolCallsChart = base
 
             const startTimeMs = startTime.getTime()
 
-            // DEBUG for past hour only
-            if (input.timeRange === '1h') {
-                console.log('🔍 PAST HOUR DEBUG:', {
-                    now: now.toISOString(),
-                    startTime: startTime.toISOString(),
-                    startTimeMs,
-                    nowMs: now.getTime()
-                })
-            }
-
             // Query tool calls
             const toolCallsResult = await db
                 .select({
@@ -116,19 +106,6 @@ export const getToolCallsChart = base
             }>
             const toolNames = [...new Set(validToolCalls.map((r) => r.toolName))]
 
-            // DEBUG for past hour only
-            if (input.timeRange === '1h') {
-                console.log('🔗 CONNECTION RAW DATA:', {
-                    totalResults: connectionsResult.length,
-                    allConnections: connectionsResult.map((r) => ({
-                        connectionTimestamp: r.connectionTimestamp,
-                        connectionDate: r.connectionDate,
-                        timestampDate: r.connectionTimestamp ? new Date(r.connectionTimestamp).toISOString() : null,
-                        isWithinRange: r.connectionTimestamp ? r.connectionTimestamp >= startTimeMs : false
-                    }))
-                })
-            }
-
             // Process connections data - use connectionTimestamp when available, fallback to connectionDate
             const validConnections = connectionsResult
                 .filter((r) => r.connectionTimestamp !== null || r.connectionDate !== null)
@@ -139,17 +116,6 @@ export const getToolCallsChart = base
                     slug: r.slug
                 }))
 
-            // DEBUG for past hour only
-            if (input.timeRange === '1h') {
-                console.log('📊 VALID CONNECTIONS:', {
-                    validCount: validConnections.length,
-                    validConnections: validConnections.map((c) => ({
-                        createdAt: c.createdAt,
-                        createdAtDate: new Date(c.createdAt).toISOString(),
-                        isWithinRange: c.createdAt >= startTimeMs
-                    }))
-                })
-            }
             const processedConnections = processConnectionsPerUserPerDay(validConnections, input.timeRange)
 
             // If no data at all, return empty structure
@@ -161,18 +127,6 @@ export const getToolCallsChart = base
                 }
             }
 
-            // DEBUG for past hour only
-            if (input.timeRange === '1h') {
-                console.log('⚙️ PROCESSED CONNECTIONS FOR TIME SERIES:', {
-                    processedCount: processedConnections.length,
-                    processedConnections: processedConnections.map((c) => ({
-                        dateKey: c.dateKey,
-                        timestamp: c.timestamp,
-                        timestampDate: c.timestamp ? new Date(c.timestamp).toISOString() : 'N/A'
-                    }))
-                })
-            }
-
             // Create time series data
             const timeSeriesData = createTimeSeriesData(
                 validToolCalls,
@@ -180,22 +134,6 @@ export const getToolCallsChart = base
                 input.timeRange,
                 toolNames
             )
-
-            // DEBUG for past hour only
-            if (input.timeRange === '1h') {
-                console.log('📈 FINAL TIME SERIES DATA:', {
-                    bucketCount: timeSeriesData.length,
-                    nonZeroBuckets: timeSeriesData
-                        .filter((bucket) =>
-                            Object.values(bucket).some((val, i) => i > 0 && typeof val === 'number' && val > 0)
-                        )
-                        .map((bucket) => ({
-                            date: bucket.date,
-                            dateFormatted: new Date(bucket.date).toISOString(),
-                            data: Object.fromEntries(Object.entries(bucket).filter(([k]) => k !== 'date'))
-                        }))
-                })
-            }
 
             return {
                 data: timeSeriesData,

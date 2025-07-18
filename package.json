@@ -5,13 +5,15 @@
     "private": true,
     "workspaces": ["packages/*"],
     "devDependencies": {
-        "@types/bun": "latest"
+        "@types/bun": "latest",
+        "@types/prop-types": "^15.7.15"
     },
     "peerDependencies": {
         "typescript": "^5"
     },
     "dependencies": {
         "exa-js": "^1.8.20",
+        "prop-types": "^15.8.1",
         "react-error-boundary": "^6.0.0",
         "weave": "^0.9.2"
     }
