@@ -71,10 +71,10 @@ export const toolCalls = pgTable('mcp_tool_calls', {
 })
 
 export const mcpServerSession = pgTable('mcp_server_session', {
+    mcpServerSessionId: text('mcp_server_session_id').primaryKey().notNull(),
     mcpServerSlug: text('mcp_server_slug')
         .references(() => mcpServers.slug, { onDelete: 'cascade' })
         .notNull(),
-    mcpServerSessionId: text('mcp_server_session_id').primaryKey().notNull(),
     connectionDate: date('connection_date')
         .notNull()
         .$defaultFn(() => new Date().toISOString()),

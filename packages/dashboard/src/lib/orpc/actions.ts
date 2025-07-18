@@ -1,7 +1,7 @@
 'use server'
 
 import { db, schema } from 'database'
-import { and, eq } from 'drizzle-orm'
+import { and, eq, inArray } from 'drizzle-orm'
 import { revalidatePath } from 'next/cache'
 import { z } from 'zod'
 import { requireSession } from '../auth/auth'
@@ -128,5 +128,52 @@ export const updateMcpServerConfiguration = base
 
         revalidatePath(`/dashboard/mcp-servers/${input.serverId}`)
         return updatedServer
+    })
+    .actionable({})
+
+export const deleteMcpUsersAction = base
+    .input(z.object({ userIds: z.array(z.string()) }))
+    .handler(async ({ input, errors, context }) => {
+        const session = await requireSession()
+        console.log(`Deleting MCP users: ${input.userIds.join(', ')}`)
+
+        if (input.userIds.length === 0) {
+            throw errors.RESOURCE_NOT_FOUND({
+                message: 'No users specified for deletion'
+            })
+        }
+
+        // Delete users where their ID is in the array AND they belong to the current organization
+        // We use a subquery to get all user IDs that belong to the current organization
+        const userIdsInOrganization = db
+            .select({ id: schema.mcpServerUser.id })
+            .from(schema.mcpServerUser)
+            .innerJoin(schema.mcpServerSession, eq(schema.mcpServerSession.mcpServerUserId, schema.mcpServerUser.id))
+            .innerJoin(schema.mcpServers, eq(schema.mcpServerSession.mcpServerSlug, schema.mcpServers.slug))
+            .where(eq(schema.mcpServers.organizationId, session.session.activeOrganizationId))
+
+        const deletedUsers = await db
+            .delete(schema.mcpServerUser)
+            .where(
+                and(
+                    inArray(schema.mcpServerUser.trackingId, input.userIds),
+                    inArray(schema.mcpServerUser.id, userIdsInOrganization)
+                )
+            )
+            .returning()
+
+        if (deletedUsers.length === 0) {
+            throw errors.RESOURCE_NOT_FOUND({
+                message: 'No users found or you do not have permission to delete these users'
+            })
+        }
+
+        console.log(`Successfully deleted ${deletedUsers.length} users`)
+
+        revalidatePath('/dashboard/users')
+        return {
+            deletedCount: deletedUsers.length,
+            deletedUserIds: deletedUsers.map((user) => user.trackingId).filter(Boolean)
+        }
     })
     .actionable({})

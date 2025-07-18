@@ -35,7 +35,8 @@
             "style": {
                 "useTemplate": "off",
                 "noNonNullAssertion": "off",
-                "noUnusedTemplateLiteral": "off"
+                "noUnusedTemplateLiteral": "off",
+                "noUselessElse": "off"
             },
             "a11y": {
                 "noSvgWithoutTitle": "off"

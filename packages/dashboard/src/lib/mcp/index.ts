@@ -2,8 +2,7 @@ import { db, schema } from 'database'
 import { eq } from 'drizzle-orm'
 import { createMcpHandler } from 'mcp-handler'
 import { auth } from '../auth/mcp/auth'
-import { registerDocumentationSearchTool } from './tools/documentation-search'
-import { registerSupportTool } from './tools/support'
+import { registerMcpSupportTool } from './tools/support'
 import type { McpServer, McpServerConfig } from './types'
 import { withMcpAuth } from './with-mcp-auth'
 export { protectedResourceHandler } from './protected-resource-handler'
@@ -16,12 +15,14 @@ export function createHandlerForServer({
     serverConfig,
     trackingId,
     email,
-    mcpServerUserId
+    mcpServerUserId,
+    serverSessionId
 }: {
     serverConfig: McpServerConfig
     trackingId: string | null
     email: string | null
-    mcpServerUserId: string | null
+    mcpServerUserId: string
+    serverSessionId: string
 }): (req: Request) => Promise<Response> {
     const mcpHandler = createMcpHandler(
         async (server) => {
@@ -30,7 +31,8 @@ export function createHandlerForServer({
                 serverConfig,
                 trackingId,
                 email,
-                mcpServerUserId
+                mcpServerUserId,
+                serverSessionId
             })
         },
         {
@@ -78,16 +80,17 @@ export function registerMcpServerToolsFromConfig({
     serverConfig,
     trackingId,
     email,
-    mcpServerUserId
+    mcpServerUserId,
+    serverSessionId
 }: {
     server: McpServer
     serverConfig: McpServerConfig
     trackingId: string | null
     email: string | null
-    mcpServerUserId: string | null
+    mcpServerUserId: string
+    serverSessionId: string
 }) {
-    registerSupportTool(server, serverConfig, trackingId)
-    registerDocumentationSearchTool(server, serverConfig, trackingId)
+    registerMcpSupportTool({ server, serverConfig, trackingId, email, mcpServerUserId, serverSessionId })
 }
 
 /**

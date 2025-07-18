@@ -1,12 +1,16 @@
 'use client'
 
+import { deleteMcpUsersAction } from '@/lib/orpc/actions'
+import { isDefinedError, onError, onSuccess } from '@orpc/client'
+import { useServerAction } from '@orpc/react/hooks'
 import {
     IconChevronDown,
     IconChevronLeft,
     IconChevronRight,
     IconChevronsLeft,
     IconChevronsRight,
-    IconLayoutColumns
+    IconLayoutColumns,
+    IconTrash
 } from '@tabler/icons-react'
 import {
     type ColumnDef,
@@ -38,6 +42,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { UserAvatar } from '@/components/user-avatar'
 import { ServerIcon } from 'lucide-react'
 import Link from 'next/link'
+import { toast } from 'sonner'
 
 interface ConnectedServer {
     distinctId: string
@@ -230,6 +235,35 @@ export function UsersTable({ data }: UsersTableProps) {
         getSortedRowModel: getSortedRowModel()
     })
 
+    // Set up delete action
+    const { execute: deleteUsers, status: deleteStatus } = useServerAction(deleteMcpUsersAction, {
+        interceptors: [
+            onError((error: any) => {
+                if (isDefinedError(error)) {
+                    toast.error(`Failed to delete users: ${error.message}`)
+                } else {
+                    toast.error('Failed to delete users')
+                }
+            }),
+            onSuccess((result: { deletedCount: number; deletedUserIds: string[] }) => {
+                toast.success(`Successfully deleted ${result.deletedCount} user(s)`)
+                setRowSelection({}) // Clear selection after successful delete
+            })
+        ]
+    })
+
+    const selectedRows = table.getFilteredSelectedRowModel().rows
+    const selectedUserIds = selectedRows.map((row) => row.original.id)
+
+    const handleDeleteSelected = async () => {
+        if (selectedUserIds.length === 0) return
+
+        const confirmMessage = `Are you sure you want to delete ${selectedUserIds.length} user(s)? This action cannot be undone.`
+        if (!confirm(confirmMessage)) return
+
+        await deleteUsers({ userIds: selectedUserIds })
+    }
+
     return (
         <div className="flex flex-col gap-4">
             <div className="flex items-center justify-between">
@@ -240,6 +274,18 @@ export function UsersTable({ data }: UsersTableProps) {
                         onChange={(event) => table.getColumn('name')?.setFilterValue(event.target.value)}
                         className="max-w-sm"
                     />
+                    {selectedUserIds.length > 0 && (
+                        <Button
+                            variant="destructive"
+                            size="sm"
+                            onClick={handleDeleteSelected}
+                            disabled={deleteStatus === 'pending'}
+                            className="flex items-center gap-2"
+                        >
+                            <IconTrash className="h-4 w-4" />
+                            {deleteStatus === 'pending' ? 'Deleting...' : `Delete ${selectedUserIds.length} user(s)`}
+                        </Button>
+                    )}
                 </div>
                 <div className="flex items-center gap-2">
                     <DropdownMenu>
