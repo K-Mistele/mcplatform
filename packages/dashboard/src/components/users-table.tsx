@@ -22,7 +22,6 @@ import {
 } from '@tanstack/react-table'
 import * as React from 'react'
 
-import Jdenticon from '@/components/github-identicon'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
@@ -36,6 +35,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
+import { UserAvatar } from '@/components/user-avatar'
 import { ServerIcon } from 'lucide-react'
 import Link from 'next/link'
 
@@ -106,9 +106,13 @@ const columns: ColumnDef<UserWithServers>[] = [
             const user = row.original
             return (
                 <div className="flex items-center gap-3">
-                    <div className="h-8 w-8 rounded-full overflow-hidden">
-                        <Jdenticon value={user.distinctId} size="32px" />
-                    </div>
+                    <UserAvatar
+                        image={user.image}
+                        fallbackValue={user.distinctId}
+                        name={user.name}
+                        size="32px"
+                        className="h-8 w-8 rounded-full"
+                    />
                     <div className="flex flex-col">
                         <Link
                             href={`/dashboard/users/${encodeURIComponent(user.distinctId)}`}

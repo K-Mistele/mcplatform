@@ -1,6 +1,7 @@
 import { UsersLoading } from '@/components/users-loading'
 import { requireSession } from '@/lib/auth/auth'
 import { db, schema } from 'database'
+import { mcpOAuthUser } from 'database/src/mcp-auth-schema'
 import { and, count, eq, sql } from 'drizzle-orm'
 import { Suspense } from 'react'
 import { ErrorBoundary } from 'react-error-boundary'
@@ -22,11 +23,15 @@ export default async function UsersPage() {
             ),
             serverName: schema.mcpServers.name,
             serverSlug: schema.mcpServers.slug,
-            transport: sql<string | null>`NULL`.as('transport') // Transport was removed in migrations
+            transport: sql<string | null>`NULL`.as('transport'), // Transport was removed in migrations
+            // Add OAuth user data for profile images and names
+            oauthName: mcpOAuthUser.name,
+            oauthImage: mcpOAuthUser.image
         })
         .from(schema.mcpServerSession)
         .innerJoin(schema.mcpServerUser, eq(schema.mcpServerSession.mcpServerUserId, schema.mcpServerUser.id))
         .innerJoin(schema.mcpServers, eq(schema.mcpServerSession.mcpServerSlug, schema.mcpServers.slug))
+        .leftJoin(mcpOAuthUser, eq(schema.mcpServerUser.email, mcpOAuthUser.email))
         .where(eq(schema.mcpServers.organizationId, session.session.activeOrganizationId))
 
     const supportTicketCountsPromise = db

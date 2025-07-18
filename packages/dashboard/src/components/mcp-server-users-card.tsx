@@ -1,6 +1,6 @@
-import Jdenticon from '@/components/github-identicon'
 import { Badge } from '@/components/ui/badge'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { UserAvatar } from '@/components/user-avatar'
 import { db, schema } from 'database'
 import { mcpOAuthUser } from 'database/src/mcp-auth-schema'
 import { eq } from 'drizzle-orm'
@@ -90,9 +90,13 @@ export async function McpServerUsersCard({ serverId, serverSlug }: McpServerUser
 
                                 return (
                                     <div key={userId} className="flex items-center gap-3 p-3 rounded-lg border bg-card">
-                                        <div className="h-10 w-10 rounded-full overflow-hidden">
-                                            <Jdenticon value={userId} size="40px" />
-                                        </div>
+                                        <UserAvatar
+                                            image={userImage}
+                                            fallbackValue={userId}
+                                            name={userName}
+                                            size="40px"
+                                            className="h-10 w-10 rounded-full"
+                                        />
                                         <div className="flex-1 min-w-0">
                                             <div className="font-medium text-sm truncate">
                                                 {userId ? (

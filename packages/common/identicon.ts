@@ -89,10 +89,18 @@ export function generateIdenticonData(idcode: string, size = 5, colors?: string[
     const table: number[][] = Array.from({ length: size }, () => Array.from({ length: size }, () => 0))
 
     // Fill table with symmetric pattern
-    let idx = 24
+    // Improved algorithm for better centering at larger sizes
+    const totalIterations = size * Math.ceil(size / 2)
+    const hashBits = hashbin.length
+
+    let iterationCount = 0
     for (let i = 0; i < size; i++) {
         for (let j = 0; j < Math.ceil(size / 2); j++) {
-            const bit = idx < hashbin.length ? Number.parseInt(hashbin[idx] || '0') : 0
+            // Use modular arithmetic to cycle through hash bits more evenly
+            // This prevents running out of bits and ensures better distribution
+            const bitIndex = (24 + iterationCount * 7) % hashBits
+            const bit = Number.parseInt(hashbin[bitIndex] || '0')
+
             const row = table[i]
             if (row && j < row.length) {
                 row[j] = bit
@@ -100,7 +108,8 @@ export function generateIdenticonData(idcode: string, size = 5, colors?: string[
             if (row && size - 1 - j < row.length) {
                 row[size - 1 - j] = bit
             }
-            idx += 3
+
+            iterationCount++
         }
     }
 

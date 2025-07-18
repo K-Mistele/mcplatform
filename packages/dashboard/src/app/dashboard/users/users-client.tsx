@@ -11,6 +11,8 @@ interface McpUserConnection {
     serverName: string | null
     serverSlug: string | null
     transport: string | null
+    oauthName: string | null
+    oauthImage: string | null
 }
 
 interface SupportTicketCount {
@@ -84,9 +86,9 @@ export function UsersClient({
             userMap.set(userId, {
                 id: userId,
                 distinctId: userId,
-                name: row.email?.split('@')[0] || 'Unknown User', // Use email prefix as name
+                name: row.oauthName || row.email?.split('@')[0] || 'Unknown User', // Use OAuth name first, then email prefix
                 email: row.email,
-                image: null,
+                image: row.oauthImage, // Use OAuth profile image
                 createdAt: new Date(row.firstSeenAt || Date.now()),
                 lifetimeSupportTickets: supportTickets.lifetime,
                 openSupportTickets: supportTickets.open,
