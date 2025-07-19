@@ -15,6 +15,20 @@
       "when": 1752774789681,
       "tag": "0001_nasty_scarlet_witch",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1752957108448,
+      "tag": "0002_spotty_weapon_omega",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1752957312639,
+      "tag": "0003_perfect_next_avengers",
+      "breakpoints": true
     }
   ]
 }

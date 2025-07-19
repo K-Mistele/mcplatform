@@ -25,7 +25,10 @@ export const supportRequests = pgTable('support_requests', {
     organizationId: text('organization_id')
         .references(() => organization.id, { onDelete: 'cascade' })
         .notNull(),
-    mcpServerId: text('mcp_server_id').references(() => mcpServers.id, { onDelete: 'cascade' })
+    mcpServerId: text('mcp_server_id').references(() => mcpServers.id, { onDelete: 'cascade' }),
+    mcpServerSessionId: text('mcp_server_session_id').references(() => mcpServerSession.mcpServerSessionId, {
+        onDelete: 'cascade'
+    })
 })
 
 export const mcpServers = pgTable('mcp_servers', {
@@ -71,6 +74,7 @@ export const toolCalls = pgTable('mcp_tool_calls', {
 })
 
 export const mcpServerSession = pgTable('mcp_server_session', {
+    title: text('title'),
     mcpServerSessionId: text('mcp_server_session_id').primaryKey().notNull(),
     mcpServerSlug: text('mcp_server_slug')
         .references(() => mcpServers.slug, { onDelete: 'cascade' })
