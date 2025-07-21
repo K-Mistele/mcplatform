@@ -130,9 +130,6 @@ You should use the connected Puppeteer tools to validate UI additions and change
 
 If you are prompted to login you can navigate to `/login-for-claude` to be automatically logged in
 
-## Addenda
-A **comprehensive guide** to the codebase including oRPC usage can be found in `.cursor/rules/mcpplatform-comprehensive-guide.md`
-
 ## RPC System (oRPC)
 
 ### Server Actions Pattern
@@ -193,3 +190,9 @@ const { execute, status } = useServerAction(actionName, {
     ]
 })
 ```
+
+## Addenda
+* A **comprehensive guide** to the codebase including oRPC usage can be found in `.cursor/rules/mcpplatform-comprehensive-guide.md`
+* the dev server is **ALWAYS** running on port `3000` - NEVER run `bun run build` or `bun run dev` - it will hang and block you, and may corrupt the running dev server.
+* do not use `tsx` or `tsc` - next.js apps are not independently compilable.
+* do NOT put non-`route.ts` or `page.tsx` files under `src/app` in the dashboard, they should always go under `src/components`!
