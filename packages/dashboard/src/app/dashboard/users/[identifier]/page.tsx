@@ -7,18 +7,35 @@ import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import { Suspense } from 'react'
 import { ErrorBoundary } from 'react-error-boundary'
-import { getUserConnections, getUserData, getUserSessions, getUserSupportRequests, getUserToolCalls } from './data'
+import { 
+    getUserConnections, 
+    getUserData, 
+    getUserSessions, 
+    getUserSupportRequests, 
+    getUserToolCalls,
+    getSessionToolCalls,
+    getSessionSupportTickets
+} from './data'
 
 interface UserDetailsPageProps {
     params: Promise<{ identifier: string }>
+    searchParams: Promise<{ 
+        session?: string
+        item?: string
+        type?: string
+    }>
 }
-
-
 
 export default async function UserDetailsPage(props: UserDetailsPageProps) {
     const session = await requireSession()
     const params = await props.params
+    const searchParams = await props.searchParams
     const identifier = decodeURIComponent(params.identifier)
+
+    // Extract URL state
+    const selectedSessionId = searchParams.session || null
+    const selectedItemId = searchParams.item || null
+    const selectedItemType = searchParams.type || null
 
     // Check if user exists first
     const user = await getUserData(identifier)
@@ -26,12 +43,12 @@ export default async function UserDetailsPage(props: UserDetailsPageProps) {
         notFound()
     }
 
-    // Create promises for data fetching (don't await them)
-    const userPromise = getUserData(identifier)
-    const connectionsPromise = getUserConnections(user.trackingId || '')
-    const toolCallsPromise = getUserToolCalls(session.session.activeOrganizationId)
-    const supportRequestsPromise = getUserSupportRequests(user.email || '')
-    const sessionsPromise = getUserSessions(user.id, session.session.activeOrganizationId)
+    // Fetch base data only
+    const userData = await getUserData(identifier)
+    const connections = await getUserConnections(user.trackingId || '')
+    const toolCalls = await getUserToolCalls(session.session.activeOrganizationId)
+    const supportRequests = await getUserSupportRequests(user.email || '')
+    const sessions = await getUserSessions(user.id, session.session.activeOrganizationId)
 
     return (
         <div className="flex flex-col gap-4 py-4 md:gap-6 md:py-6">
@@ -49,12 +66,11 @@ export default async function UserDetailsPage(props: UserDetailsPageProps) {
             <ErrorBoundary fallback={<div>Error</div>}>
                 <Suspense fallback={<UserDetailSkeleton />}>
                     <UserDetailClient
-                        userPromise={userPromise}
-                        connectionsPromise={connectionsPromise}
-                        toolCallsPromise={toolCallsPromise}
-                        supportRequestsPromise={supportRequestsPromise}
-                        sessionsPromise={sessionsPromise}
-                        organizationId={session.session.activeOrganizationId}
+                        user={userData}
+                        connections={connections}
+                        toolCalls={toolCalls}
+                        supportRequests={supportRequests}
+                        sessions={sessions}
                     />
                 </Suspense>
             </ErrorBoundary>

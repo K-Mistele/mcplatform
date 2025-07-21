@@ -196,3 +196,5 @@ const { execute, status } = useServerAction(actionName, {
 * the dev server is **ALWAYS** running on port `3000` - NEVER run `bun run build` or `bun run dev` - it will hang and block you, and may corrupt the running dev server.
 * do not use `tsx` or `tsc` - next.js apps are not independently compilable.
 * do NOT put non-`route.ts` or `page.tsx` files under `src/app` in the dashboard, they should always go under `src/components`!
+* instead of `import * as React from 'react'; React.useEffect(...)...` prefer the `import { useEffect } from 'react'; useEffect(...)` style of usage in react components
+* ensure that you only implement one react component per file and that components go under `src/components` in the dashboard package. 

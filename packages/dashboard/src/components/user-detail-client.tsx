@@ -1,5 +1,6 @@
 'use client'
 
+import React, { useState, useEffect } from 'react'
 import { Badge } from '@/components/ui/badge'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from '@/components/ui/resizable'
@@ -15,24 +16,15 @@ import {
     WrenchIcon
 } from 'lucide-react'
 import Link from 'next/link'
-import { use, useMemo, useState } from 'react'
+import { useQueryState } from 'nuqs'
+import { client } from '@/lib/orpc/orpc.client'
 
 interface UserDetailClientProps {
-    userPromise: Promise<any>
-    connectionsPromise: Promise<any[]>
-    toolCallsPromise: Promise<any[]>
-    supportRequestsPromise: Promise<any[]>
-    sessionsPromise: Promise<any[]>
-    organizationId: string
-}
-
-interface TimelineEvent {
-    id: string
-    type: 'tool_call' | 'connection' | 'support_request'
-    timestamp: number
-    title: string
-    subtitle: string
-    data: any
+    user: any
+    connections: any[]
+    toolCalls: any[]
+    supportRequests: any[]
+    sessions: any[]
 }
 
 function formatDate(timestamp: number | null): string {
@@ -85,75 +77,85 @@ function getEventColor(type: string) {
 }
 
 export function UserDetailClient({
-    userPromise,
-    connectionsPromise,
-    toolCallsPromise,
-    supportRequestsPromise,
-    sessionsPromise,
-    organizationId
+    user,
+    connections,
+    toolCalls,
+    supportRequests,
+    sessions
 }: UserDetailClientProps) {
-    const user = use(userPromise)
-    const connections = use(connectionsPromise)
-    const toolCalls = use(toolCallsPromise)
-    const supportRequests = use(supportRequestsPromise)
-    const sessions = use(sessionsPromise)
+    // Use nuqs for URL state management
+    const [selectedSessionId, setSelectedSessionId] = useQueryState('session')
+    const [selectedItemId, setSelectedItemId] = useQueryState('item')
+    const [selectedItemType, setSelectedItemType] = useQueryState('type')
 
-    // URL state management for selected session and item (temporarily using useState)
-    const [selectedSessionId, setSelectedSessionId] = useState<string | null>(null)
-    const [selectedItemId, setSelectedItemId] = useState<string | null>(null)
-    const [selectedItemType, setSelectedItemType] = useState<string | null>(null)
+    // Local state for session-specific data
+    const [sessionItems, setSessionItems] = useState<any[]>([])
+    const [isLoadingSession, setIsLoadingSession] = useState(false)
 
     // Get selected session data
-    const selectedSession = useMemo(() => {
-        return sessions.find(session => session.sessionId === selectedSessionId) || null
-    }, [sessions, selectedSessionId])
-
-    // Temporarily use all tool calls and support requests (not session-specific yet)
-    // TODO: Implement oRPC endpoints for session-specific data fetching
-    const sessionItems = useMemo(() => {
-        if (!selectedSessionId) return []
-        
-        const items: Array<{
-            id: string
-            type: 'tool_call' | 'support_request'
-            timestamp: number
-            title: string
-            subtitle: string
-            data: any
-        }> = []
-
-        // Add all tool calls (temporarily - should be session-specific)
-        for (const call of toolCalls) {
-            items.push({
-                id: call.id,
-                type: 'tool_call',
-                timestamp: call.createdAt,
-                title: call.toolName,
-                subtitle: `from ${call.serverName}`,
-                data: call
-            })
-        }
-
-        // Add all support requests (temporarily - should be session-specific)
-        for (const request of supportRequests) {
-            items.push({
-                id: request.id,
-                type: 'support_request',
-                timestamp: request.createdAt,
-                title: request.title,
-                subtitle: `from ${request.serverName}`,
-                data: request
-            })
-        }
-
-        // Sort by timestamp (most recent first)
-        return items.sort((a, b) => b.timestamp - a.timestamp)
-    }, [selectedSessionId, toolCalls, supportRequests])
+    const selectedSession = sessions.find(session => session.sessionId === selectedSessionId) || null
 
     // Get selected item data
-    const selectedItem = useMemo(() => {
-        return sessionItems.find(item => item.id === selectedItemId) || null
-    }, [sessionItems, selectedItemId])
+    const selectedItem = sessionItems.find(item => item.id === selectedItemId) || null
+
+    // Fetch session-specific data when selectedSessionId changes
+    useEffect(() => {
+        if (!selectedSessionId) {
+            setSessionItems([])
+            return
+        }
+
+        const fetchSessionData = async () => {
+            setIsLoadingSession(true)
+            try {
+                // Fetch both tool calls and support tickets for the session
+                const [toolCallsResponse, supportTicketsResponse] = await Promise.all([
+                    client.sessions.getToolCalls({ sessionId: selectedSessionId }),
+                    client.sessions.getSupportTickets({ sessionId: selectedSessionId })
+                ])
+
+                // Combine and format the data
+                const items = [
+                    ...toolCallsResponse.map((call: any) => ({
+                        id: call.id,
+                        type: 'tool_call' as const,
+                        timestamp: call.createdAt || 0,
+                        title: call.toolName,
+                        subtitle: `from ${call.serverName}`,
+                        data: call
+                    })),
+                    ...supportTicketsResponse.map((ticket: any) => ({
+                        id: ticket.id,
+                        type: 'support_request' as const,
+                        timestamp: ticket.createdAt || 0,
+                        title: ticket.title || 'Untitled',
+                        subtitle: `from ${ticket.serverName}`,
+                        data: ticket
+                    }))
+                ].sort((a, b) => b.timestamp - a.timestamp)
+
+                setSessionItems(items)
+            } catch (error) {
+                console.error('Error fetching session data:', error)
+                setSessionItems([])
+            } finally {
+                setIsLoadingSession(false)
+            }
+        }
+
+        fetchSessionData()
+    }, [selectedSessionId])
+
+    const handleSessionSelect = (sessionId: string) => {
+        setSelectedSessionId(sessionId)
+        setSelectedItemId(null) // Clear item selection when session changes
+        setSelectedItemType(null)
+    }
+
+    const handleItemSelect = (itemId: string, itemType: string) => {
+        setSelectedItemId(itemId)
+        setSelectedItemType(itemType)
+    }
 
     return (
         <div className="flex flex-col gap-4">
@@ -257,11 +259,7 @@ export function UserDetailClient({
                                                 <button
                                                     key={session.sessionId}
                                                     type="button"
-                                                    onClick={() => {
-                                                        setSelectedSessionId(session.sessionId)
-                                                        setSelectedItemId(null)
-                                                        setSelectedItemType(null)
-                                                    }}
+                                                    onClick={() => handleSessionSelect(session.sessionId)}
                                                     className={`w-full text-left p-3 rounded-lg border hover:bg-accent transition-colors ${
                                                         selectedSessionId === session.sessionId ? 'bg-accent border-primary' : 'bg-card'
                                                     }`}
@@ -310,6 +308,11 @@ export function UserDetailClient({
                                             <ClockIcon className="h-8 w-8 text-muted-foreground mx-auto mb-2" />
                                             <p className="text-sm text-muted-foreground">Select a session to view activity</p>
                                         </div>
+                                    ) : isLoadingSession ? (
+                                        <div className="text-center py-8 px-4">
+                                            <ClockIcon className="h-8 w-8 text-muted-foreground mx-auto mb-2 animate-spin" />
+                                            <p className="text-sm text-muted-foreground">Loading session activity...</p>
+                                        </div>
                                     ) : sessionItems.length === 0 ? (
                                         <div className="text-center py-8 px-4">
                                             <ClockIcon className="h-8 w-8 text-muted-foreground mx-auto mb-2" />
@@ -321,10 +324,7 @@ export function UserDetailClient({
                                                 <button
                                                     key={item.id}
                                                     type="button"
-                                                    onClick={() => {
-                                                        setSelectedItemId(item.id)
-                                                        setSelectedItemType(item.type)
-                                                    }}
+                                                    onClick={() => handleItemSelect(item.id, item.type)}
                                                     className={`w-full text-left p-3 rounded-lg border hover:bg-accent transition-colors ${
                                                         selectedItemId === item.id ? 'bg-accent border-primary' : 'bg-card'
                                                     }`}

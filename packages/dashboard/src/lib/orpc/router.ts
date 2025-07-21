@@ -308,11 +308,79 @@ function roundToNearestBucket(timestamp: number, timeRange: '1h' | '1d' | '1w' |
     return referenceTime - bucketIndex * intervalMs
 }
 
+export const getSessionToolCalls = base
+    .input(
+        z.object({
+            sessionId: z.string()
+        })
+    )
+    .handler(async ({ input, errors }) => {
+        const session = await requireSession()
+
+        const toolCalls = await db
+            .select({
+                id: schema.toolCalls.id,
+                toolName: schema.toolCalls.toolName,
+                input: schema.toolCalls.input,
+                output: schema.toolCalls.output,
+                createdAt: schema.toolCalls.createdAt,
+                serverName: schema.mcpServers.name,
+                serverSlug: schema.mcpServers.slug
+            })
+            .from(schema.toolCalls)
+            .leftJoin(schema.mcpServers, eq(schema.toolCalls.mcpServerId, schema.mcpServers.id))
+            .where(
+                and(
+                    eq(schema.toolCalls.mcpServerSessionId, input.sessionId),
+                    eq(schema.mcpServers.organizationId, session.session.activeOrganizationId)
+                )
+            )
+            .orderBy(schema.toolCalls.createdAt)
+
+        return toolCalls
+    })
+
+export const getSessionSupportTickets = base
+    .input(
+        z.object({
+            sessionId: z.string()
+        })
+    )
+    .handler(async ({ input, errors }) => {
+        const session = await requireSession()
+
+        const supportTickets = await db
+            .select({
+                id: schema.supportRequests.id,
+                title: schema.supportRequests.title,
+                conciseSummary: schema.supportRequests.conciseSummary,
+                status: schema.supportRequests.status,
+                createdAt: schema.supportRequests.createdAt,
+                serverName: schema.mcpServers.name,
+                serverSlug: schema.mcpServers.slug
+            })
+            .from(schema.supportRequests)
+            .leftJoin(schema.mcpServers, eq(schema.supportRequests.mcpServerId, schema.mcpServers.id))
+            .where(
+                and(
+                    eq(schema.supportRequests.mcpServerSessionId, input.sessionId),
+                    eq(schema.mcpServers.organizationId, session.session.activeOrganizationId)
+                )
+            )
+            .orderBy(schema.supportRequests.createdAt)
+
+        return supportTickets
+    })
+
 export const router = {
     example: {
         execute: executeExample
     },
     toolCalls: {
         getChart: getToolCallsChart
+    },
+    sessions: {
+        getToolCalls: getSessionToolCalls,
+        getSupportTickets: getSessionSupportTickets
     }
 }

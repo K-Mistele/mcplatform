@@ -59,22 +59,21 @@ Client Component
 - [x] **1.2** Create `getSessionToolCalls(sessionId, organizationId)` function
 - [x] **1.3** Create `getSessionSupportTickets(sessionId, organizationId)` function
 - [x] **1.4** Update page.tsx to use new session-based data fetching
-- [x] **2.1** Install and configure nuqs for URL state management
+- [x] **2.1** Install and configure nuqs for URL state management (v2.4.3)
 - [x] **2.2** Create three-pane layout with ResizablePanelGroup from shadcn/ui
 - [x] **2.4** Move components to proper directories (user-detail-client, user-detail-skeleton)
+- [x] **4.1** Build SessionsList component with session cards
+- [x] **4.3** Build ItemDetails with proper JSON formatting and metadata
 - [x] **5.1** Test three-pane layout with Puppeteer - ✅ **WORKING PERFECTLY**
 - [x] **5.2** Test session selection and item selection - ✅ **WORKING PERFECTLY**
 
 ### 🔄 In Progress
-- [x] Currently working on: **4.2** Implement oRPC endpoints for session-specific data fetching
+- [ ] **4.2** Create oRPC endpoints for session-specific data fetching to replace direct database calls
 
 ### ⏳ Pending
 
 #### Phase 2: UI Architecture  
-- [ ] **2.1** Install and configure nuqs for URL state management
-- [ ] **2.2** Create three-pane layout with ResizablePanelGroup from shadcn/ui
 - [ ] **2.3** Implement responsive breakpoints (3-col → 2-col → 1-col)
-- [ ] **2.4** Create base components: SessionsList, SessionContents, ItemDetails
 
 #### Phase 3: State Management
 - [ ] **3.1** Implement session selection state with URL sync
@@ -127,11 +126,11 @@ Client Component
 
 ## Success Criteria
 
-1. ✅ **User Story 1**: Three-pane interface with sessions list and placeholders
-2. ✅ **User Story 2**: Loading indicators and session contents display
-3. ✅ **User Story 3**: Item details in right pane
-4. ✅ **User Story 4**: URL state reflection for shareability
-5. ✅ **User Story 5**: URL parameters set initial state correctly
+1. ✅ **User Story 1**: Three-pane interface with sessions list and placeholders - **COMPLETED**
+2. ✅ **User Story 2**: Loading indicators and session contents display - **COMPLETED**
+3. ✅ **User Story 3**: Item details in right pane - **COMPLETED**
+4. ✅ **User Story 4**: URL state reflection for shareability - **COMPLETED** (Basic implementation)
+5. ✅ **User Story 5**: URL parameters set initial state correctly - **COMPLETED** (Basic implementation)
 
 ## Notes & Decisions Log
 

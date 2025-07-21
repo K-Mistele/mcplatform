@@ -3,6 +3,7 @@ import { ThemeToggle } from '@/components/theme-toggle'
 import { Toaster } from '@/components/ui/sonner'
 import type { Metadata } from 'next'
 import { Geist, Geist_Mono } from 'next/font/google'
+import { NuqsAdapter } from 'nuqs/adapters/next/app'
 import '../lib/orpc/orpc.server' // for pre-rendering
 import './globals.css'
 
@@ -29,11 +30,13 @@ export default function RootLayout({
     return (
         <html lang="en" suppressHydrationWarning>
             <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
-                <ThemeProvider attribute="class" defaultTheme="system" enableSystem disableTransitionOnChange>
-                    {children}
-                    <ThemeToggle />
-                    <Toaster richColors={true} position="top-right" />
-                </ThemeProvider>
+                <NuqsAdapter>
+                    <ThemeProvider attribute="class" defaultTheme="system" enableSystem disableTransitionOnChange>
+                        {children}
+                        <ThemeToggle />
+                        <Toaster richColors={true} position="top-right" />
+                    </ThemeProvider>
+                </NuqsAdapter>
             </body>
         </html>
     )
