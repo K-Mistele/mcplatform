@@ -11,11 +11,6 @@
                 "ALLOW_DANGEROUS": "true",
                 "CHROME_USER_DATA_DIR": "/Users/kyle/Library/Application Support/Google/Chrome/Default"
             }
-        },
-        "exa_web_search": {
-            "type": "remote",
-            "url": "https://mcp.exa.ai/mcp?exaApiKey=417448fe-ab7a-4cae-a642-6caf71dd081e",
-            "enabled": true
         }
     },
     "theme": "tokyonight",

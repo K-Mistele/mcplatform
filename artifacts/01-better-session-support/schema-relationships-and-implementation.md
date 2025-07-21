@@ -21,6 +21,7 @@ erDiagram
     mcpServerUser ||--o{ mcpServerSession : "participates"
     
     mcpServerSession ||--o{ toolCalls : "contains"
+    mcpServerSession ||--o{ supportRequests : "links"
     
     mcpOAuthUser ||--o{ mcpServerUser : "enriches (via email)"
 ```
@@ -48,6 +49,7 @@ erDiagram
 - **Parent**: `organization` (customer tenant)
 - **Children**: `toolCalls`, `supportRequests`, `mcpServerSession`
 - **Routing**: Uses `slug` for subdomain-based server identification
+- **Indexes**: `mcp_server_slug_idx` on `slug` for efficient routing lookups
 
 #### 2. `mcpServerUser` (End-User Identity)
 **Purpose**: Tracks end-users who interact with MCP servers (not platform customers)
@@ -55,7 +57,7 @@ erDiagram
 ```typescript
 {
     id: text (PK) // "mcpu_" + nanoid(12)
-    trackingId: text (UNIQUE) // Anonymous tracking identifier
+    trackingId: text (UNIQUE, NULLS NOT DISTINCT) // Anonymous tracking identifier (stored as 'distinct_id')
     email: text // Links to mcpOAuthUser via email matching
     firstSeenAt: bigint
 }
@@ -65,12 +67,18 @@ erDiagram
 - **No direct FK to mcpServers** - relationship established via sessions
 - **Enriched by**: `mcpOAuthUser` (LEFT JOIN on email)
 - **Children**: `toolCalls`, `mcpServerSession`
+- **Indexes**: 
+  - `mcp_server_user_distinct_id_idx` on `trackingId` for anonymous user lookups
+  - `mcp_server_user_email_idx` on `email` for OAuth user enrichment
+
+**Note**: The `trackingId` field is stored as `distinct_id` in the database but accessed as `trackingId` in TypeScript.
 
 #### 3. `mcpServerSession` (Connection Tracking)
 **Purpose**: Tracks individual connection sessions between users and MCP servers
 
 ```typescript
 {
+    title: text // Optional session title/description
     mcpServerSessionId: text (PK) // Session identifier
     mcpServerSlug: text (FK → mcpServers.slug, CASCADE DELETE)
     mcpServerUserId: text (FK → mcpServerUser.id, CASCADE DELETE)
@@ -82,7 +90,10 @@ erDiagram
 **Key Relationships**:
 - **Bridge table** connecting users to servers
 - **Parent**: `mcpServers` (via slug), `mcpServerUser`
-- **Children**: `toolCalls`
+- **Children**: `toolCalls`, `supportRequests`
+- **Indexes**:
+  - `mcp_server_session_user_id_idx` on `mcpServerUserId` for user session lookups
+  - `mcp_server_session_mcp_server_slug_idx` on `mcpServerSlug` for server session queries
 
 #### 4. `toolCalls` (Activity Tracking)
 **Purpose**: Records individual tool invocations within MCP sessions
@@ -103,6 +114,7 @@ erDiagram
 **Key Relationships**:
 - **Triple-linked**: References server, user, and session
 - **Cascade behavior**: Deletes with user or session, but not server
+- **Indexes**: `tool_calls_mcp_server_session_id_idx` on `mcpServerSessionId` for session-based tool call queries
 
 #### 5. `supportRequests` (Support Tickets)
 **Purpose**: Customer support tickets submitted by end-users
@@ -112,6 +124,7 @@ erDiagram
     id: text (PK) // "sr_" + nanoid(8)
     organizationId: text (FK → organization.id, CASCADE DELETE)
     mcpServerId: text (FK → mcpServers.id, CASCADE DELETE)
+    mcpServerSessionId: text (FK → mcpServerSession.mcpServerSessionId, CASCADE DELETE) // Links to specific session
     email: text // String field, not FK - matches users by email
     title: text
     conciseSummary: text
@@ -124,8 +137,9 @@ erDiagram
 ```
 
 **Key Relationships**:
-- **Dual-scoped**: Belongs to both organization and specific MCP server
+- **Triple-scoped**: Belongs to organization, specific MCP server, and optionally linked to a session
 - **Email-based linking**: Connects to users via email string matching
+- **Session context**: Can be linked to a specific session for detailed context
 
 ## Dual Authentication Architecture
 
@@ -263,7 +277,7 @@ Request: acme-corp.mcplatform.com/api/mcpserver/...
 ↓
 Extract subdomain: "acme-corp"
 ↓
-Query: mcpServers WHERE slug = "acme-corp"
+Query: mcpServers WHERE slug = "acme-corp" (uses mcp_server_slug_idx)
 ↓
 Route to correct server configuration
 ```
@@ -276,7 +290,7 @@ OAuth Flow (optional)
 ↓
 mcpOAuthUser created
 ↓
-mcpServerUser enriched via email JOIN
+mcpServerUser enriched via email JOIN (uses mcp_server_user_email_idx)
 ```
 
 ### 3. Activity Tracking Flow
@@ -296,25 +310,40 @@ User submits support request
 ↓
 Create supportRequests entry
 ↓
-Link: organization + server + email
+Link: organization + server + email + session (optional)
 ```
 
 ## Performance Considerations
 
-### Indexing Strategy
-- **Primary Keys**: All use text with nanoid for distributed systems
-- **Foreign Keys**: Proper CASCADE DELETE for data integrity
-- **Unique Constraints**: `slug` for routing, `trackingId` for anonymous users
+### Comprehensive Indexing Strategy
+
+The schema includes strategic indexes for optimal query performance:
+
+#### **mcpServers**
+- `mcp_server_slug_idx` on `slug` - Critical for subdomain-based routing
+
+#### **mcpServerUser**  
+- `mcp_server_user_distinct_id_idx` on `trackingId` - Fast anonymous user lookups
+- `mcp_server_user_email_idx` on `email` - Efficient OAuth enrichment queries
+
+#### **mcpServerSession**
+- `mcp_server_session_user_id_idx` on `mcpServerUserId` - User session history queries
+- `mcp_server_session_mcp_server_slug_idx` on `mcpServerSlug` - Server-specific session queries
+
+#### **toolCalls**
+- `tool_calls_mcp_server_session_id_idx` on `mcpServerSessionId` - Session-based tool call filtering
 
 ### Query Optimization
 - **LEFT JOINs**: Used for optional data enrichment
 - **Post-filtering**: Remove null JOINed records in application layer
 - **Timestamp Ordering**: Efficient sorting on indexed `createdAt` fields
+- **Index Coverage**: All foreign keys and frequent lookup fields are indexed
 
 ### Data Integrity
 - **Cascade Deletes**: Proper cleanup when organizations/servers are removed
-- **Dual Scoping**: Support requests tied to both org and server
+- **Triple Scoping**: Support requests tied to org, server, and optionally session
 - **Email Matching**: Flexible user linking without strict FK constraints
+- **Unique Constraints**: `slug` for routing, `trackingId` for anonymous users (nulls not distinct)
 
 ## Migration Considerations
 
@@ -325,6 +354,7 @@ When updating the schema, consider:
 3. **Index Updates**: New queries may need additional indexes
 4. **UI Query Updates**: Data fetching functions may need modification
 5. **Type Safety**: Update TypeScript types after schema changes
+6. **Session Linking**: Support requests can now link to specific sessions for better context
 
 ## Common Query Patterns
 
@@ -343,9 +373,19 @@ const activity = await db
     .where(eq(mcpServerUser.id, userId))
 ```
 
+### Session-Based Tool Call Queries
+```typescript
+// Get all tool calls for a specific session (leverages tool_calls_mcp_server_session_id_idx)
+const sessionToolCalls = await db
+    .select()
+    .from(toolCalls)
+    .where(eq(toolCalls.mcpServerSessionId, sessionId))
+    .orderBy(desc(toolCalls.createdAt))
+```
+
 ### Server Usage Analytics
 ```typescript
-// Get server usage metrics for organization
+// Get server usage metrics for organization (leverages mcp_server_slug_idx)
 const metrics = await db
     .select({
         serverId: mcpServers.id,
@@ -360,4 +400,18 @@ const metrics = await db
     .groupBy(mcpServers.id, mcpServers.name)
 ```
 
-This architecture provides a robust foundation for tracking user interactions across multiple MCP servers while maintaining clear separation between customer management and end-user analytics.
+### User Session History with Context
+```typescript
+// Get user sessions with server context (leverages multiple indexes)
+const sessions = await db
+    .select({
+        session: mcpServerSession,
+        server: mcpServers
+    })
+    .from(mcpServerSession)
+    .leftJoin(mcpServers, eq(mcpServerSession.mcpServerSlug, mcpServers.slug))
+    .where(eq(mcpServerSession.mcpServerUserId, userId))
+    .orderBy(desc(mcpServerSession.connectionTimestamp))
+```
+
+This architecture provides a robust foundation for tracking user interactions across multiple MCP servers while maintaining clear separation between customer management and end-user analytics. The comprehensive indexing strategy ensures optimal performance for all common query patterns.

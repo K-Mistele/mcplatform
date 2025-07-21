@@ -133,6 +133,7 @@ function useDashboardSupportBackend({
                         email: submissionEmail,
                         organizationId: serverConfig.organizationId,
                         mcpServerId: serverConfig.id,
+                        mcpServerSessionId: serverSessionId,
                         status: 'pending'
                     })
                     .returning()

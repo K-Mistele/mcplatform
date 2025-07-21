@@ -97,3 +97,99 @@ The database schema is managed with Drizzle ORM.
 *   **Authentication logic belongs on the server**. Never perform auth checks in client components.
 *   Use **`shadcn/ui`** components for all UI. Do not use Radix UI primitives directly.
 *   When writing data, use server actions via oRPC. When reading data, query the database directly in Server Components.
+
+
+# UI Testing with Puppeteer
+You should use the connected Puppeteer tools to validate UI additions and changes you have made.
+
+* use 1920x1080 as the screen resolution.
+* Always use puppeteer for testing UIs that you have built
+* always launch in headless mode
+* the user data dir is "/Users/kyle/Library/Application Support/Google/Chrome/Default", make sure to always use this
+
+If you are prompted to login you can navigate to `/login-for-claude` to be automatically logged in
+
+## Use Bun instead of npm/pnpm/yarn 
+
+Default to using Bun instead of Node.js.
+
+- Use `bun <file>` instead of `node <file>` or `ts-node <file>`
+- Use `bun test` instead of `jest` or `vitest`
+- Use `bun build <file.html|file.ts|file.css>` instead of `webpack` or `esbuild`
+- Use `bun install` instead of `npm install` or `yarn install` or `pnpm install`
+- Use `bun run <script>` instead of `npm run <script>` or `yarn run <script>` or `pnpm run <script>`
+- Bun automatically loads .env, so don't use dotenv.
+
+## UI Testing with Puppeteer
+You should use the connected Puppeteer tools to validate UI additions and changes you have made.
+
+* use 1920x1080 as the screen resolution.
+* Always use puppeteer for testing UIs that you have built
+* always launch in headless mode
+* the user data dir is "/Users/kyle/Library/Application Support/Google/Chrome/Default", make sure to always use this
+
+If you are prompted to login you can navigate to `/login-for-claude` to be automatically logged in
+
+## Addenda
+A **comprehensive guide** to the codebase including oRPC usage can be found in `.cursor/rules/mcpplatform-comprehensive-guide.md`
+
+## RPC System (oRPC)
+
+### Server Actions Pattern
+Server actions are created with ORPC and defined in `actions.ts`.
+```typescript
+// Server actions must:
+// 1. Include 'use server' directive
+// 2. Validate authentication
+// 3. Use proper error handling
+// 4. Call revalidatePath for updates
+
+export const actionName = base
+    .input(zodSchema)
+    .handler(async ({ input, errors }) => {
+        const session = await requireSession()
+        // Business logic
+        const records = await db.insert(...)
+
+        // revalidate paths with affected data that's loaded in page server component
+        revalidatePath('/relevant-path')
+        return result
+    })
+    .actionable({}) // converts the oRPC function into a server action.
+```
+
+### RPC Router Structure
+the base router (for non-server-action RPC calls, i.e. client-side data fetches not involving forms or requiring UI revalidation) can be found at `router.ts`
+```typescript
+// Error definitions - can add new ones! Used for strongly-typing errors.
+export const base = os.errors({
+    UNAUTHORIZED: {},
+    RESOURCE_NOT_FOUND: {},
+    INVALID_SUBDOMAIN: {},
+    SUBDOMAIN_ALREADY_EXISTS: {}
+})
+
+// Router configuration for RPC calls that are NOT used as server actions
+export const router = {
+    example: { execute: executeExample },
+    toolCalls: { getChart: getToolCallsChart }
+}
+```
+
+### Client Usage
+```typescript
+// Client-side server action RPC calls (only for `.actionable()` RPCs in actions.ts)
+const { execute, status } = useServerAction(actionName, {
+    interceptors: [
+        onError((error) => {
+            if (isDefinedError(error)) {
+                // error will match the error types
+                toast.error(error.message)
+            }
+        }),
+        onSuccess(() => {
+            toast.success('Success')
+        })
+    ]
+})
+```
