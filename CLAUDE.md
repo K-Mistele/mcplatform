@@ -97,7 +97,8 @@ The database schema is managed with Drizzle ORM.
 *   **Authentication logic belongs on the server**. Never perform auth checks in client components.
 *   Use **`shadcn/ui`** components for all UI. Do not use Radix UI primitives directly.
 *   When writing data, use server actions via oRPC. When reading data, query the database directly in Server Components.
-
+*   **NEVER run bun run dev, bun run build yourself - the dev server is always running on port 3000 and building it will mess it up. If you think there's an issue with it make sure to ask me**
+*   **NEVER run bun run db:generate or bun run db:migrate or any database migration-related commands. always ask me to do it, and never do it without explicit, recent permission.**
 
 # UI Testing with Puppeteer
 You should use the connected Puppeteer tools to validate UI additions and changes you have made.
@@ -198,3 +199,4 @@ const { execute, status } = useServerAction(actionName, {
 * do NOT put non-`route.ts` or `page.tsx` files under `src/app` in the dashboard, they should always go under `src/components`!
 * instead of `import * as React from 'react'; React.useEffect(...)...` prefer the `import { useEffect } from 'react'; useEffect(...)` style of usage in react components
 * ensure that you only implement one react component per file and that components go under `src/components` in the dashboard package. 
+```
