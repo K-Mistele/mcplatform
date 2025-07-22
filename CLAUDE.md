@@ -202,4 +202,6 @@ const { execute, status } = useServerAction(actionName, {
 * do NOT put non-`route.ts` or `page.tsx` files under `src/app` in the dashboard, they should always go under `src/components`!
 * instead of `import * as React from 'react'; React.useEffect(...)...` prefer the `import { useEffect } from 'react'; useEffect(...)` style of usage in react components
 * ensure that you only implement one react component per file and that components go under `src/components` in the dashboard package. 
-* use `bun:test` for all test cases.
+* use `bun:test` for all test cases with `describe`, `expect`, and `test`.
+* tests should live in a `tests` directory for the appropriate package e.g. `package/dashboard/tests`, with a sub-folder for the feature and subfeatures. e.g. `packages/dashboard/tests/01-better-session-support/` or `packages/dashboard/tests/03-interactive-walkthrough/01-core-infrastructure-mcp-tools/*`
+* tests should end in a `.test.ts` file extension so they are runnable by bun's test runner; there is no need to compile them as bun can run them directly. 
