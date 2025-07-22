@@ -502,3 +502,108 @@ export const addSupportTicketCommentWithStatus = base
         return { activity, updatedTicket }
     })
     .actionable({})
+
+export const editSupportTicketComment = base
+    .input(
+        z.object({
+            activityId: z.string(),
+            content: z.any(),
+            contentType: z.enum(['text', 'markdown', 'json']).default('json')
+        })
+    )
+    .handler(async ({ input, errors }) => {
+        const session = await requireSession()
+
+        // Find the activity and verify ownership
+        const [activity] = await db
+            .select({
+                activity: schema.supportTicketActivities,
+                ticketId: schema.supportRequests.id,
+                organizationId: schema.supportRequests.organizationId
+            })
+            .from(schema.supportTicketActivities)
+            .innerJoin(schema.supportRequests, eq(schema.supportTicketActivities.supportRequestId, schema.supportRequests.id))
+            .where(eq(schema.supportTicketActivities.id, input.activityId))
+
+        if (!activity) {
+            throw errors.RESOURCE_NOT_FOUND({
+                message: 'Comment not found'
+            })
+        }
+
+        // Verify ticket belongs to user's organization and user owns the comment
+        if (activity.organizationId !== session.session.activeOrganizationId) {
+            throw errors.UNAUTHORIZED({
+                message: 'Access denied'
+            })
+        }
+
+        if (activity.activity.userId !== session.user.id) {
+            throw errors.UNAUTHORIZED({
+                message: 'You can only edit your own comments'
+            })
+        }
+
+        // Update the comment
+        const [updatedActivity] = await db
+            .update(schema.supportTicketActivities)
+            .set({
+                content: input.content,
+                contentType: input.contentType
+            })
+            .where(eq(schema.supportTicketActivities.id, input.activityId))
+            .returning()
+
+        revalidatePath(`/dashboard/support-tickets/${activity.ticketId}`)
+        return updatedActivity
+    })
+    .actionable({})
+
+export const deleteSupportTicketComment = base
+    .input(
+        z.object({
+            activityId: z.string()
+        })
+    )
+    .handler(async ({ input, errors }) => {
+        const session = await requireSession()
+
+        // Find the activity and verify ownership
+        const [activity] = await db
+            .select({
+                activity: schema.supportTicketActivities,
+                ticketId: schema.supportRequests.id,
+                organizationId: schema.supportRequests.organizationId
+            })
+            .from(schema.supportTicketActivities)
+            .innerJoin(schema.supportRequests, eq(schema.supportTicketActivities.supportRequestId, schema.supportRequests.id))
+            .where(eq(schema.supportTicketActivities.id, input.activityId))
+
+        if (!activity) {
+            throw errors.RESOURCE_NOT_FOUND({
+                message: 'Comment not found'
+            })
+        }
+
+        // Verify ticket belongs to user's organization and user owns the comment
+        if (activity.organizationId !== session.session.activeOrganizationId) {
+            throw errors.UNAUTHORIZED({
+                message: 'Access denied'
+            })
+        }
+
+        if (activity.activity.userId !== session.user.id) {
+            throw errors.UNAUTHORIZED({
+                message: 'You can only delete your own comments'
+            })
+        }
+
+        // Delete the comment
+        await db
+            .delete(schema.supportTicketActivities)
+            .where(eq(schema.supportTicketActivities.id, input.activityId))
+
+        revalidatePath(`/dashboard/support-tickets/${activity.ticketId}`)
+        return { success: true }
+    })
+    .actionable({})

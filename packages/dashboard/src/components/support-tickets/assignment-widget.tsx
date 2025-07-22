@@ -60,7 +60,7 @@ export function AssignmentWidget({
                 onValueChange={handleAssignmentChange}
                 disabled={status === 'pending'}
             >
-                <SelectTrigger className="w-full h-auto" size="default">
+                <SelectTrigger className="w-full h-auto!" size="default">
                     <SelectValue placeholder="Assign to..." />
                 </SelectTrigger>
                 <SelectContent>
