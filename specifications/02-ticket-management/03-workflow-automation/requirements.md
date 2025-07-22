@@ -7,7 +7,7 @@ Implement advanced workflow features including ticket templates, automation rule
 Note: all paths provided in this document are relative to `packages/dashboard`, the dashboard package in this monorepo.
 Exceptions: 
 * All database-related paths such as `schema.ts`, `auth-schema.ts` and `mcp-auth-schema.ts` are under `packages/database/src`, and are exported under `packages/database/index.ts`
-* Any paths beginning with `artifacts/` are at the top level of the repository and NOT under `packages/`; the `artifacts/` directory is at the SAME LEVEL as the `packages/` directory.
+* Any paths beginning with `specification/` are at the top level of the repository and NOT under `packages/`; the `specification/` directory is at the SAME LEVEL as the `packages/` directory.
 
 ### Prerequisites
 This phase builds upon Phase 1 (Core Management) and Phase 2 (Enhanced UI) and assumes full activity tracking, bulk operations, and advanced filtering are already implemented.

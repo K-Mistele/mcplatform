@@ -1,0 +1,48 @@
+{
+  "name": "@mastra/mcp-docs-server",
+  "version": "0.1.0",
+  "description": "MCP server providing course functionality and documentation access",
+  "type": "module",
+  "main": "dist/index.js",
+  "bin": {
+    "mcp-docs-server": "dist/index.js"
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsc && chmod +x dist/index.js",
+    "dev": "tsc --watch",
+    "test": "vitest",
+    "test:watch": "vitest --watch"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.0.0",
+    "zod": "^3.22.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "typescript": "^5.0.0",
+    "vitest": "^2.0.0"
+  },
+  "keywords": [
+    "mcp",
+    "model-context-protocol",
+    "ai",
+    "course",
+    "documentation",
+    "interactive-learning"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/mastra-ai/mastra.git",
+    "directory": "packages/mcp-docs-server"
+  },
+  "license": "MIT",
+  "peerDependencies": {
+    "node": ">=18.0.0"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}

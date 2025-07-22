@@ -7,7 +7,7 @@ Enhance the support ticket management interface with basic editing capabilities,
 Note: all paths provided in this document are relative to `packages/dashboard`, the dashboard package in this monorepo.
 Exceptions: 
 * All database-related paths such as `schema.ts`, `auth-schema.ts` and `mcp-auth-schema.ts` are under `packages/database/src`, and are exported under `packages/database/index.ts`
-* Any paths beginning with `artifacts/` are at the top level of the repository and NOT under `packages/`; the `artifacts/` directory is at the SAME LEVEL as the `packages/` directory.
+* Any paths beginning with `specification/` are at the top level of the repository and NOT under `packages/`; the `specification/` directory is at the SAME LEVEL as the `packages/` directory.
 
 ### Current Implementation
 The **support tickets list view** is implemented at `/dashboard/support-tickets` in `src/app/dashboard/support-tickets/page.tsx` and the **ticket details view** at `/dashboard/support-tickets/[ticketId]` in `src/app/dashboard/support-tickets/[ticketId]/page.tsx`.
@@ -16,7 +16,7 @@ The **support tickets list view** is implemented at `/dashboard/support-tickets`
 Unless otherwise specified, all data should be fetched at the top level of the page in the async server component, and passed down the component tree as promises where they can be `use()`'ed with `<Suspense>` and `<ErrorBoundary>`.
 
 ### Data Model
-Information about the current data model can be found in `artifacts/02-ticket-management/research.md` or accessed directly from the database package at `packages/database/src/schema.ts`.
+Information about the current data model can be found in `specification/02-ticket-management/research.md` or accessed directly from the database package at `packages/database/src/schema.ts`.
 
 ### Rich Text Editor
 This phase will integrate **shadcn-editor** for all markdown/rich text editing functionality, providing a consistent, professional editing experience across all text inputs.

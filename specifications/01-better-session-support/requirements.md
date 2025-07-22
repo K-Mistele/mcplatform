@@ -8,7 +8,7 @@ Note: all paths provided in this document are relative to `packages/dashboard`, 
 Exceptions: 
 * All database-related paths such as `schema.ts`, `auth-schema.ts` and `mcp-auth-schema.ts` are under `packages/database/src`, 
 and are exported under `packages/database/index.ts`
-* Any paths beginning with `artifacts/` are at the top level of the repository and NOT under `packages/`; the `artifacts/` directory is at the SAME LEVEL as the `packages/` directory.
+* Any paths beginning with `specification/` are at the top level of the repository and NOT under `packages/`; the `specification/` directory is at the SAME LEVEL as the `packages/` directory.
 
 ### User List
 THe **user list view** is implemented at the path `/dashboard/users` in `src/app/dashboard/users/page.tsx` and the components contained within.
@@ -23,7 +23,7 @@ Unless otherwise specified, all user data should be fetched at the top level of 
 Promises should **never** be created in a client component unless through a memo, since re-renders will result in the promise never resolving. Promises should **only** be created in the top-level async server component and then passed down all the way to the client components. Only the bottom-level client component that needs a promise should `use()` it. if there are components between the top-level async page, and the component where the promise should be waited for with `use()`, the promise does not need to go inside a `use()` in those components - only where it's actually needed. This will prevent components from suspending unnecessarily. 
 
 ### Data Model
-information about the data model necessary to implement this feature can be found in `artifacts/01-better-session-support/schema-relationships-and-implementation.md` or accessed directly from the database package at `packages/database/src/*.ts`
+information about the data model necessary to implement this feature can be found in `specification/01-better-session-support/schema-relationships-and-implementation.md` or accessed directly from the database package at `packages/database/src/*.ts`
 
 ## User Stories
 This section defines the user stories for the feature.

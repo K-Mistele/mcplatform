@@ -48,13 +48,13 @@ Then wait for the user's research query.
      4. Find examples of usage in [relevant areas]
      5. Note any patterns or conventions used
      6. Use only READ-ONLY tools (Read, Grep, Glob, LS)
-     Return: File paths, line numbers, and concise explanations of findings
+     Return: File paths, line numbers, code patterns found, and concise explanations of findings
      ```
    - Example web sub-agent prompt (only create if user explicitly asks for web search):
      ```
      Research [specific component/pattern] using WebSearch and/or WebFetch:
      1. Find all pages related to [topic]
-     2. Identify how [concept] could be implemented (include page:quotation references
+     2. Identify how [concept] could be implemented (include page:quotation references)
      3. Look for connections to [related components]
      4. Find examples of usage in [relevant areas]
      5. Note any patterns or conventions used
@@ -64,19 +64,12 @@ Then wait for the user's research query.
 
    - Thoughts directory sub-agent prompt:
      ```
-     Explore the thoughts/ directory for context related to [topic]:
-     1. Search for any relevant information in thoughts/ (including shared/, local/, etc.)
+     Explore the `specifications/thoughts` and `specifications/feature-name/thoughts` directory for context related to [topic]:
+     1. Search for any relevant information in specifications/
      2. Look for design decisions, past research, PR descriptions, or implementation notes
      3. Find any historical context about [specific components/patterns]
      4. Note any architectural decisions or trade-offs discussed
      Remember: This information is historical context, not current truth
-     IMPORTANT: If you find files in thoughts/searchable/, report the actual path by removing only "searchable/"
-     Examples:
-     - thoughts/searchable/allison/notes.md → thoughts/allison/notes.md
-     - thoughts/searchable/shared/research/file.md → thoughts/shared/research/file.md
-     - thoughts/searchable/allison/old_stuff/notes.md → thoughts/allison/old_stuff/notes.md
-     DO NOT change the subdirectory structure - only remove "searchable/" from the path
-     Return: Relevant findings with correct file paths and key insights
      ```
 
 4. **Wait for all sub-agents to complete and synthesize findings:**
@@ -92,7 +85,7 @@ Then wait for the user's research query.
 
 5. **Gather metadata for the research document:**
    - Run the `scripts/spec_metadata.sh` script to generate all relevant metadata
-   - Filename: should be under the `artifacts` directory for the feature that you're currently working on, e.g. `artifacts/01-better-session-support/`, or under `artifacts/general` if you don't hav einformation about which feature you're working on. Name the file `researhc_YYYY-MM-DD_HH-MM-SS_topic.md`
+   - Filename: should be under the `specification` directory for the feature that you're currently working on, e.g. `specification/01-better-session-support/`, or under `specification/general` if you don't hav einformation about which feature you're working on. Name the file `research_YYYY-MM-DD_HH-MM-SS_topic.md`
 
 6. **Generate research document:**
    - Use the metadata gathered in step 4
@@ -144,11 +137,11 @@ Then wait for the user's research query.
 
      ## Historical Context (from thoughts/)
      [Relevant insights from thoughts/ directory with references]
-     - `artifacts/thoughts/something.md` - Historical decision about X
-     - `artifacts/thoughts/notes.md` - Past exploration of Y
+     - `specification/thoughts/something.md` or `specification/feature-name/thoughts/something.md`- Historical decision about X
+     - `specification/thoughts/notes.md` or `specification/feature-name/thoughts/notes.md` - Past exploration of Y
 
      ## Related Research
-     [Links to other research documents in `artifacts/` or `artifacts/thoughts/`]
+     [Links to other research documents in `specification/` or `specification/thoughts/`]
 
      ## Open Questions
      [Any areas that need further investigation]

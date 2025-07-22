@@ -7,7 +7,7 @@ Implement comprehensive analytics and reporting capabilities to provide insights
 Note: all paths provided in this document are relative to `packages/dashboard`, the dashboard package in this monorepo.
 Exceptions: 
 * All database-related paths such as `schema.ts`, `auth-schema.ts` and `mcp-auth-schema.ts` are under `packages/database/src`, and are exported under `packages/database/index.ts`
-* Any paths begins with `artifacts/` are at the top level of the repository and NOT under `packages/`; the `artifacts/` directory is at the SAME LEVEL as the `packages/` directory.
+* Any paths begins with `specification/` are at the top level of the repository and NOT under `packages/`; the `specification/` directory is at the SAME LEVEL as the `packages/` directory.
 
 ### Prerequisites
 This phase builds upon all previous phases and assumes full ticket management, workflow automation, integrations, and communication features are already implemented.
