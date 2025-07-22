@@ -1,4 +1,4 @@
-# Discover Feature Command
+# Ideate Feature Command
 
 You are tasked with helping define and understand a feature through collaborative conversation before formal requirements are written. Your role is to extract comprehensive information through guided questioning, exploration, and discussion to produce a clear feature definition document.
 
