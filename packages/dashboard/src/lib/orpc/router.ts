@@ -1,7 +1,7 @@
 import { requireSession } from '@/lib/auth/auth'
 import { os } from '@orpc/server'
 import { db, schema } from 'database'
-import { and, eq, gte, or } from 'drizzle-orm'
+import { and, desc, eq, gte, or } from 'drizzle-orm'
 import { z } from 'zod'
 
 export const base = os.errors({
@@ -372,6 +372,115 @@ export const getSessionSupportTickets = base
         return supportTickets
     })
 
+export const getSupportTicketActivities = base
+    .input(
+        z.object({
+            ticketId: z.string(),
+            limit: z.number().optional().default(50),
+            offset: z.number().optional().default(0)
+        })
+    )
+    .handler(async ({ input, errors }) => {
+        const session = await requireSession()
+
+        // Verify ticket belongs to user's organization
+        const [ticket] = await db
+            .select()
+            .from(schema.supportRequests)
+            .where(
+                and(
+                    eq(schema.supportRequests.id, input.ticketId),
+                    eq(schema.supportRequests.organizationId, session.session.activeOrganizationId)
+                )
+            )
+
+        if (!ticket) {
+            throw errors.RESOURCE_NOT_FOUND({
+                message: 'Support ticket not found'
+            })
+        }
+
+        const activities = await db
+            .select({
+                id: schema.supportTicketActivities.id,
+                createdAt: schema.supportTicketActivities.createdAt,
+                activityType: schema.supportTicketActivities.activityType,
+                content: schema.supportTicketActivities.content,
+                contentType: schema.supportTicketActivities.contentType,
+                metadata: schema.supportTicketActivities.metadata,
+                userName: schema.user.name,
+                userEmail: schema.user.email
+            })
+            .from(schema.supportTicketActivities)
+            .leftJoin(schema.user, eq(schema.supportTicketActivities.userId, schema.user.id))
+            .where(eq(schema.supportTicketActivities.supportRequestId, input.ticketId))
+            .orderBy(desc(schema.supportTicketActivities.createdAt))
+            .limit(input.limit)
+            .offset(input.offset)
+
+        return activities
+    })
+
+export const getOrganizationMembers = base.handler(async ({ errors }) => {
+    const session = await requireSession()
+
+    const members = await db
+        .select({
+            id: schema.user.id,
+            name: schema.user.name,
+            email: schema.user.email,
+            image: schema.user.image
+        })
+        .from(schema.user)
+        .innerJoin(schema.member, eq(schema.member.userId, schema.user.id))
+        .where(eq(schema.member.organizationId, session.session.activeOrganizationId))
+
+    return members
+})
+
+export const getSupportTicketWithMcpUser = base
+    .input(z.object({ ticketId: z.string() }))
+    .handler(async ({ input, errors }) => {
+        const session = await requireSession()
+
+        // Get support ticket with associated MCP server user via session relationship
+        const [ticketWithMcpUser] = await db
+            .select({
+                // Support ticket fields
+                ticketId: schema.supportRequests.id,
+                title: schema.supportRequests.title,
+                status: schema.supportRequests.status,
+                createdAt: schema.supportRequests.createdAt,
+                
+                // MCP Server User fields (the end user who submitted the ticket)
+                mcpUserTrackingId: schema.mcpServerUser.trackingId,
+                mcpUserEmail: schema.mcpServerUser.email,
+                mcpUserFirstSeen: schema.mcpServerUser.firstSeenAt,
+                
+                // MCP Server info
+                mcpServerName: schema.mcpServers.name,
+                mcpServerSlug: schema.mcpServers.slug
+            })
+            .from(schema.supportRequests)
+            .leftJoin(schema.mcpServerSession, eq(schema.supportRequests.mcpServerSessionId, schema.mcpServerSession.mcpServerSessionId))
+            .leftJoin(schema.mcpServerUser, eq(schema.mcpServerSession.mcpServerUserId, schema.mcpServerUser.id))
+            .leftJoin(schema.mcpServers, eq(schema.supportRequests.mcpServerId, schema.mcpServers.id))
+            .where(
+                and(
+                    eq(schema.supportRequests.id, input.ticketId),
+                    eq(schema.supportRequests.organizationId, session.session.activeOrganizationId)
+                )
+            )
+
+        if (!ticketWithMcpUser) {
+            throw errors.RESOURCE_NOT_FOUND({
+                message: 'Support ticket not found'
+            })
+        }
+
+        return ticketWithMcpUser
+    })
+
 export const router = {
     example: {
         execute: executeExample
@@ -382,5 +491,12 @@ export const router = {
     sessions: {
         getToolCalls: getSessionToolCalls,
         getSupportTickets: getSessionSupportTickets
+    },
+    supportTickets: {
+        getActivities: getSupportTicketActivities,
+        getWithMcpUser: getSupportTicketWithMcpUser
+    },
+    organization: {
+        getMembers: getOrganizationMembers
     }
 }

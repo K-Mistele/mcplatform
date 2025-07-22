@@ -10,6 +10,9 @@ export default function MyComponent() {
     const [name, setName] = useState('')
     const { execute, data, error, status } = useServerAction(redirectExample, {
         interceptors: [
+            onSuccess((data) => {
+                toast.success('Success')
+            }),
             onError((error) => {
                 if (isDefinedError(error)) {
                     toast.error(error.message)
@@ -17,9 +20,6 @@ export default function MyComponent() {
                 } else {
                     console.error(`unknown error:   `, error)
                 }
-            }),
-            onSuccess((data) => {
-                toast.success('Success')
             })
         ]
     })

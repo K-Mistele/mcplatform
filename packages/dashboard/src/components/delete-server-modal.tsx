@@ -29,16 +29,16 @@ export function DeleteServerModal({ serverId, serverName, trigger }: DeleteServe
 
     const { execute, status } = useServerAction(deleteMcpServerAction, {
         interceptors: [
+            onSuccess(() => {
+                toast.success('MCP server deleted successfully')
+                setOpen(false)
+            }),
             onError((error) => {
                 if (isDefinedError(error)) {
                     toast.error(error.message)
                 } else {
                     toast.error('Failed to delete MCP server')
                 }
-            }),
-            onSuccess(() => {
-                toast.success('MCP server deleted successfully')
-                setOpen(false)
             })
         ]
     })

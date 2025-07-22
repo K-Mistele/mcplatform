@@ -43,20 +43,12 @@ export function AddServerModal() {
             productPlatformOrTool: '',
             slug: '',
             authType: 'none',
-            informationMessage: '',
             supportTicketType: 'dashboard'
         }
     })
 
     const { execute, status } = useServerAction(createMcpServerAction, {
         interceptors: [
-            onError((error) => {
-                if (isDefinedError(error)) {
-                    toast.error(error.message)
-                } else {
-                    toast.error('Failed to create MCP server')
-                }
-            }),
             onSuccess(async (result) => {
                 toast.success('MCP server created successfully')
                 setOpen(false)
@@ -66,22 +58,29 @@ export function AddServerModal() {
                 if (result && typeof result === 'object' && 'id' in result) {
                     router.push(`/dashboard/mcp-servers/${result.id}`)
                 }
+            }),
+            onError((error) => {
+                if (isDefinedError(error)) {
+                    toast.error(error.message)
+                } else {
+                    toast.error('Failed to create MCP server')
+                }
             })
         ]
     })
 
     const { execute: validateSlug } = useServerAction(validateSubdomainAction, {
         interceptors: [
+            onSuccess(() => {
+                setSlugValidationError(null)
+                setIsValidatingSlug(false)
+            }),
             onError((error) => {
                 if (isDefinedError(error)) {
                     setSlugValidationError(error.message)
                 } else {
                     setSlugValidationError('Failed to validate slug')
                 }
-                setIsValidatingSlug(false)
-            }),
-            onSuccess(() => {
-                setSlugValidationError(null)
                 setIsValidatingSlug(false)
             })
         ]

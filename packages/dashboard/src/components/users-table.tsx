@@ -238,16 +238,16 @@ export function UsersTable({ data }: UsersTableProps) {
     // Set up delete action
     const { execute: deleteUsers, status: deleteStatus } = useServerAction(deleteMcpUsersAction, {
         interceptors: [
+            onSuccess((result: { deletedCount: number; deletedUserIds: (string | null)[] }) => {
+                toast.success(`Successfully deleted ${result.deletedCount} user(s)`)
+                setRowSelection({}) // Clear selection after successful delete
+            }),
             onError((error: any) => {
                 if (isDefinedError(error)) {
                     toast.error(`Failed to delete users: ${error.message}`)
                 } else {
                     toast.error('Failed to delete users')
                 }
-            }),
-            onSuccess((result: { deletedCount: number; deletedUserIds: string[] }) => {
-                toast.success(`Successfully deleted ${result.deletedCount} user(s)`)
-                setRowSelection({}) // Clear selection after successful delete
             })
         ]
     })

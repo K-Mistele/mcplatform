@@ -25,5 +25,5 @@ export type {
     User,
     Verification
 } from './src/auth-schema'
-export type { McpServer, McpServerSession, McpServerUser, SupportRequest } from './src/schema'
+export type { McpServer, McpServerSession, McpServerUser, SupportRequest, SupportTicketActivity } from './src/schema'
 export { authSchema, mcpAuthSchema }

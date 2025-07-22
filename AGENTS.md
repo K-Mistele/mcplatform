@@ -175,17 +175,20 @@ export const router = {
 
 ### Client Usage
 ```typescript
+import { onError, onSuccess } from '@orpc/client'
+import { useServerAction } from '@orpc/react/hooks'
+
 // Client-side server action RPC calls (only for `.actionable()` RPCs in actions.ts)
 const { execute, status } = useServerAction(actionName, {
     interceptors: [
+                onSuccess(() => {
+            toast.success('Success')
+        }),
         onError((error) => {
             if (isDefinedError(error)) {
                 // error will match the error types
                 toast.error(error.message)
             }
-        }),
-        onSuccess(() => {
-            toast.success('Success')
         })
     ]
 })

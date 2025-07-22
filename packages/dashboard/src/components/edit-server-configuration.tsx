@@ -70,16 +70,16 @@ export function EditServerConfiguration({
 
     const { execute, status } = useServerAction(updateMcpServerConfiguration, {
         interceptors: [
+            onSuccess(async () => {
+                toast.success('Configuration updated successfully')
+                setIsEditing(false)
+            }),
             onError((error) => {
                 if (isDefinedError(error)) {
                     toast.error(error.message)
                 } else {
                     toast.error('Failed to update configuration')
                 }
-            }),
-            onSuccess(async () => {
-                toast.success('Configuration updated successfully')
-                setIsEditing(false)
             })
         ]
     })

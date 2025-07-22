@@ -1,12 +1,18 @@
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Suspense } from 'react'
+import { ErrorBoundary } from 'react-error-boundary'
 import { requireSession } from '@/lib/auth/auth'
 import { db, schema } from 'database'
-import { eq } from 'drizzle-orm'
+import { and, desc, eq } from 'drizzle-orm'
 import { ArrowLeftIcon, CalendarIcon, MailIcon, ServerIcon, TicketIcon } from 'lucide-react'
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
+import { ActivityStream } from '@/components/support-tickets/activity-stream'
+import { StatusManager } from '@/components/support-tickets/status-manager'
+import { AssignmentWidget } from '@/components/support-tickets/assignment-widget'
+import { EditableTitle, EditableDescription, PriorityDisplay } from '@/components/support-tickets/editable-fields'
 
 interface SupportTicketDetailsPageProps {
     params: Promise<{ ticketId: string }>
@@ -58,17 +64,52 @@ export default async function SupportTicketDetailsPage(props: SupportTicketDetai
             resolvedAt: schema.supportRequests.resolvedAt,
             mcpServerId: schema.supportRequests.mcpServerId,
             organizationId: schema.supportRequests.organizationId,
+            assigneeId: schema.supportRequests.assigneeId,
+            priority: schema.supportRequests.priority,
             mcpServerName: schema.mcpServers.name,
-            mcpServerSlug: schema.mcpServers.slug
+            mcpServerSlug: schema.mcpServers.slug,
+            assigneeName: schema.user.name,
+            assigneeEmail: schema.user.email,
+            assigneeImage: schema.user.image
         })
         .from(schema.supportRequests)
         .leftJoin(schema.mcpServers, eq(schema.supportRequests.mcpServerId, schema.mcpServers.id))
+        .leftJoin(schema.user, eq(schema.supportRequests.assigneeId, schema.user.id))
         .where(eq(schema.supportRequests.id, params.ticketId))
         .limit(1)
 
     if (!ticketData || ticketData.organizationId !== session.session.activeOrganizationId) {
         notFound()
     }
+
+    // Fetch activities for the ticket
+    const activitiesPromise = db
+        .select({
+            id: schema.supportTicketActivities.id,
+            createdAt: schema.supportTicketActivities.createdAt,
+            activityType: schema.supportTicketActivities.activityType,
+            content: schema.supportTicketActivities.content,
+            contentType: schema.supportTicketActivities.contentType,
+            metadata: schema.supportTicketActivities.metadata,
+            userName: schema.user.name,
+            userEmail: schema.user.email
+        })
+        .from(schema.supportTicketActivities)
+        .leftJoin(schema.user, eq(schema.supportTicketActivities.userId, schema.user.id))
+        .where(eq(schema.supportTicketActivities.supportRequestId, params.ticketId))
+        .orderBy(desc(schema.supportTicketActivities.createdAt))
+
+    // Fetch organization members for assignment
+    const membersPromise = db
+        .select({
+            id: schema.user.id,
+            name: schema.user.name,
+            email: schema.user.email,
+            image: schema.user.image
+        })
+        .from(schema.user)
+        .innerJoin(schema.member, eq(schema.member.userId, schema.user.id))
+        .where(eq(schema.member.organizationId, session.session.activeOrganizationId))
 
     return (
         <div className="flex flex-col gap-4 py-4 md:gap-6 md:py-6">
@@ -82,17 +123,26 @@ export default async function SupportTicketDetailsPage(props: SupportTicketDetai
                     </Button>
                 </div>
 
-                <div className="flex items-center gap-3 mb-2">
+                <div className="flex items-center gap-3 mb-6">
                     <TicketIcon className="h-8 w-8 text-primary" />
-                    <div>
-                        <h1 className="text-3xl font-bold">{ticketData.title || 'Support Ticket'}</h1>
+                    <div className="flex-1">
+                        <EditableTitle
+                            ticketId={ticketData.id}
+                            initialValue={ticketData.title}
+                        />
                         <p className="text-muted-foreground">Ticket ID: {ticketData.id}</p>
+                    </div>
+                    <div className="flex items-center gap-3">
+                        <StatusManager
+                            ticketId={ticketData.id}
+                            currentStatus={ticketData.status || 'pending'}
+                        />
                     </div>
                 </div>
             </div>
 
             <div className="px-4 lg:px-6">
-                <div className="grid gap-6 md:grid-cols-2 2xl:grid-cols-3">
+                <div className="grid gap-6 lg:grid-cols-2 2xl:grid-cols-3">
                     {/* Basic Information Card */}
                     <Card>
                         <CardHeader>
@@ -103,22 +153,14 @@ export default async function SupportTicketDetailsPage(props: SupportTicketDetai
                             <CardDescription>Core details about this support ticket</CardDescription>
                         </CardHeader>
                         <CardContent className="space-y-4">
-                            <div>
-                                <div className="text-sm font-medium text-muted-foreground">Ticket ID</div>
-                                <div className="mt-1">
-                                    <Badge variant="outline" className="font-mono text-xs">
-                                        {ticketData.id}
-                                    </Badge>
-                                </div>
-                            </div>
-                            <div>
-                                <div className="text-sm font-medium text-muted-foreground">Status</div>
-                                <div className="mt-1">
-                                    <Badge className={getStatusColor(ticketData.status || 'pending')}>
-                                        {ticketData.status?.replace('_', ' ') || 'pending'}
-                                    </Badge>
-                                </div>
-                            </div>
+                            <PriorityDisplay
+                                currentPriority={ticketData.priority}
+                            />
+                            <AssignmentWidget
+                                ticketId={ticketData.id}
+                                currentAssigneeId={ticketData.assigneeId}
+                                membersPromise={membersPromise}
+                            />
                             <div>
                                 <div className="text-sm font-medium text-muted-foreground">User's Email</div>
                                 <div className="mt-1 flex items-center gap-2">
@@ -192,23 +234,22 @@ export default async function SupportTicketDetailsPage(props: SupportTicketDetai
                     )}
 
                     {/* Summary Card */}
-                    <Card className="md:col-span-1 md:row-span-2">
+                    <Card className="lg:col-span-2 2xl:col-span-1">
                         <CardHeader>
                             <CardTitle>Summary</CardTitle>
                             <CardDescription>Problem description provided by the user</CardDescription>
                         </CardHeader>
                         <CardContent>
-                            <div className="prose prose-sm max-w-none">
-                                <p className="text-sm leading-relaxed">
-                                    {ticketData.conciseSummary || 'No summary provided'}
-                                </p>
-                            </div>
+                            <EditableDescription
+                                ticketId={ticketData.id}
+                                initialValue={ticketData.conciseSummary}
+                            />
                         </CardContent>
                     </Card>
 
                     {/* Context Card */}
                     {ticketData.context && (
-                        <Card className="md:col-span-2 ">
+                        <Card className="lg:col-span-2 2xl:col-span-3">
                             <CardHeader>
                                 <CardTitle>Context</CardTitle>
                                 <CardDescription>Additional context about the user's project and setup</CardDescription>
@@ -220,6 +261,19 @@ export default async function SupportTicketDetailsPage(props: SupportTicketDetai
                             </CardContent>
                         </Card>
                     )}
+                </div>
+
+                {/* Activity Stream */}
+                <div className="md:col-span-3">
+                    <Suspense fallback={<div>Loading activity...</div>}>
+                        <ErrorBoundary fallback={<div>Error loading activity</div>}>
+                            <ActivityStream
+                                activitiesPromise={activitiesPromise}
+                                ticketId={ticketData.id}
+                                currentStatus={ticketData.status || 'pending'}
+                            />
+                        </ErrorBoundary>
+                    </Suspense>
                 </div>
             </div>
         </div>

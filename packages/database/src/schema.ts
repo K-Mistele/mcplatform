@@ -1,14 +1,18 @@
 import { nanoid } from 'common/nanoid'
 import { bigint, date, index, jsonb, pgEnum, pgTable, text } from 'drizzle-orm/pg-core'
-import { organization } from './auth-schema'
+import { organization, user } from './auth-schema'
 
 const supportRequestStatusValues = ['needs_email', 'pending', 'in_progress', 'resolved', 'closed'] as const
 const supportRequestMethodValues = ['slack', 'linear', 'dashboard', 'none'] as const
 const mcpServerAuthTypeValues = ['platform_oauth', 'custom_oauth', 'none', 'collect_email'] as const
+const activityTypeValues = ['comment', 'status_change', 'assignment', 'field_update', 'system'] as const
+const priorityValues = ['low', 'medium', 'high', 'critical'] as const
 
 export const supportRequestStatus = pgEnum('support_request_status', supportRequestStatusValues)
 export const supportRequestMethod = pgEnum('support_request_method', supportRequestMethodValues)
 export const mcpServerAuthType = pgEnum('mcp_server_auth_type', mcpServerAuthTypeValues)
+export const supportTicketActivityType = pgEnum('support_ticket_activity_type', activityTypeValues)
+export const supportTicketPriority = pgEnum('support_ticket_priority', priorityValues)
 
 export const supportRequests = pgTable('support_requests', {
     id: text('id')
@@ -28,8 +32,34 @@ export const supportRequests = pgTable('support_requests', {
     mcpServerId: text('mcp_server_id').references(() => mcpServers.id, { onDelete: 'cascade' }),
     mcpServerSessionId: text('mcp_server_session_id').references(() => mcpServerSession.mcpServerSessionId, {
         onDelete: 'cascade'
-    })
+    }),
+    assigneeId: text('assignee_id').references(() => user.id, { onDelete: 'set null' }),
+    priority: supportTicketPriority('priority').default('medium')
 })
+
+export const supportTicketActivities = pgTable(
+    'support_ticket_activities',
+    {
+        id: text('id')
+            .primaryKey()
+            .$defaultFn(() => `sta_${nanoid(8)}`),
+        createdAt: bigint('created_at', { mode: 'number' }).$defaultFn(() => Date.now()),
+        supportRequestId: text('support_request_id')
+            .references(() => supportRequests.id, { onDelete: 'cascade' })
+            .notNull(),
+        userId: text('user_id')
+            .references(() => user.id, { onDelete: 'cascade' })
+            .notNull(),
+        activityType: supportTicketActivityType('activity_type').notNull(),
+        content: jsonb('content'),
+        contentType: text('content_type').default('text'),
+        metadata: jsonb('metadata')
+    },
+    (t) => [
+        index('support_ticket_activities_support_request_id_idx').on(t.supportRequestId),
+        index('support_ticket_activities_created_at_idx').on(t.createdAt)
+    ]
+)
 
 export const mcpServers = pgTable(
     'mcp_servers',
@@ -108,4 +138,5 @@ export const mcpServerSession = pgTable(
 export type McpServerSession = typeof mcpServerSession.$inferSelect
 export type McpServerUser = typeof mcpServerUser.$inferSelect
 export type SupportRequest = typeof supportRequests.$inferSelect
+export type SupportTicketActivity = typeof supportTicketActivities.$inferSelect
 export type McpServer = typeof mcpServers.$inferSelect
