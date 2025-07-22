@@ -102,6 +102,7 @@ Then wait for the user's research query.
      status: complete
      last_updated: [Current date in YYYY-MM-DD format]
      last_updated_by: [Researcher name]
+     type: research
      ---
 
      # Research: [User's Question/Topic]

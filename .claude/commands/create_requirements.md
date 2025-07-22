@@ -120,13 +120,33 @@ Then wait for the user's input.
    - Security requirements
    - Organization scoping
 
-### Step 4: Write Requirements Document
+### Step 4: Gather Metadata and Write Requirements Document
 
-Write the document directly using the standard template structure. Keep it focused on shipping functionality.
+1. **Gather metadata for the requirements document:**
+   - Run the `scripts/spec_metadata.sh` script to generate all relevant metadata
+   - This provides git commit hash, branch name, repository info, and researcher details
 
-Use this lean template:
+2. **Write the document directly using the standard template structure with frontmatter**
+
+Keep it focused on shipping functionality and include proper metadata frontmatter.
+
+Use this template:
 
 ```markdown
+---
+date: [Current date and time with timezone in ISO format]
+researcher: [Researcher name from thoughts status]
+git_commit: [Current commit hash]
+branch: [Current branch name]
+repository: [Repository name]
+topic: "[Feature Name] Requirements"
+tags: [requirements, specification, relevant-feature-tags]
+status: complete
+last_updated: [Current date in YYYY-MM-DD format]
+last_updated_by: [Researcher name]
+type: requirements
+---
+
 # Requirements for [Feature Name]
 
 ## Goal

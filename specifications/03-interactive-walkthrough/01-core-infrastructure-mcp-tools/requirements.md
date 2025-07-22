@@ -39,21 +39,27 @@ New tables integrate with existing schema:
 
 3. **End-user**: As a developer, when I call `select_walkthrough` for a walkthrough I've started before, then I resume from my current step position with all previous progress preserved.
 
-4. **End-user**: As a developer, when I call `next_walkthrough_step`, then I receive the next step's content and my progress is updated to reflect my current position in the walkthrough.
+4. **End-user**: As a developer, when I call `next_walkthrough_step`, then the system dynamically calculates the next uncompleted step using the `completedSteps` array, returns the content, and atomically updates my progress.
 
 5. **End-user**: As a developer, when I reach the final step and call `next_walkthrough_step`, then my walkthrough status is marked as completed and I receive confirmation of completion.
 
+6. **End-user**: As a developer, when I call `get_walkthrough_status`, then I receive structured information about my overall progress including current step and completion status for all steps in the walkthrough.
+
+7. **End-user**: As a developer, when I want to restart a walkthrough I've partially completed, then I can call `reset_walkthrough_progress` with confirmation to clear my progress and begin fresh from the first step.
+
 ### Progress Tracking & Session Management  
-6. **End-user**: As a developer, when I close my IDE and restart it days later, then I can resume my walkthrough exactly where I left off without losing any progress.
+8. **End-user**: As a developer, when I close my IDE and restart it days later, then I can resume my walkthrough exactly where I left off without losing any progress.
 
-7. **End-user**: As a developer using multiple MCP servers from the same organization, when the same walkthrough is assigned to different servers, then my progress is independent per server context for analytics purposes.
+9. **End-user**: As a developer using multiple MCP servers from the same organization, when the same walkthrough is assigned to different servers, then my progress is independent per server context for analytics purposes.
 
-8. **System**: When a walkthrough is updated with new content, then existing users maintain their progress on the version they started, preventing confusion or lost progress.
+10. **System**: When a walkthrough author reorders, adds, or deletes steps, then existing users maintain their progress seamlessly via the `completedSteps` array tracking and dynamic next-step calculation.
+
+11. **System**: When a walkthrough is updated with new content, then existing users maintain their progress on the version they started, preventing confusion or lost progress.
 
 ### OAuth Integration & User Identification
-9. **End-user**: As a developer, when I call walkthrough tools without being authenticated, then I'm prompted for OAuth authorization and seamlessly returned to my walkthrough after completing the flow.
+12. **End-user**: As a developer, when I call walkthrough tools without being authenticated, then I'm prompted for OAuth authorization and seamlessly returned to my walkthrough after completing the flow.
 
-10. **System**: When an end-user completes OAuth authentication, then their email is captured for de-anonymization and linked to their walkthrough progress for analytics and support purposes.
+13. **System**: When an end-user completes OAuth authentication, then their email is captured for de-anonymization and linked to their walkthrough progress for analytics and support purposes.
 
 ## Requirements
 
@@ -61,22 +67,29 @@ New tables integrate with existing schema:
 
 #### Database Schema Implementation
 - Four new tables must be created following MCPlatform naming conventions with `nanoid` IDs and `bigint` timestamps
-- `walkthroughs` table stores organization-scoped metadata with versioning and publish status
+- `walkthroughs` table stores organization-scoped metadata with versioning and publish status, including `firstStepId` reference
 - `mcp_server_walkthroughs` junction table enables many-to-many assignments with display ordering and enable/disable controls
-- `walkthrough_steps` table uses linked-list structure via `next_step_id` for flexible step ordering and insertion
-- `walkthrough_progress` table tracks user position with version compatibility and completion status
+- `walkthrough_steps` table uses linked-list structure via `next_step_id` for flexible step ordering and insertion, plus `displayOrder` and optional `sectionTitle`
+- `walkthrough_progress` table tracks user position with version compatibility, completion status, and JSONB `completedSteps` array for granular progress tracking
+- Progress tracking enum: `walkthrough_status` with values `['not_started', 'in_progress', 'completed']`
 - All foreign key relationships must include proper cascade deletes and organization scoping
 
 #### MCP Tool Implementation
-- `list_walkthroughs` tool returns walkthroughs assigned to current server filtered by `isEnabled` and `isPublished` status
-- `select_walkthrough` tool handles OAuth flow initiation, progress creation/resumption, and version compatibility
-- `next_walkthrough_step` tool navigates linked-list structure, updates progress, and handles completion detection
+- `list_walkthroughs` tool returns walkthroughs assigned to current server filtered by `isEnabled` and `isPublished` status, ordered by `displayOrder`
+- `select_walkthrough` tool handles OAuth flow initiation, progress creation/resumption, and version compatibility with `resume_if_exists` parameter
+- `next_walkthrough_step` tool uses dynamic progress calculation algorithm to find next uncompleted step and updates `completedSteps` array
+- `get_walkthrough_status` tool returns structured progress information including overall status, current step, and completion status for all steps
+- `reset_walkthrough_progress` tool allows users to clear their progress and restart a walkthrough from the beginning with confirmation requirement
 - All tools must integrate with existing VHost routing via `getMcpServerConfiguration` function
 - Tools must follow established patterns from `src/lib/mcp/tools/support.ts` including Zod validation and error handling
 
 #### Progress Tracking Logic
+- **Dynamic Next Step Calculation**: System must use `displayOrder`-based algorithm to find next step rather than relying solely on `nextStepId` linked-list pointers
+- **Next Step Algorithm**: For each user/walkthrough, fetch user's `completedSteps` array and all walkthrough steps sorted by `displayOrder`, then return first step ID not in completed array
+- **Atomic Progress Updates**: When user completes a step, must atomically update `completedSteps` array, `currentStepId`, and `status` in single database transaction
+- **Content Change Resilience**: System must handle walkthrough edits (reordering, adding, deleting steps) without breaking user progress via `completedSteps` tracking
+- **Version Compatibility**: Users maintain progress on their started version while new users get latest version
 - User progress must persist across IDE sessions using existing session management infrastructure
-- Progress tracking must handle walkthrough content updates gracefully via version field compatibility
 - System must support multiple users progressing through same walkthrough simultaneously
 - Progress updates must be atomic to prevent race conditions during concurrent access
 
@@ -128,7 +141,10 @@ New tables integrate with existing schema:
 ### Core Functionality
 - End-users can discover walkthroughs via `list_walkthroughs` tool showing appropriate content for their server context
 - End-users can start new walkthroughs via `select_walkthrough` with automatic OAuth flow when needed
-- End-users can navigate through steps via `next_walkthrough_step` with progress automatically tracked
+- End-users can navigate through steps via `next_walkthrough_step` using dynamic progress calculation algorithm
+- End-users can check their progress via `get_walkthrough_status` tool showing detailed completion information
+- End-users can reset their progress via `reset_walkthrough_progress` tool to start over from the beginning
+- Progress tracking survives walkthrough content changes (step reordering, additions, deletions) via `completedSteps` array
 - Progress persists correctly across IDE sessions and server restarts
 - Multiple users can progress through same walkthrough independently without conflicts
 - Walkthrough completion is properly detected and recorded for analytics
@@ -136,8 +152,10 @@ New tables integrate with existing schema:
 ### Technical Implementation  
 - All database operations properly scoped to organizations preventing data leaks
 - OAuth integration works seamlessly with existing sub-tenant authentication system
-- Linked-list operations perform efficiently without database performance issues
+- Dynamic progress calculation algorithm works efficiently using `displayOrder` sorting and `completedSteps` array lookups
 - Content versioning prevents user progress loss during walkthrough updates
+- Progress tracking resilience handles content changes without breaking user state
+- All five MCP tools (`list_walkthroughs`, `select_walkthrough`, `next_walkthrough_step`, `get_walkthrough_status`, `reset_walkthrough_progress`) function correctly
 - MCP tools integrate with existing server infrastructure without conflicts or breaking changes
 - Error handling follows established JSON-RPC patterns with proper status codes
 

@@ -129,11 +129,30 @@ Then wait for the user's input.
 
 3. **Get feedback on strategy** before writing detailed plan
 
-### Step 3: Implementation Plan Writing
+### Step 3: Gather Metadata and Write Implementation Plan
 
-Write the implementation strategy document using this template:
+1. **Gather metadata for the implementation strategy document:**
+   - Run the `scripts/spec_metadata.sh` script to generate all relevant metadata
+   - Filename: should be under the `specifications` directory for the feature that you're currently working on, e.g. `specifications/01-better-session-support/implementation-plan.md`, or under `specifications/general` if you don't have information about which feature you're working on. Name the file `implementation-plan.md`
 
-```markdown
+2. **Generate implementation strategy document:**
+   - Use the metadata gathered in step 1
+   - Structure the document with YAML frontmatter followed by content:
+     ```markdown
+     ---
+     date: [Current date and time with timezone in ISO format]
+     researcher: [Researcher name from thoughts status]
+     git_commit: [Current commit hash]
+     branch: [Current branch name]
+     repository: [Repository name]
+     topic: "[Feature/Task Name] Implementation Strategy"
+     tags: [implementation, strategy, relevant-component-names]
+     status: complete
+     last_updated: [Current date in YYYY-MM-DD format]
+     last_updated_by: [Researcher name]
+     type: implementation_strategy
+     ---
+
 # [Feature/Task Name] Implementation Plan
 
 ## Overview

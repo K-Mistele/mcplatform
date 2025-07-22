@@ -309,6 +309,36 @@ Returns a structured object with the overall status, current step, and a list of
 ```
 Provides a way for users to start over by clearing the corresponding record in `walkthrough_progress`.
 
+### State and Progress Management Logic
+
+This section details the core algorithms for managing user progress, designed for resilience against content updates.
+
+#### Next Step Calculation Logic
+
+To ensure progress is not lost when authors edit a walkthrough (reorder, add, or delete steps), the next step is determined dynamically rather than relying solely on the `nextStepId` linked-list pointer.
+
+The algorithm is as follows:
+1.  **Fetch Data**: For a given user and walkthrough, concurrently fetch:
+    a. The user's `walkthrough_progress` record to get the `completedSteps` array.
+    b. The complete, ordered list of all `walkthrough_steps` for the walkthrough, sorted by `displayOrder`.
+2.  **Find Next Step**: Iterate through the ordered list of all steps. The **first** step whose ID is **not** present in the user's `completedSteps` array is the next step for the user.
+3.  **Handle Completion**: If the loop completes and all step IDs are found in the `completedSteps` array, the walkthrough is considered complete. The `status` in the `walkthrough_progress` record should be updated to `'completed'`.
+
+This method ensures that changes to the walkthrough's structure do not break a user's state.
+
+#### Progress Update on Step Completion
+
+When a user completes a step (e.g., by invoking the `next_walkthrough_step` tool), the following atomic update must occur:
+
+1.  **Identify Completed Step**: The step the user was just on is marked as completed.
+2.  **Calculate Next Step**: The "Next Step Calculation Logic" (described above) is executed to find the user's new `currentStepId`.
+3.  **Update Database**: The user's `walkthrough_progress` record is updated:
+    a. The ID of the just-completed step is appended to the `completedSteps` JSONB array.
+    b. The `currentStepId` is updated to the new next step.
+    c. The `status` is set to `in_progress` if it was previously `not_started`.
+
+This ensures that progress is always recorded before the user is shown the next step.
+
 ### Integration with Existing Infrastructure
 
 #### Database Integration
