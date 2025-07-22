@@ -1,18 +1,18 @@
+import { ActivityStream } from '@/components/support-tickets/activity-stream'
+import { AssignmentWidget } from '@/components/support-tickets/assignment-widget'
+import { EditableDescription, EditableTitle, PriorityDisplay } from '@/components/support-tickets/editable-fields'
+import { StatusManager } from '@/components/support-tickets/status-manager'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Suspense } from 'react'
-import { ErrorBoundary } from 'react-error-boundary'
 import { requireSession } from '@/lib/auth/auth'
 import { db, schema } from 'database'
-import { and, desc, eq } from 'drizzle-orm'
+import { desc, eq } from 'drizzle-orm'
 import { ArrowLeftIcon, CalendarIcon, MailIcon, ServerIcon, TicketIcon } from 'lucide-react'
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
-import { ActivityStream } from '@/components/support-tickets/activity-stream'
-import { StatusManager } from '@/components/support-tickets/status-manager'
-import { AssignmentWidget } from '@/components/support-tickets/assignment-widget'
-import { EditableTitle, EditableDescription, PriorityDisplay } from '@/components/support-tickets/editable-fields'
+import { Suspense } from 'react'
+import { ErrorBoundary } from 'react-error-boundary'
 
 interface SupportTicketDetailsPageProps {
     params: Promise<{ ticketId: string }>
@@ -129,17 +129,11 @@ export default async function SupportTicketDetailsPage(props: SupportTicketDetai
                 <div className="flex items-center gap-3 mb-6">
                     <TicketIcon className="h-8 w-8 text-primary" />
                     <div className="flex-1">
-                        <EditableTitle
-                            ticketId={ticketData.id}
-                            initialValue={ticketData.title}
-                        />
+                        <EditableTitle ticketId={ticketData.id} initialValue={ticketData.title} />
                         <p className="text-muted-foreground">Ticket ID: {ticketData.id}</p>
                     </div>
                     <div className="flex items-center gap-3">
-                        <StatusManager
-                            ticketId={ticketData.id}
-                            currentStatus={ticketData.status || 'pending'}
-                        />
+                        <StatusManager ticketId={ticketData.id} currentStatus={ticketData.status || 'pending'} />
                     </div>
                 </div>
             </div>
@@ -156,9 +150,7 @@ export default async function SupportTicketDetailsPage(props: SupportTicketDetai
                             <CardDescription>Core details about this support ticket</CardDescription>
                         </CardHeader>
                         <CardContent className="space-y-4">
-                            <PriorityDisplay
-                                currentPriority={ticketData.priority}
-                            />
+                            <PriorityDisplay currentPriority={ticketData.priority} />
                             <AssignmentWidget
                                 ticketId={ticketData.id}
                                 currentAssigneeId={ticketData.assigneeId}
@@ -243,10 +235,7 @@ export default async function SupportTicketDetailsPage(props: SupportTicketDetai
                             <CardDescription>Problem description provided by the user</CardDescription>
                         </CardHeader>
                         <CardContent>
-                            <EditableDescription
-                                ticketId={ticketData.id}
-                                initialValue={ticketData.conciseSummary}
-                            />
+                            <EditableDescription ticketId={ticketData.id} initialValue={ticketData.conciseSummary} />
                         </CardContent>
                     </Card>
 

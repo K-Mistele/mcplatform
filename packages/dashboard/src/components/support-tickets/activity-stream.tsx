@@ -6,9 +6,9 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Separator } from '@/components/ui/separator'
 import { CpuIcon, EditIcon, MessageCircleIcon, SettingsIcon, TicketIcon, UserCheckIcon } from 'lucide-react'
 import { use, useEffect, useState } from 'react'
+import { CommentActions } from './comment-actions'
 import { CommentForm } from './comment-form'
 import { MarkdownRenderer } from './markdown-renderer'
-import { CommentActions } from './comment-actions'
 
 interface Activity {
     id: string
@@ -105,10 +105,7 @@ function ActivityItem({ activity }: ActivityItemProps) {
                                 </span>
                                 {getActivityIcon('comment')}
                             </div>
-                            <CommentActions 
-                                activityId={activity.id}
-                                content={activity.content}
-                            />
+                            <CommentActions activityId={activity.id} content={activity.content} />
                         </div>
                         {hasStatusChange && (
                             <div className="flex items-center gap-2 text-sm ml-6 flex-wrap">
@@ -269,23 +266,18 @@ function useRelativeTime(timestamp: number) {
     return relativeTime
 }
 
-// Component for displaying time that avoids hydration issues
+// Component for displaying time that shows both relative and absolute
 function TimeDisplay({ timestamp }: { timestamp: number }) {
     const relativeTime = useRelativeTime(timestamp)
     const absoluteTime = formatDate(timestamp)
 
-    // Show relative time if available (client-side), otherwise absolute time
-    return <span>{relativeTime || absoluteTime}</span>
+    // Show relative time with absolute time in title for hover
+    return <span title={absoluteTime}>{relativeTime || absoluteTime}</span>
 }
 
 export function ActivityStream({ activitiesPromise, ticketId, currentStatus }: ActivityStreamProps) {
-    let activities: Activity[]
-    try {
-        activities = use(activitiesPromise)
-    } catch (error) {
-        console.error('Error loading activities:', error)
-        activities = []
-    }
+    // Use the promise directly - errors will be caught by ErrorBoundary
+    const activities = use(activitiesPromise)
 
     return (
         <Card className="mt-6">
@@ -304,12 +296,7 @@ export function ActivityStream({ activitiesPromise, ticketId, currentStatus }: A
                     {activities.length === 0 ? (
                         <div className="text-center py-8 text-muted-foreground">No activity yet</div>
                     ) : (
-                        activities.map((activity) => (
-                            <ActivityItem 
-                                key={activity.id} 
-                                activity={activity} 
-                            />
-                        ))
+                        activities.map((activity) => <ActivityItem key={activity.id} activity={activity} />)
                     )}
                 </div>
             </CardContent>
