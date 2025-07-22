@@ -21,15 +21,13 @@ interface EditCommentDialogProps {
     onOpenChange: (open: boolean) => void
     activityId: string
     initialContent: string
-    onCommentEdited?: () => void
 }
 
 export function EditCommentDialog({
     open,
     onOpenChange,
     activityId,
-    initialContent,
-    onCommentEdited
+    initialContent
 }: EditCommentDialogProps) {
     const [content, setContent] = useState(initialContent)
 
@@ -37,7 +35,6 @@ export function EditCommentDialog({
         interceptors: [
             onSuccess(() => {
                 toast.success('Comment updated successfully')
-                onCommentEdited?.()
                 onOpenChange(false)
             }),
             onError((error) => {

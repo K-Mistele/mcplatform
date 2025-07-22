@@ -47,6 +47,9 @@ function getStatusColor(status: string) {
     }
 }
 
+// Ensure this page is not cached so revalidatePath works properly
+export const revalidate = 0
+
 export default async function SupportTicketDetailsPage(props: SupportTicketDetailsPageProps) {
     const session = await requireSession()
     const params = await props.params
@@ -82,7 +85,7 @@ export default async function SupportTicketDetailsPage(props: SupportTicketDetai
         notFound()
     }
 
-    // Fetch activities for the ticket
+    // Fetch activities for the ticket (with no-cache to ensure revalidatePath works)
     const activitiesPromise = db
         .select({
             id: schema.supportTicketActivities.id,

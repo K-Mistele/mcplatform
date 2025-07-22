@@ -8,6 +8,7 @@ import { CpuIcon, EditIcon, MessageCircleIcon, SettingsIcon, TicketIcon, UserChe
 import { use, useEffect, useState } from 'react'
 import { CommentForm } from './comment-form'
 import { MarkdownRenderer } from './markdown-renderer'
+import { CommentActions } from './comment-actions'
 
 interface Activity {
     id: string
@@ -24,7 +25,10 @@ interface ActivityStreamProps {
     activitiesPromise: Promise<Activity[]>
     ticketId: string
     currentStatus: string
-    onActivityUpdate?: () => void
+}
+
+interface ActivityItemProps {
+    activity: Activity
 }
 
 function formatDate(timestamp: number): string {
@@ -75,7 +79,7 @@ function getStatusColor(status: string) {
     }
 }
 
-function ActivityItem({ activity }: { activity: Activity }) {
+function ActivityItem({ activity }: ActivityItemProps) {
     const userInitials = activity.userName
         ? activity.userName
               .split(' ')
@@ -93,12 +97,18 @@ function ActivityItem({ activity }: { activity: Activity }) {
                 )
                 return (
                     <div className="space-y-2">
-                        <div className="flex items-center gap-2 text-sm font-medium flex-wrap">
-                            {getActivityIcon('comment')}
-                            <span>{activity.userName || activity.userEmail}</span>
-                            <span className="text-muted-foreground">
-                                {hasStatusChange ? 'commented and changed status' : 'commented'}
-                            </span>
+                        <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-2 text-sm font-medium flex-wrap">
+                                <span>{activity.userName || activity.userEmail}</span>
+                                <span className="text-muted-foreground">
+                                    {hasStatusChange ? 'commented and changed status' : 'commented'}
+                                </span>
+                                {getActivityIcon('comment')}
+                            </div>
+                            <CommentActions 
+                                activityId={activity.id}
+                                content={activity.content}
+                            />
                         </div>
                         {hasStatusChange && (
                             <div className="flex items-center gap-2 text-sm ml-6 flex-wrap">
@@ -124,9 +134,9 @@ function ActivityItem({ activity }: { activity: Activity }) {
                 if (!activity.content?.oldStatus || !activity.content?.newStatus) {
                     return (
                         <div className="flex items-center gap-2 text-sm font-medium">
-                            {getActivityIcon('status_change')}
                             <span>{activity.userName || activity.userEmail}</span>
                             <span className="text-muted-foreground">changed status</span>
+                            {getActivityIcon('status_change')}
                         </div>
                     )
                 }
@@ -134,7 +144,6 @@ function ActivityItem({ activity }: { activity: Activity }) {
                 return (
                     <div className="space-y-2">
                         <div className="flex items-center gap-2 text-sm font-medium flex-wrap">
-                            {getActivityIcon('status_change')}
                             <span>{activity.userName || activity.userEmail}</span>
                             <span className="text-muted-foreground">changed status from</span>
                             <Badge className={getStatusColor(activity.content.oldStatus)}>
@@ -144,6 +153,7 @@ function ActivityItem({ activity }: { activity: Activity }) {
                             <Badge className={getStatusColor(activity.content.newStatus)}>
                                 {activity.content.newStatus?.replace('_', ' ')}
                             </Badge>
+                            {getActivityIcon('status_change')}
                         </div>
                         {activity.metadata?.comment && (
                             <div className="ml-6 text-sm text-muted-foreground">"{activity.metadata.comment}"</div>
@@ -155,13 +165,13 @@ function ActivityItem({ activity }: { activity: Activity }) {
             case 'assignment':
                 return (
                     <div className="flex items-center gap-2 text-sm font-medium">
-                        {getActivityIcon('assignment')}
                         <span>{activity.userName || activity.userEmail}</span>
                         {activity.content?.newAssigneeId ? (
                             <span className="text-muted-foreground">assigned this ticket</span>
                         ) : (
                             <span className="text-muted-foreground">unassigned this ticket</span>
                         )}
+                        {getActivityIcon('assignment')}
                     </div>
                 )
 
@@ -169,9 +179,9 @@ function ActivityItem({ activity }: { activity: Activity }) {
                 if (!activity.content || typeof activity.content !== 'object') {
                     return (
                         <div className="flex items-center gap-2 text-sm font-medium">
-                            {getActivityIcon('field_update')}
                             <span>{activity.userName || activity.userEmail}</span>
                             <span className="text-muted-foreground">updated fields</span>
+                            {getActivityIcon('field_update')}
                         </div>
                     )
                 }
@@ -180,9 +190,9 @@ function ActivityItem({ activity }: { activity: Activity }) {
                 return (
                     <div className="space-y-1">
                         <div className="flex items-center gap-2 text-sm font-medium">
-                            {getActivityIcon('field_update')}
                             <span>{activity.userName || activity.userEmail}</span>
                             <span className="text-muted-foreground">updated</span>
+                            {getActivityIcon('field_update')}
                         </div>
                         <div className="ml-6 space-y-1">
                             {changes.map((field) => (
@@ -202,23 +212,25 @@ function ActivityItem({ activity }: { activity: Activity }) {
             default:
                 return (
                     <div className="flex items-center gap-2 text-sm font-medium">
-                        {getActivityIcon('system')}
                         <span className="text-muted-foreground">System activity</span>
+                        {getActivityIcon('system')}
                     </div>
                 )
         }
     }
 
     return (
-        <div className="flex gap-3 p-4">
-            <Avatar className="h-8 w-8 flex-shrink-0">
-                <AvatarImage src="" alt={activity.userName || activity.userEmail || ''} />
-                <AvatarFallback className="text-xs">{userInitials}</AvatarFallback>
-            </Avatar>
-            <div className="flex-1 space-y-2">
-                {renderActivityContent()}
-                <div className="text-xs text-muted-foreground">
-                    <TimeDisplay timestamp={activity.createdAt} />
+        <div className="border rounded-lg p-4 bg-card">
+            <div className="flex gap-3">
+                <Avatar className="h-8 w-8 flex-shrink-0">
+                    <AvatarImage src="" alt={activity.userName || activity.userEmail || ''} />
+                    <AvatarFallback className="text-xs">{userInitials}</AvatarFallback>
+                </Avatar>
+                <div className="flex-1 space-y-2">
+                    {renderActivityContent()}
+                    <div className="text-xs text-muted-foreground">
+                        <TimeDisplay timestamp={activity.createdAt} />
+                    </div>
                 </div>
             </div>
         </div>
@@ -266,7 +278,7 @@ function TimeDisplay({ timestamp }: { timestamp: number }) {
     return <span>{relativeTime || absoluteTime}</span>
 }
 
-export function ActivityStream({ activitiesPromise, ticketId, currentStatus, onActivityUpdate }: ActivityStreamProps) {
+export function ActivityStream({ activitiesPromise, ticketId, currentStatus }: ActivityStreamProps) {
     let activities: Activity[]
     try {
         activities = use(activitiesPromise)
@@ -284,19 +296,19 @@ export function ActivityStream({ activitiesPromise, ticketId, currentStatus, onA
                 </CardTitle>
             </CardHeader>
             <CardContent className="space-y-0">
-                <CommentForm ticketId={ticketId} currentStatus={currentStatus} onCommentAdded={onActivityUpdate} />
+                <CommentForm ticketId={ticketId} currentStatus={currentStatus} />
 
                 <Separator className="my-6" />
 
-                <div className="space-y-0">
+                <div className="space-y-4">
                     {activities.length === 0 ? (
                         <div className="text-center py-8 text-muted-foreground">No activity yet</div>
                     ) : (
-                        activities.map((activity, index) => (
-                            <div key={activity.id}>
-                                <ActivityItem activity={activity} />
-                                {index < activities.length - 1 && <Separator className="ml-11" />}
-                            </div>
+                        activities.map((activity) => (
+                            <ActivityItem 
+                                key={activity.id} 
+                                activity={activity} 
+                            />
                         ))
                     )}
                 </div>

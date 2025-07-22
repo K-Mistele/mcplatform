@@ -18,17 +18,15 @@ import { EditCommentDialog } from './edit-comment-dialog'
 interface CommentActionsProps {
     activityId: string
     content: string
-    onCommentChanged?: () => void
 }
 
-export function CommentActions({ activityId, content, onCommentChanged }: CommentActionsProps) {
+export function CommentActions({ activityId, content }: CommentActionsProps) {
     const [editDialogOpen, setEditDialogOpen] = useState(false)
 
     const { execute: deleteComment, status: deleteStatus } = useServerAction(deleteSupportTicketComment, {
         interceptors: [
             onSuccess(() => {
                 toast.success('Comment deleted successfully')
-                onCommentChanged?.()
             }),
             onError((error) => {
                 if (isDefinedError(error)) {
@@ -76,7 +74,6 @@ export function CommentActions({ activityId, content, onCommentChanged }: Commen
                 onOpenChange={setEditDialogOpen}
                 activityId={activityId}
                 initialContent={content}
-                onCommentEdited={onCommentChanged}
             />
         </>
     )
