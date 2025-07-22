@@ -61,6 +61,7 @@ The database schema is managed with Drizzle ORM.
 *   **Run Dashboard Dev Server**: `cd packages/dashboard && bun run dev`. The server is always available on `http://localhost:3000`.
 *   **Lint & Format**: The project uses **Biome**. Run `bunx @biomejs/biome check .` to lint and format.
 *   **Testing**:
+    *   Tests should be in a subdirectory of `tests/` pertaining to the in-progress feature.
     *   Run all tests: `bun test`
     *   Run a single test file: `bun test <path_to_file>`
     *   Run tests by name: `bun test --grep "test description"`
