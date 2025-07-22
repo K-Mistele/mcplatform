@@ -101,6 +101,13 @@ export default async function SupportTicketDetailsPage(props: SupportTicketDetai
         .leftJoin(schema.user, eq(schema.supportTicketActivities.userId, schema.user.id))
         .where(eq(schema.supportTicketActivities.supportRequestId, params.ticketId))
         .orderBy(desc(schema.supportTicketActivities.createdAt))
+        .then((activities) =>
+            activities.map((activity) => ({
+                ...activity,
+                createdAt: activity.createdAt ?? Date.now(), // Ensure createdAt is never null
+                contentType: (activity.contentType as 'text' | 'markdown' | 'json') ?? 'text' // Ensure contentType matches expected types
+            }))
+        )
 
     // Fetch organization members for assignment
     const membersPromise = db
