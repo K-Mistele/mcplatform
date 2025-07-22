@@ -1,3 +1,17 @@
+---
+date: 2025-07-22T15:03:35-05:00
+researcher: Kyle Mistele
+git_commit: 7c31f4d2919859faae85690b10736e1ca77046ee
+branch: master
+repository: mcplatform
+topic: "UI Ideation for Interactive Walkthroughs"
+tags: [thoughts, ui, ideation, interactive-walkthrough, design]
+status: complete
+last_updated: 2025-07-22
+last_updated_by: Kyle Mistele
+type: thoughts
+---
+
 # UI Ideation for Interactive Walkthroughs
 
 Based on my exploration of the existing MCPlatform dashboard, this document outlines the proposed UI for the interactive walkthrough feature. The design follows the established patterns and components already in use, with walkthroughs managed independently from MCP servers.

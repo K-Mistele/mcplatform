@@ -1,3 +1,17 @@
+---
+date: 2025-07-22T15:03:35-05:00
+researcher: Kyle Mistele
+git_commit: 7c31f4d2919859faae85690b10736e1ca77046ee
+branch: master
+repository: mcplatform
+topic: "Mastra MCP Course Implementation - Portable Code Reference"
+tags: [research-artifact, portable-code, mastra, mcp-course, readme]
+status: complete
+last_updated: 2025-07-22
+last_updated_by: Kyle Mistele
+type: research_artifact
+---
+
 # Mastra MCP Course Implementation - Portable Code Reference
 
 This directory contains all the code, data structures, and implementation details needed to understand and recreate Mastra's MCP course system in a separate project.

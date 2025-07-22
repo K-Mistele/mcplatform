@@ -1,3 +1,17 @@
+---
+date: 2025-07-22T15:03:35-05:00
+researcher: Kyle Mistele
+git_commit: 7c31f4d2919859faae85690b10736e1ca77046ee
+branch: master
+repository: mcplatform
+topic: "Data Structures for Interactive Walkthroughs"
+tags: [thoughts, technical-specification, data-structures, interactive-walkthrough]
+status: complete
+last_updated: 2025-07-22
+last_updated_by: Kyle Mistele
+type: thoughts
+---
+
 # Data Structures for Interactive Walkthroughs
 
 This document outlines the proposed data structures for implementing the interactive walkthrough feature. The design supports a many-to-many relationship between walkthroughs and MCP servers, allowing walkthroughs to be managed independently and assigned to multiple servers.

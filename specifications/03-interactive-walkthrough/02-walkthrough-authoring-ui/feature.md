@@ -1,3 +1,17 @@
+---
+date: 2025-07-22T15:03:35-05:00
+researcher: Kyle Mistele
+git_commit: 7c31f4d2919859faae85690b10736e1ca77046ee
+branch: master
+repository: mcplatform
+topic: "Sub-Feature: Walkthrough Authoring & Management UI"
+tags: [sub-feature-definition, interactive-walkthrough, authoring-ui, management]
+status: complete
+last_updated: 2025-07-22
+last_updated_by: Kyle Mistele
+type: sub_feature_definition
+---
+
 # Sub-Feature: Walkthrough Authoring & Management UI
 
 ## Parent Feature

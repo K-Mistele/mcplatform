@@ -1,3 +1,19 @@
+---
+date: 2025-07-22T15:03:35-05:00
+researcher: Kyle Mistele
+git_commit: 7c31f4d2919859faae85690b10736e1ca77046ee
+branch: master
+repository: mcplatform
+topic: "Reference Markdown Input for shadcn Editor"
+tags: [reference, markdown, shadcn, editor, ui-component]
+status: complete
+last_updated: 2025-07-22
+last_updated_by: Kyle Mistele
+type: reference
+---
+
+# Reference Markdown Input for shadcn Editor
+
 Here is an example of the shadcn Editor with markdown support: 
 
 ```tsx

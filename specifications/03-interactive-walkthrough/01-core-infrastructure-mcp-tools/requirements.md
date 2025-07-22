@@ -1,3 +1,17 @@
+---
+date: 2025-07-22T15:03:35-05:00
+researcher: Kyle Mistele
+git_commit: 7c31f4d2919859faae85690b10736e1ca77046ee
+branch: master
+repository: mcplatform
+topic: "Interactive Walkthrough - Core Infrastructure & MCP Tools Requirements"
+tags: [requirements, specification, interactive-walkthrough, mcp-tools, core-infrastructure]
+status: complete
+last_updated: 2025-07-22
+last_updated_by: Kyle Mistele
+type: requirements
+---
+
 # Requirements for Interactive Walkthrough - Core Infrastructure & MCP Tools
 
 ## Goal
