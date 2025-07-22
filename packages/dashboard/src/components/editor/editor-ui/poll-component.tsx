@@ -1,5 +1,5 @@
 import * as React from "react"
-import { JSX, useCallback, useEffect, useMemo, useRef, useState } from "react"
+import { type JSX, useCallback, useEffect, useMemo, useRef, useState } from "react"
 import { useCollaborationContext } from "@lexical/react/LexicalCollaborationContext"
 import { useLexicalComposerContext } from "@lexical/react/LexicalComposerContext"
 import { useLexicalNodeSelection } from "@lexical/react/useLexicalNodeSelection"
@@ -8,12 +8,12 @@ import {
   $getNodeByKey,
   $getSelection,
   $isNodeSelection,
-  BaseSelection,
+  type BaseSelection,
   CLICK_COMMAND,
   COMMAND_PRIORITY_LOW,
   KEY_BACKSPACE_COMMAND,
   KEY_DELETE_COMMAND,
-  NodeKey,
+  type NodeKey,
 } from "lexical"
 
 import type {

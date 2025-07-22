@@ -5,7 +5,7 @@ import {
   $getSelectionStyleValueForProperty,
   $patchStyleText,
 } from "@lexical/selection"
-import { $getSelection, $isRangeSelection, BaseSelection } from "lexical"
+import { $getSelection, $isRangeSelection, type BaseSelection } from "lexical"
 import { Minus, Plus } from "lucide-react"
 
 import { useToolbarContext } from "@/components/editor/context/toolbar-context"
@@ -30,7 +30,7 @@ export function FontSizeToolbarPlugin() {
         "font-size",
         `${DEFAULT_FONT_SIZE}px`
       )
-      setFontSize(parseInt(value) || DEFAULT_FONT_SIZE)
+      setFontSize(Number.parseInt(value) || DEFAULT_FONT_SIZE)
     }
   }
 
@@ -67,7 +67,7 @@ export function FontSizeToolbarPlugin() {
         <Input
           value={fontSize}
           onChange={(e) =>
-            updateFontSize(parseInt(e.target.value) || DEFAULT_FONT_SIZE)
+            updateFontSize(Number.parseInt(e.target.value) || DEFAULT_FONT_SIZE)
           }
           className="!h-8 w-12 text-center"
           min={MIN_FONT_SIZE}

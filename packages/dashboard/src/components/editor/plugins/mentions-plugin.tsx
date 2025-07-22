@@ -8,15 +8,15 @@
  *
  */
 import * as React from "react"
-import { JSX, useCallback, useEffect, useMemo, useState } from "react"
+import { type JSX, useCallback, useEffect, useMemo, useState } from "react"
 import dynamic from "next/dynamic"
 import { useLexicalComposerContext } from "@lexical/react/LexicalComposerContext"
 import {
   MenuOption,
-  MenuTextMatch,
+  type MenuTextMatch,
   useBasicTypeaheadTriggerMatch,
 } from "@lexical/react/LexicalTypeaheadMenuPlugin"
-import { TextNode } from "lexical"
+import type { TextNode } from "lexical"
 import { CircleUserRoundIcon } from "lucide-react"
 import { createPortal } from "react-dom"
 

@@ -1,7 +1,16 @@
 import { betterAuth } from 'better-auth'
 import { drizzleAdapter } from 'better-auth/adapters/drizzle'
 import { mcp } from 'better-auth/plugins'
-import { db, mcpAuthSchema } from 'database'
+import { 
+    db, 
+    mcpOAuthUser,
+    mcpOAuthSession,
+    mcpOAuthAccount,
+    mcpOAuthVerification,
+    mcpOAuthApplication,
+    mcpOAuthAccessToken,
+    mcpOAuthConsent
+} from 'database'
 
 const betterAuthBaseUrl = new URL(process.env.NEXT_PUBLIC_BETTER_AUTH_URL as string)
 const trustedOrigins = [betterAuthBaseUrl.origin, betterAuthBaseUrl.host, `*.${betterAuthBaseUrl.host}`]
@@ -10,13 +19,13 @@ export const auth = betterAuth({
     database: drizzleAdapter(db, {
         provider: 'pg', // or "pg" or "mysql"
         schema: {
-            user: mcpAuthSchema.mcpOAuthUser,
-            session: mcpAuthSchema.mcpOAuthSession,
-            account: mcpAuthSchema.mcpOAuthAccount,
-            verification: mcpAuthSchema.mcpOAuthVerification,
-            oauthApplication: mcpAuthSchema.mcpOAuthApplication,
-            oauthAccessToken: mcpAuthSchema.mcpOAuthAccessToken,
-            oauthConsent: mcpAuthSchema.mcpOAuthConsent
+            user: mcpOAuthUser,
+            session: mcpOAuthSession,
+            account: mcpOAuthAccount,
+            verification: mcpOAuthVerification,
+            oauthApplication: mcpOAuthApplication,
+            oauthAccessToken: mcpOAuthAccessToken,
+            oauthConsent: mcpOAuthConsent
         }
     }),
     plugins: [

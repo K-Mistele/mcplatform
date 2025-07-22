@@ -1,10 +1,10 @@
-import { ElementTransformer } from "@lexical/markdown"
+import type { ElementTransformer } from "@lexical/markdown"
 import {
   $createHorizontalRuleNode,
   $isHorizontalRuleNode,
   HorizontalRuleNode,
 } from "@lexical/react/LexicalHorizontalRuleNode"
-import { LexicalNode } from "lexical"
+import type { LexicalNode } from "lexical"
 
 export const HR: ElementTransformer = {
   dependencies: [HorizontalRuleNode],

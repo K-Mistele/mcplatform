@@ -7,11 +7,11 @@
  * LICENSE file in the root directory of this source tree.
  *
  */
-import { JSX, useMemo, useState } from "react"
+import { type JSX, useMemo, useState } from "react"
 import {
   AutoEmbedOption,
-  EmbedConfig,
-  EmbedMatchResult,
+  type EmbedConfig,
+  type EmbedMatchResult,
   LexicalAutoEmbedPlugin,
   URL_MATCHER,
 } from "@lexical/react/LexicalAutoEmbedPlugin"

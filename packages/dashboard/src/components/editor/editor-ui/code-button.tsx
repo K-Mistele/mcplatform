@@ -5,7 +5,7 @@ import {
   $getNearestNodeFromDOMNode,
   $getSelection,
   $setSelection,
-  LexicalEditor,
+  type LexicalEditor,
 } from "lexical"
 import { CircleCheckIcon, CopyIcon } from "lucide-react"
 

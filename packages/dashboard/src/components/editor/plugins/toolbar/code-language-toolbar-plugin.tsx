@@ -13,7 +13,7 @@ import {
   $getNodeByKey,
   $isRangeSelection,
   $isRootOrShadowRoot,
-  BaseSelection,
+  type BaseSelection,
 } from "lexical"
 
 import { useToolbarContext } from "@/components/editor/context/toolbar-context"

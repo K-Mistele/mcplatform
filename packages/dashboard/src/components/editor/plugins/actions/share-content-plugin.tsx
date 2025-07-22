@@ -3,7 +3,7 @@
 import { useEffect } from "react"
 import {
   editorStateFromSerializedDocument,
-  SerializedDocument,
+  type SerializedDocument,
   serializedDocumentFromEditorState,
 } from "@lexical/file"
 import { useLexicalComposerContext } from "@lexical/react/LexicalComposerContext"

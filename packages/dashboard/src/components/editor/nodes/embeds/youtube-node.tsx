@@ -1,9 +1,9 @@
 import * as React from "react"
-import { JSX } from "react"
+import type { JSX } from "react"
 import { BlockWithAlignableContents } from "@lexical/react/LexicalBlockWithAlignableContents"
 import {
   DecoratorBlockNode,
-  SerializedDecoratorBlockNode,
+  type SerializedDecoratorBlockNode,
 } from "@lexical/react/LexicalDecoratorBlockNode"
 import type {
   DOMConversionMap,

@@ -1,11 +1,11 @@
 "use client"
 
 import {
-  InitialConfigType,
+  type InitialConfigType,
   LexicalComposer,
 } from "@lexical/react/LexicalComposer"
 import { OnChangePlugin } from "@lexical/react/LexicalOnChangePlugin"
-import { EditorState, SerializedEditorState } from "lexical"
+import type { EditorState, SerializedEditorState } from "lexical"
 
 import { FloatingLinkContext } from "@/components/editor/context/floating-link-context"
 import { SharedAutocompleteContext } from "@/components/editor/context/shared-autocomplete-context"

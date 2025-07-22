@@ -9,7 +9,7 @@
  */
 import {
   createContext,
-  JSX,
+  type JSX,
   useContext,
   useEffect,
   useMemo,
@@ -26,11 +26,11 @@ import {
   $insertNodes,
   COMMAND_PRIORITY_EDITOR,
   createCommand,
-  EditorThemeClasses,
-  Klass,
-  LexicalCommand,
-  LexicalEditor,
-  LexicalNode,
+  type EditorThemeClasses,
+  type Klass,
+  type LexicalCommand,
+  type LexicalEditor,
+  type LexicalNode,
 } from "lexical"
 
 import { invariant } from "@/components/editor/shared/invariant"

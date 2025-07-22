@@ -1,11 +1,11 @@
 "use client"
 
 import { useState } from "react"
-import { SerializedEditorState } from "lexical"
+import type { SerializedEditorState } from "lexical"
 
 import { Editor } from "@/components/blocks/editor-x/editor"
 
-export const initialValue = {
+const initialValue = {
   root: {
     children: [
       {

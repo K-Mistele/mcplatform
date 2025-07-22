@@ -1,14 +1,14 @@
 import {
   $createParagraphNode,
   $isElementNode,
-  DOMConversionMap,
-  DOMConversionOutput,
-  EditorConfig,
+  type DOMConversionMap,
+  type DOMConversionOutput,
+  type EditorConfig,
   ElementNode,
-  LexicalEditor,
-  LexicalNode,
-  RangeSelection,
-  SerializedElementNode,
+  type LexicalEditor,
+  type LexicalNode,
+  type RangeSelection,
+  type SerializedElementNode,
 } from "lexical"
 
 import { $isCollapsibleContainerNode } from "@/components/editor/nodes/collapsible-container-node"

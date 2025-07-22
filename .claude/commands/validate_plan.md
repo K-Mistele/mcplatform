@@ -21,8 +21,8 @@ When invoked:
    git diff HEAD~N..HEAD  # Where N covers implementation commits
 
    # Run MCPlatform checks
-   bunx @biomejs/biome check .
-   cd packages/dashboard && bun run build --dry-run
+   cd packages/dashboard && bun lint
+   cd packages/dashboard && bun run build
    ```
    IMPORTANT: make sure to ask the user to stop the dev server BEFORE doing this!!!
 
@@ -77,9 +77,9 @@ For each phase in the implementation plan document
    - Execute each command from "Automated Verification" section
    - Use MCPlatform specific tools:
      ```bash
-     bunx @biomejs/biome check .
+     cd packages/dashboard && bun lint
      cd packages/database && bun test
-     cd packages/dashboard && bun run build --dry-run
+     cd packages/dashboard && bun run build
      ```
    - Document pass/fail status
    - If failures, investigate root cause
@@ -111,8 +111,8 @@ Create comprehensive validation summary:
 ⚠️ Phase 3: [Name] - Partially implemented (see issues)
 
 ### Automated Verification Results
-✅ Biome check passes: `bunx @biomejs/biome check .`
-✅ Build succeeds: `cd packages/dashboard && bun run build --dry-run`
+✅ Biome check passes: `bun lint`
+✅ Build succeeds: `cd packages/dashboard && bun run build`
 ❌ Database tests fail: `cd packages/database && bun test` (2 failures)
 
 ### Code Review Findings
@@ -221,7 +221,7 @@ Always verify MCPlatform patterns:
 3. **Document everything** - Both successes and issues
 4. **Think critically** - Question if implementation truly solves the problem
 5. **Consider maintenance** - Will this be maintainable long-term?
-6. **Respect the dev server** - Never run `bun run dev` or `bun run build` (use --dry-run)
+6. **Respect the dev server** - Never run `bun run dev` or `bun run build`
 
 ## Validation Checklist
 

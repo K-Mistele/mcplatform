@@ -3,7 +3,7 @@ import {
   $convertToMarkdownString,
   CHECK_LIST,
   ELEMENT_TRANSFORMERS,
-  ElementTransformer,
+  type ElementTransformer,
   MULTILINE_ELEMENT_TRANSFORMERS,
   TEXT_FORMAT_TRANSFORMERS,
   TEXT_MATCH_TRANSFORMERS,
@@ -20,7 +20,7 @@ import {
   TableNode,
   TableRowNode,
 } from "@lexical/table"
-import { $isParagraphNode, $isTextNode, LexicalNode } from "lexical"
+import { $isParagraphNode, $isTextNode, type LexicalNode } from "lexical"
 
 import { EMOJI } from "@/components/editor/transformers/markdown-emoji-transformer"
 import { EQUATION } from "@/components/editor/transformers/markdown-equation-transformer"

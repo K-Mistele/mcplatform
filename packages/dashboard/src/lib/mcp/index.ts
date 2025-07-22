@@ -1,8 +1,10 @@
 import { db, schema } from 'database'
-import { eq } from 'drizzle-orm'
+import { and, eq } from 'drizzle-orm'
 import { createMcpHandler } from 'mcp-handler'
+import { z } from 'zod'
 import { auth } from '../auth/mcp/auth'
 import { registerMcpSupportTool } from './tools/support'
+import { walkthroughTools } from './tools/walkthrough'
 import type { McpServer, McpServerConfig } from './types'
 import { withMcpAuth } from './with-mcp-auth'
 export { protectedResourceHandler } from './protected-resource-handler'
@@ -26,7 +28,7 @@ export function createHandlerForServer({
 }): (req: Request) => Promise<Response> {
     const mcpHandler = createMcpHandler(
         async (server) => {
-            registerMcpServerToolsFromConfig({
+            await registerMcpServerToolsFromConfig({
                 server,
                 serverConfig,
                 trackingId,
@@ -75,7 +77,7 @@ export function createHandlerForServer({
  * @param server - the MCP server instance
  * @param serverStaticConfiguration - the static configuration for the MCP server from the database
  */
-export function registerMcpServerToolsFromConfig({
+export async function registerMcpServerToolsFromConfig({
     server,
     serverConfig,
     trackingId,
@@ -90,7 +92,22 @@ export function registerMcpServerToolsFromConfig({
     mcpServerUserId: string
     serverSessionId: string
 }) {
+    // Always register support tool
     registerMcpSupportTool({ server, serverConfig, trackingId, email, mcpServerUserId, serverSessionId })
+
+    // Conditionally register walkthrough tools if server has walkthroughs and tools are enabled
+    if (serverConfig.walkthroughToolsEnabled === 'true') {
+        const hasWalkthroughs = await checkServerHasWalkthroughs(serverConfig.id)
+        
+        if (hasWalkthroughs) {
+            registerWalkthroughTools({
+                server,
+                mcpServerId: serverConfig.id,
+                mcpServerUserId,
+                serverSessionId
+            })
+        }
+    }
 }
 
 /**
@@ -140,4 +157,69 @@ export async function getMcpServerConfiguration(request: Request) {
         .limit(1)
 
     return serverConfig ?? null // return null if not found, return config if found; throw error for bad request.
+}
+
+/**
+ * Check if an MCP server has any published walkthroughs linked to it
+ */
+async function checkServerHasWalkthroughs(mcpServerId: string): Promise<boolean> {
+    const walkthroughCount = await db
+        .select({
+            count: schema.mcpServerWalkthroughs.id
+        })
+        .from(schema.mcpServerWalkthroughs)
+        .innerJoin(schema.walkthroughs, eq(schema.walkthroughs.id, schema.mcpServerWalkthroughs.walkthroughId))
+        .where(
+            and(
+                eq(schema.mcpServerWalkthroughs.mcpServerId, mcpServerId),
+                eq(schema.walkthroughs.status, 'published')
+            )
+        )
+        .limit(1)
+
+    return walkthroughCount.length > 0
+}
+
+/**
+ * Register all walkthrough tools with the MCP server
+ */
+function registerWalkthroughTools({
+    server,
+    mcpServerId,
+    mcpServerUserId,
+    serverSessionId
+}: {
+    server: McpServer
+    mcpServerId: string
+    mcpServerUserId: string
+    serverSessionId: string
+}) {
+    const toolContext = {
+        mcpServerId,
+        mcpServerUserId,
+        serverSessionId
+    }
+
+    // Register all walkthrough tools
+    Object.entries(walkthroughTools).forEach(([toolName, { tool, handler }]) => {
+        server.registerTool(
+            toolName,
+            {
+                title: tool.description,
+                description: tool.description,
+                inputSchema: z.object({}).shape // Use empty schema for now, proper validation is in handlers
+            },
+            async (args) => {
+                // Convert args format to request format expected by handlers
+                const request = {
+                    method: 'tools/call' as const,
+                    params: {
+                        name: toolName,
+                        arguments: args
+                    }
+                }
+                return handler(request, toolContext)
+            }
+        )
+    })
 }

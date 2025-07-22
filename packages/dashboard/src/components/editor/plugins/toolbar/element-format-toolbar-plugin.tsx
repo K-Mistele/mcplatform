@@ -6,8 +6,8 @@ import { $findMatchingParent } from "@lexical/utils"
 import {
   $isElementNode,
   $isRangeSelection,
-  BaseSelection,
-  ElementFormatType,
+  type BaseSelection,
+  type ElementFormatType,
   FORMAT_ELEMENT_COMMAND,
   INDENT_CONTENT_COMMAND,
   OUTDENT_CONTENT_COMMAND,

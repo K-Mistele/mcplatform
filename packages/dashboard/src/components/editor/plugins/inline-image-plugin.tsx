@@ -7,8 +7,8 @@
  * LICENSE file in the root directory of this source tree.
  *
  */
-import * as React from "react"
-import { JSX, useEffect, useRef, useState } from "react"
+import type * as React from "react"
+import { type JSX, useEffect, useRef, useState } from "react"
 // import '../nodes/inline-image-node.css';
 import { useLexicalComposerContext } from "@lexical/react/LexicalComposerContext"
 import { $wrapNodeInElement, mergeRegister } from "@lexical/utils"
@@ -27,8 +27,8 @@ import {
   DRAGOVER_COMMAND,
   DRAGSTART_COMMAND,
   DROP_COMMAND,
-  LexicalCommand,
-  LexicalEditor,
+  type LexicalCommand,
+  type LexicalEditor,
 } from "lexical"
 
 import type { Position } from "@/components/editor/nodes/inline-image-node"
@@ -36,7 +36,7 @@ import {
   $createInlineImageNode,
   $isInlineImageNode,
   InlineImageNode,
-  InlineImagePayload,
+  type InlineImagePayload,
 } from "@/components/editor/nodes/inline-image-node"
 import { CAN_USE_DOM } from "@/components/editor/shared/can-use-dom"
 import { Button } from "@/components/ui/button"
@@ -85,7 +85,7 @@ export function InsertInlineImageDialog({
 
   const loadImage = (files: FileList | null) => {
     const reader = new FileReader()
-    reader.onload = function () {
+    reader.onload = () => {
       if (typeof reader.result === "string") {
         setSrc(reader.result)
       }

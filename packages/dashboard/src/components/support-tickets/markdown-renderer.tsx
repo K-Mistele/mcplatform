@@ -11,7 +11,7 @@ import {
     TEXT_MATCH_TRANSFORMERS
 } from '@lexical/markdown'
 import { OverflowNode } from '@lexical/overflow'
-import { InitialConfigType, LexicalComposer } from '@lexical/react/LexicalComposer'
+import { type InitialConfigType, LexicalComposer } from '@lexical/react/LexicalComposer'
 import { ContentEditable } from '@lexical/react/LexicalContentEditable'
 import { LexicalErrorBoundary } from '@lexical/react/LexicalErrorBoundary'
 import { HorizontalRuleNode } from '@lexical/react/LexicalHorizontalRuleNode'

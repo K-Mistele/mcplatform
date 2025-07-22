@@ -1,5 +1,5 @@
-import * as React from "react"
-import { JSX, Suspense, useCallback, useEffect, useRef, useState } from "react"
+import type * as React from "react"
+import { type JSX, Suspense, useCallback, useEffect, useRef, useState } from "react"
 import { AutoFocusPlugin } from "@lexical/react/LexicalAutoFocusPlugin"
 import { useLexicalComposerContext } from "@lexical/react/LexicalComposerContext"
 import { LexicalErrorBoundary } from "@lexical/react/LexicalErrorBoundary"
@@ -29,7 +29,7 @@ import { ContentEditable } from "@/components/editor/editor-ui/content-editable"
 import type { Position } from "@/components/editor/nodes/inline-image-node"
 import {
   $isInlineImageNode,
-  InlineImageNode,
+  type InlineImageNode,
 } from "@/components/editor/nodes/inline-image-node"
 import { LinkPlugin } from "@/components/editor/plugins/link-plugin"
 import { Button } from "@/components/ui/button"

@@ -3,7 +3,7 @@
  * TODO this needs to user something faster than postgres.
  */
 import { nanoid } from 'common/nanoid'
-import { db, mcpAuthSchema, schema } from 'database'
+import { db, schema, mcpOAuthUser } from 'database'
 import { eq, or } from 'drizzle-orm'
 import { headers } from 'next/headers'
 import { auth } from '../auth/mcp/auth'
@@ -74,8 +74,8 @@ export async function getAndTrackMcpServerUser({
         if (session?.userId) {
             const [user] = await db
                 .select()
-                .from(mcpAuthSchema.mcpOAuthUser)
-                .where(eq(mcpAuthSchema.mcpOAuthUser.id, session.userId))
+                .from(mcpOAuthUser)
+                .where(eq(mcpOAuthUser.id, session.userId))
                 .limit(1)
             if (user) email = user.email
         }

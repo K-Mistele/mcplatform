@@ -1,6 +1,6 @@
 import type { JSX, Ref, RefObject } from "react"
 import * as React from "react"
-import { ChangeEvent, forwardRef } from "react"
+import { type ChangeEvent, forwardRef } from "react"
 
 type BaseEquationEditorProps = {
   equation: string

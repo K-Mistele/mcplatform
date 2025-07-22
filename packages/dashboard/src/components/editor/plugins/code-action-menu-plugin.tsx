@@ -8,8 +8,8 @@
  *
  */
 // import './index.css';
-import { JSX, useEffect, useRef, useState } from "react"
-import * as React from "react"
+import { type JSX, useEffect, useRef, useState } from "react"
+import type * as React from "react"
 import {
   $isCodeNode,
   CodeNode,

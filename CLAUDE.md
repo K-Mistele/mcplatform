@@ -59,7 +59,7 @@ The database schema is managed with Drizzle ORM.
 *   **Package Manager**: This project uses **Bun**. Never use `npm`, `yarn`, or `pnpm`.
 *   **Installation**: `bun install`
 *   **Run Dashboard Dev Server**: `cd packages/dashboard && bun run dev`. The server is always available on `http://localhost:3000`.
-*   **Lint & Format**: The project uses **Biome**. Run `bunx @biomejs/biome check .` to lint and format.
+*   **Lint & Format**: The project uses **Biome**. Run `bun lint` to lint and format.
 *   **Testing**:
     *   Tests should be in a subdirectory of `tests/` pertaining to the in-progress feature.
     *   Run all tests: `bun test`
@@ -205,3 +205,4 @@ const { execute, status } = useServerAction(actionName, {
 * use `bun:test` for all test cases with `describe`, `expect`, and `test`.
 * tests should live in a `tests` directory for the appropriate package e.g. `package/dashboard/tests`, with a sub-folder for the feature and subfeatures. e.g. `packages/dashboard/tests/01-better-session-support/` or `packages/dashboard/tests/03-interactive-walkthrough/01-core-infrastructure-mcp-tools/*`
 * tests should end in a `.test.ts` file extension so they are runnable by bun's test runner; there is no need to compile them as bun can run them directly. 
+* **IMPORTANT** - whenever you edit a markdown file under `specifications/` that has frontmatter, make sure to update the last edited at and last edited by field with the current date. Run `scripts/spec_metadata.sh` to get this information; if you are editing it yourself without explicit instructions to edit it you may assign yourself as last_edited_by.

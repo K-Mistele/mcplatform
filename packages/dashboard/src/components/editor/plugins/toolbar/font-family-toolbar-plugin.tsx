@@ -5,7 +5,7 @@ import {
   $getSelectionStyleValueForProperty,
   $patchStyleText,
 } from "@lexical/selection"
-import { $getSelection, $isRangeSelection, BaseSelection } from "lexical"
+import { $getSelection, $isRangeSelection, type BaseSelection } from "lexical"
 import { TypeIcon } from "lucide-react"
 
 import { useToolbarContext } from "@/components/editor/context/toolbar-context"

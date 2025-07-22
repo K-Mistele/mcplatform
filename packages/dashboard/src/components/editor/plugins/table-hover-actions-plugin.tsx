@@ -7,8 +7,8 @@
  * LICENSE file in the root directory of this source tree.
  *
  */
-import { JSX, useEffect, useMemo, useRef, useState } from "react"
-import * as React from "react"
+import { type JSX, useEffect, useMemo, useRef, useState } from "react"
+import type * as React from "react"
 import { useLexicalComposerContext } from "@lexical/react/LexicalComposerContext"
 import { useLexicalEditable } from "@lexical/react/useLexicalEditable"
 import {
@@ -18,12 +18,12 @@ import {
   $insertTableRow__EXPERIMENTAL,
   $isTableCellNode,
   $isTableNode,
-  TableCellNode,
+  type TableCellNode,
   TableNode,
-  TableRowNode,
+  type TableRowNode,
 } from "@lexical/table"
 import { $findMatchingParent, mergeRegister } from "@lexical/utils"
-import { $getNearestNodeFromDOMNode, NodeKey } from "lexical"
+import { $getNearestNodeFromDOMNode, type NodeKey } from "lexical"
 import { PlusIcon } from "lucide-react"
 import { createPortal } from "react-dom"
 

@@ -1,6 +1,7 @@
 import appIcon from '@/assets/appicon.png'
 import { OidcLoginForm } from '@/components/oidc-login-form'
 import Image from 'next/image'
+import { Suspense } from 'react'
 
 export default function AuthtenantLoginPage() {
     return (
@@ -13,7 +14,9 @@ export default function AuthtenantLoginPage() {
                     </a>
                 </div>
 
-                <OidcLoginForm />
+                <Suspense fallback={<div>Loading...</div>}>
+                    <OidcLoginForm />
+                </Suspense>
             </div>
         </div>
     )

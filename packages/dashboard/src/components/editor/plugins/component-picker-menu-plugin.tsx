@@ -7,11 +7,11 @@
  * LICENSE file in the root directory of this source tree.
  *
  */
-import { JSX, useCallback, useMemo, useState } from "react"
+import { type JSX, useCallback, useMemo, useState } from "react"
 import dynamic from "next/dynamic"
 import { useLexicalComposerContext } from "@lexical/react/LexicalComposerContext"
 import { useBasicTypeaheadTriggerMatch } from "@lexical/react/LexicalTypeaheadMenuPlugin"
-import { TextNode } from "lexical"
+import type { TextNode } from "lexical"
 import { createPortal } from "react-dom"
 
 import { useEditorModal } from "@/components/editor/editor-hooks/use-modal"
@@ -22,7 +22,7 @@ import {
   CommandList,
 } from "@/components/ui/command"
 
-import { ComponentPickerOption } from "./picker/component-picker-option"
+import type { ComponentPickerOption } from "./picker/component-picker-option"
 
 const LexicalTypeaheadMenuPlugin = dynamic(
   () => import("./default/lexical-typeahead-menu-plugin"),

@@ -1,5 +1,5 @@
 import * as React from "react"
-import { JSX, useCallback, useState } from "react"
+import { type JSX, useCallback, useState } from "react"
 import { useLexicalComposerContext } from "@lexical/react/LexicalComposerContext"
 import { ErrorBoundary } from "react-error-boundary"
 

@@ -1,5 +1,5 @@
 import * as React from "react"
-import { JSX, Suspense } from "react"
+import { type JSX, Suspense } from "react"
 import type {
   DOMConversionMap,
   DOMConversionOutput,

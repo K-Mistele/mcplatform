@@ -4,6 +4,9 @@
     "type": "module",
     "private": true,
     "workspaces": ["packages/*"],
+    "scripts": {
+        "lint": "bunx @biomejs/biome lint --write"
+    },
     "devDependencies": {
         "@types/bun": "latest",
         "@types/prop-types": "^15.7.15"

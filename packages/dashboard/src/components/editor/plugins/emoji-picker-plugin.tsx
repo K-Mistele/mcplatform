@@ -19,7 +19,7 @@ import {
   $createTextNode,
   $getSelection,
   $isRangeSelection,
-  TextNode,
+  type TextNode,
 } from "lexical"
 import { createPortal } from "react-dom"
 

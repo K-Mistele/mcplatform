@@ -4,7 +4,7 @@ import { useCallback, useEffect, useState } from "react"
 import { $isLinkNode, TOGGLE_LINK_COMMAND } from "@lexical/link"
 import {
   $isRangeSelection,
-  BaseSelection,
+  type BaseSelection,
   COMMAND_PRIORITY_NORMAL,
   KEY_MODIFIER_COMMAND,
 } from "lexical"

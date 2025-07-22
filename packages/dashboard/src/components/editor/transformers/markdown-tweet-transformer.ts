@@ -1,4 +1,4 @@
-import { ElementTransformer } from "@lexical/markdown"
+import type { ElementTransformer } from "@lexical/markdown"
 
 import {
   $createTweetNode,

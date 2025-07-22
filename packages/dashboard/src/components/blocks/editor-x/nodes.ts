@@ -7,9 +7,9 @@ import { HorizontalRuleNode } from "@lexical/react/LexicalHorizontalRuleNode"
 import { HeadingNode, QuoteNode } from "@lexical/rich-text"
 import { TableCellNode, TableNode, TableRowNode } from "@lexical/table"
 import {
-  Klass,
-  LexicalNode,
-  LexicalNodeReplacement,
+  type Klass,
+  type LexicalNode,
+  type LexicalNodeReplacement,
   ParagraphNode,
   TextNode,
 } from "lexical"
@@ -23,7 +23,6 @@ import { TweetNode } from "@/components/editor/nodes/embeds/tweet-node"
 import { YouTubeNode } from "@/components/editor/nodes/embeds/youtube-node"
 import { EmojiNode } from "@/components/editor/nodes/emoji-node"
 import { EquationNode } from "@/components/editor/nodes/equation-node"
-import { ExcalidrawNode } from "@/components/editor/nodes/excalidraw-node"
 import { ImageNode } from "@/components/editor/nodes/image-node"
 import { InlineImageNode } from "@/components/editor/nodes/inline-image-node"
 import { KeywordNode } from "@/components/editor/nodes/keyword-node"
@@ -56,8 +55,7 @@ export const nodes: ReadonlyArray<Klass<LexicalNode> | LexicalNodeReplacement> =
     InlineImageNode,
     EmojiNode,
     KeywordNode,
-    ExcalidrawNode,
-    PollNode,
+      PollNode,
     LayoutContainerNode,
     LayoutItemNode,
     EquationNode,

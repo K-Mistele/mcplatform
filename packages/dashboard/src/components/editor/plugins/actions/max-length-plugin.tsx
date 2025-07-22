@@ -14,7 +14,7 @@ import { $restoreEditorState } from "@lexical/utils"
 import {
   $getSelection,
   $isRangeSelection,
-  EditorState,
+  type EditorState,
   RootNode,
 } from "lexical"
 

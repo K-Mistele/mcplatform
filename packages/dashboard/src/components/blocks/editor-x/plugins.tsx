@@ -48,7 +48,6 @@ import { YouTubePlugin } from "@/components/editor/plugins/embeds/youtube-plugin
 import { EmojiPickerPlugin } from "@/components/editor/plugins/emoji-picker-plugin"
 import { EmojisPlugin } from "@/components/editor/plugins/emojis-plugin"
 import { EquationsPlugin } from "@/components/editor/plugins/equations-plugin"
-import { ExcalidrawPlugin } from "@/components/editor/plugins/excalidraw-plugin"
 import { FloatingLinkEditorPlugin } from "@/components/editor/plugins/floating-link-editor-plugin"
 import { FloatingTextFormatToolbarPlugin } from "@/components/editor/plugins/floating-text-format-plugin"
 import { ImagesPlugin } from "@/components/editor/plugins/images-plugin"
@@ -68,7 +67,6 @@ import { ColumnsLayoutPickerPlugin } from "@/components/editor/plugins/picker/co
 import { DividerPickerPlugin } from "@/components/editor/plugins/picker/divider-picker-plugin"
 import { EmbedsPickerPlugin } from "@/components/editor/plugins/picker/embeds-picker-plugin"
 import { EquationPickerPlugin } from "@/components/editor/plugins/picker/equation-picker-plugin"
-import { ExcalidrawPickerPlugin } from "@/components/editor/plugins/picker/excalidraw-picker-plugin"
 import { HeadingPickerPlugin } from "@/components/editor/plugins/picker/heading-picker-plugin"
 import { ImagePickerPlugin } from "@/components/editor/plugins/picker/image-picker-plugin"
 import { NumberedListPickerPlugin } from "@/components/editor/plugins/picker/numbered-list-picker-plugin"
@@ -97,7 +95,6 @@ import { BlockInsertPlugin } from "@/components/editor/plugins/toolbar/block-ins
 import { InsertCollapsibleContainer } from "@/components/editor/plugins/toolbar/block-insert/insert-collapsible-container"
 import { InsertColumnsLayout } from "@/components/editor/plugins/toolbar/block-insert/insert-columns-layout"
 import { InsertEmbeds } from "@/components/editor/plugins/toolbar/block-insert/insert-embeds"
-import { InsertExcalidraw } from "@/components/editor/plugins/toolbar/block-insert/insert-excalidraw"
 import { InsertHorizontalRule } from "@/components/editor/plugins/toolbar/block-insert/insert-horizontal-rule"
 import { InsertImage } from "@/components/editor/plugins/toolbar/block-insert/insert-image"
 import { InsertInlineImage } from "@/components/editor/plugins/toolbar/block-insert/insert-inline-image"
@@ -182,7 +179,6 @@ export function Plugins({}) {
                   <InsertImage />
                   <InsertInlineImage />
                   <InsertCollapsibleContainer />
-                  <InsertExcalidraw />
                   <InsertTable />
                   <InsertPoll />
                   <InsertColumnsLayout />
@@ -225,7 +221,6 @@ export function Plugins({}) {
         <EmojisPlugin />
         <ImagesPlugin />
         <InlineImagePlugin />
-        <ExcalidrawPlugin />
         <TableCellResizerPlugin />
         <TableHoverActionsPlugin anchorElem={floatingAnchorElem} />
         <TableActionMenuPlugin
@@ -280,7 +275,6 @@ export function Plugins({}) {
             CodePickerPlugin(),
             DividerPickerPlugin(),
             PageBreakPickerPlugin(),
-            ExcalidrawPickerPlugin(),
             PollPickerPlugin(),
             EmbedsPickerPlugin({ embed: "figma" }),
             EmbedsPickerPlugin({ embed: "tweet" }),

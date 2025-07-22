@@ -9,13 +9,13 @@ import {
   COMMAND_PRIORITY_HIGH,
   COMMAND_PRIORITY_LOW,
   DecoratorNode,
-  DOMConversionMap,
-  DOMConversionOutput,
+  type DOMConversionMap,
+  type DOMConversionOutput,
   KEY_BACKSPACE_COMMAND,
   KEY_DELETE_COMMAND,
-  LexicalNode,
-  NodeKey,
-  SerializedLexicalNode,
+  type LexicalNode,
+  type NodeKey,
+  type SerializedLexicalNode,
 } from "lexical"
 
 export type SerializedPageBreakNode = SerializedLexicalNode
@@ -97,7 +97,7 @@ function PageBreakComponent({ nodeKey }: { nodeKey: NodeKey }) {
   return null
 }
 
-export class PageBreakNode extends DecoratorNode<JSX.Element> {
+export class PageBreakNode extends DecoratorNode<React.JSX.Element> {
   static getType(): string {
     return "page-break"
   }
@@ -168,7 +168,7 @@ export class PageBreakNode extends DecoratorNode<JSX.Element> {
     return false
   }
 
-  decorate(): JSX.Element {
+  decorate(): React.JSX.Element {
     return <PageBreakComponent nodeKey={this.__key} />
   }
 }

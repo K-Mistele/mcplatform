@@ -1,14 +1,14 @@
 import * as React from "react"
-import { JSX, Suspense } from "react"
+import { type JSX, Suspense } from "react"
 import {
   DecoratorNode,
-  DOMConversionMap,
-  DOMConversionOutput,
-  DOMExportOutput,
-  LexicalNode,
-  NodeKey,
-  SerializedLexicalNode,
-  Spread,
+  type DOMConversionMap,
+  type DOMConversionOutput,
+  type DOMExportOutput,
+  type LexicalNode,
+  type NodeKey,
+  type SerializedLexicalNode,
+  type Spread,
 } from "lexical"
 
 export type Options = ReadonlyArray<Option>

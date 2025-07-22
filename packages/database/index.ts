@@ -12,18 +12,6 @@ export const schema = {
 export const db = drizzle(process.env.DATABASE_URL!, {
     schema: schema
 })
-
-export type {
-    Account,
-    Invitation,
-    Member,
-    OAuthAccessToken,
-    OAuthApplication,
-    OAuthConsent,
-    Organization,
-    Session,
-    User,
-    Verification
-} from './src/auth-schema'
-export type { McpServer, McpServerSession, McpServerUser, SupportRequest, SupportTicketActivity } from './src/schema'
-export { authSchema, mcpAuthSchema }
+export * from './src/auth-schema'
+export * from './src/mcp-auth-schema'
+export * from './src/schema'

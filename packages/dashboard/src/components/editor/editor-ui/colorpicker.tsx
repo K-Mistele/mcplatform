@@ -1,4 +1,4 @@
-import * as React from "react"
+import type * as React from "react"
 import { HexColorPicker } from "react-colorful"
 
 import { Button } from "@/components/ui/button"

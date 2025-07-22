@@ -1,7 +1,7 @@
 import { INSERT_EMBED_COMMAND } from "@lexical/react/LexicalAutoEmbedPlugin"
 
 import {
-  CustomEmbedConfig,
+  type CustomEmbedConfig,
   EmbedConfigs,
 } from "@/components/editor/plugins/embeds/auto-embed-plugin"
 import { ComponentPickerOption } from "@/components/editor/plugins/picker/component-picker-option"

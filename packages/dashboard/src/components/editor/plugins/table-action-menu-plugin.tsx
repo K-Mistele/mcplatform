@@ -9,8 +9,8 @@
  */
 import * as React from "react"
 import {
-  JSX,
-  ReactPortal,
+  type JSX,
+  type ReactPortal,
   useCallback,
   useEffect,
   useRef,
@@ -33,11 +33,11 @@ import {
   $isTableSelection,
   $unmergeCell,
   getTableObserverFromTableElement,
-  HTMLTableElementWithWithTableSelectionState,
+  type HTMLTableElementWithWithTableSelectionState,
   TableCellHeaderStates,
   TableCellNode,
-  TableRowNode,
-  TableSelection,
+  type TableRowNode,
+  type TableSelection,
 } from "@lexical/table"
 import type { ElementNode, LexicalEditor } from "lexical"
 import {
@@ -255,7 +255,7 @@ function TableActionMenu({
 
         const tableObserver = getTableObserverFromTableElement(tableElement)
         if (tableObserver !== null) {
-          tableObserver.clearHighlight()
+          tableObserver.$clearHighlight()
         }
 
         tableNode.markDirty()

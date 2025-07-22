@@ -7,7 +7,7 @@
  * LICENSE file in the root directory of this source tree.
  *
  */
-import { JSX, useEffect } from "react"
+import { type JSX, useEffect } from "react"
 
 import { useReport } from "@/components/editor/editor-hooks/use-report"
 

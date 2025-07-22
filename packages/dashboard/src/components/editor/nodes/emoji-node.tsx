@@ -40,7 +40,7 @@ export class EmojiNode extends TextNode {
   }
 
   updateDOM(
-    prevNode: TextNode,
+    prevNode: EmojiNode,
     dom: HTMLElement,
     config: EditorConfig
   ): boolean {
@@ -48,7 +48,7 @@ export class EmojiNode extends TextNode {
     if (inner === null) {
       return true
     }
-    super.updateDOM(prevNode, inner as HTMLElement, config)
+    super.updateDOM(prevNode as this, inner as HTMLElement, config)
     return false
   }
 

@@ -7,10 +7,10 @@
  * LICENSE file in the root directory of this source tree.
  *
  */
-import * as React from "react"
+import type * as React from "react"
 import {
-  JSX,
-  MouseEventHandler,
+  type JSX,
+  type MouseEventHandler,
   useCallback,
   useEffect,
   useMemo,
@@ -203,7 +203,7 @@ function TableCellResizer({ editor }: { editor: LexicalEditor }): JSX.Element {
             const rowCells = tableRow.getChildren<TableCellNode>()
             height = Math.min(
               ...rowCells.map(
-                (cell) => getCellNodeHeight(cell, editor) ?? Infinity
+                (cell) => getCellNodeHeight(cell, editor) ?? Number.POSITIVE_INFINITY
               )
             )
           }

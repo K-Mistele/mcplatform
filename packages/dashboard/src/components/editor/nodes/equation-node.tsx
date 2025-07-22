@@ -1,5 +1,5 @@
 import * as React from "react"
-import { JSX, Suspense } from "react"
+import { type JSX, Suspense } from "react"
 import katex from "katex"
 import type {
   DOMConversionMap,
@@ -10,7 +10,7 @@ import type {
   SerializedLexicalNode,
   Spread,
 } from "lexical"
-import { $applyNodeReplacement, DecoratorNode, DOMExportOutput } from "lexical"
+import { $applyNodeReplacement, DecoratorNode, type DOMExportOutput } from "lexical"
 
 const EquationComponent = React.lazy(
   () => import("../editor-ui/equation-component")

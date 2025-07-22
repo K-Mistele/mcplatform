@@ -7,7 +7,7 @@
  * LICENSE file in the root directory of this source tree.
  *
  */
-import { Dispatch, JSX, useCallback, useEffect, useRef, useState } from "react"
+import { type Dispatch, type JSX, useCallback, useEffect, useRef, useState } from "react"
 import * as React from "react"
 import { $isCodeHighlightNode } from "@lexical/code"
 import { $isLinkNode, TOGGLE_LINK_COMMAND } from "@lexical/link"
@@ -20,7 +20,7 @@ import {
   $isTextNode,
   COMMAND_PRIORITY_LOW,
   FORMAT_TEXT_COMMAND,
-  LexicalEditor,
+  type LexicalEditor,
   SELECTION_CHANGE_COMMAND,
 } from "lexical"
 import {

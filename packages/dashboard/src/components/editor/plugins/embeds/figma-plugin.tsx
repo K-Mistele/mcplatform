@@ -7,10 +7,10 @@
  * LICENSE file in the root directory of this source tree.
  *
  */
-import { JSX, useEffect } from "react"
+import { type JSX, useEffect } from "react"
 import { useLexicalComposerContext } from "@lexical/react/LexicalComposerContext"
 import { $insertNodeToNearestRoot } from "@lexical/utils"
-import { COMMAND_PRIORITY_EDITOR, createCommand, LexicalCommand } from "lexical"
+import { COMMAND_PRIORITY_EDITOR, createCommand, type LexicalCommand } from "lexical"
 
 import {
   $createFigmaNode,

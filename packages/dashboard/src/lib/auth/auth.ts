@@ -1,7 +1,20 @@
 import { betterAuth } from 'better-auth'
 import { drizzleAdapter } from 'better-auth/adapters/drizzle'
 import { mcp, organization } from 'better-auth/plugins'
-import { authSchema, db, schema } from 'database'
+import { 
+    db, 
+    schema, 
+    user, 
+    session, 
+    account, 
+    verification, 
+    invitation, 
+    member, 
+    organization as organizationTable, 
+    oauthApplication, 
+    oauthAccessToken, 
+    oauthConsent 
+} from 'database'
 import { eq } from 'drizzle-orm'
 import { headers } from 'next/headers'
 import { redirect } from 'next/navigation'
@@ -10,7 +23,16 @@ export const auth = betterAuth({
     database: drizzleAdapter(db, {
         provider: 'pg', // or "pg" or "mysql"
         schema: {
-            ...authSchema
+            user,
+            session,
+            account,
+            verification,
+            invitation,
+            member,
+            organization: organizationTable,
+            oauthApplication,
+            oauthAccessToken,
+            oauthConsent
         }
     }),
     plugins: [

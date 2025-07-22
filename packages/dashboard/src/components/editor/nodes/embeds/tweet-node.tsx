@@ -1,9 +1,9 @@
 import * as React from "react"
-import { JSX, useCallback, useEffect, useRef, useState } from "react"
+import { type JSX, useCallback, useEffect, useRef, useState } from "react"
 import { BlockWithAlignableContents } from "@lexical/react/LexicalBlockWithAlignableContents"
 import {
   DecoratorBlockNode,
-  SerializedDecoratorBlockNode,
+  type SerializedDecoratorBlockNode,
 } from "@lexical/react/LexicalDecoratorBlockNode"
 import type {
   DOMConversionMap,

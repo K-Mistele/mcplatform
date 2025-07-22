@@ -1,5 +1,5 @@
 import * as React from "react"
-import { JSX, useEffect, useRef } from "react"
+import { type JSX, useEffect, useRef } from "react"
 import katex from "katex"
 
 export default function KatexRenderer({

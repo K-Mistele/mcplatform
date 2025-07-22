@@ -2,7 +2,7 @@
 
 import { useState } from "react"
 import { $isTableSelection } from "@lexical/table"
-import { $isRangeSelection, BaseSelection, FORMAT_TEXT_COMMAND } from "lexical"
+import { $isRangeSelection, type BaseSelection, FORMAT_TEXT_COMMAND } from "lexical"
 import { SubscriptIcon, SuperscriptIcon } from "lucide-react"
 
 import { useToolbarContext } from "@/components/editor/context/toolbar-context"
