@@ -7,8 +7,8 @@ repository: mcplatform
 topic: "Sub-Feature: Walkthrough Authoring & Management UI"
 tags: [sub-feature-definition, interactive-walkthrough, authoring-ui, management]
 status: complete
-last_updated: 2025-07-22
-last_updated_by: Kyle Mistele
+last_updated: 2025-07-28T15:32:54-05:00
+last_updated_by: Claude
 type: sub_feature_definition
 ---
 
@@ -23,7 +23,7 @@ This sub-feature delivers the dashboard UI that allows MCPlatform customers to c
 ## Business Value
 - **Content Independence**: Walkthroughs are created once and can be reused across multiple MCP servers
 - **Centralized Management**: All walkthrough content managed in one place for operational efficiency
-- **Rich Authoring Experience**: Full-featured markdown editor with preview capabilities
+- **Structured Authoring Experience**: Four-field content structure with simple textarea editing and preview capabilities
 - **Flexible Assignment**: Dynamic assignment and ordering of walkthroughs per server
 - **Version Control**: Basic versioning system with publish/draft states
 - **Analytics Integration**: Built-in tracking for walkthrough performance across servers
@@ -32,7 +32,7 @@ This sub-feature delivers the dashboard UI that allows MCPlatform customers to c
 
 ### Primary Users (MCPlatform Customers)
 - As a customer, I want to create walkthroughs independently of my MCP servers so I can manage content efficiently
-- As a customer, I want to edit walkthrough content using a markdown editor so I can create rich, formatted guidance
+- As a customer, I want to edit walkthrough content using structured fields so I can create effective, AI-optimized guidance
 - As a customer, I want to reorder steps easily so I can refine the learning flow
 - As a customer, I want to preview my walkthrough so I can test the user experience before publishing
 - As a customer, I want to assign the same walkthrough to multiple MCP servers so I can reuse content across different contexts
@@ -52,7 +52,7 @@ Dashboard
 ├── Overview
 ├── Servers
 ├── Walkthroughs  ← NEW
-├── Support
+├── Support Tickets
 └── Settings
 ```
 
@@ -66,9 +66,9 @@ Dashboard
 #### Walkthroughs Data Table
 A comprehensive data table with the following columns:
 - **Title** (clickable, leads to detail page)
+- **Type** (badge with icon: 📚 Course, ⚙️ Installer, 🔧 Troubleshooting, 🔗 Integration, ⚡ Quick Start)
 - **Description** (truncated with tooltip for full text)
 - **Steps** (count badge)
-- **Version** (integer with "v" prefix)
 - **Assigned Servers** (count with hover tooltip showing server names)
 - **Created** (relative time using `formatDistanceToNow`)
 - **Status** (Published/Draft with colored badges)
@@ -78,7 +78,9 @@ A comprehensive data table with the following columns:
 - **Search**: Filter by title and description
 - **Sorting**: All columns sortable
 - **Pagination**: Standard pagination for large lists
-- **Bulk Actions**: Select multiple walkthroughs for bulk operations
+- **Bulk Actions**: Select multiple walkthroughs for bulk operations. Actions include:
+  - delete
+  - add to MCP Server
 
 #### Empty State
 If no walkthroughs exist:
@@ -87,43 +89,48 @@ If no walkthroughs exist:
 - **Secondary Text**: "Create your first interactive walkthrough to guide users through your products"
 - **CTA Button**: "Create Walkthrough"
 
-### 2. Create/Edit Walkthrough Modal
+### 2. Create/Edit Walkthrough Page
 
-#### Modal Specifications
+#### Page Specifications
 **Triggered by**: "Create Walkthrough" button or Edit action from table
 
-**Modal Structure**:
-- **Title**: "Create Walkthrough" / "Edit Walkthrough"
-- **Size**: Medium modal (600px width)
+**Routes**: 
+- Create: `/dashboard/walkthroughs/new`
+- Edit: `/dashboard/walkthroughs/[id]/edit`
+
+**Page Structure**:
+- **Header**: Page breadcrumb and walkthrough metadata
 - **Form Fields**:
   - **Title** (required, text input, max 100 characters)
   - **Description** (optional, textarea, max 500 characters, 3 rows)
+  - **Type** (required, dropdown with: Course, Installer, Troubleshooting, Integration, Quick Start)
   - **Server Assignment** (optional multi-select using new MultiSelectWalkthroughs component)
   - **Publish Status** (toggle: Draft/Published)
 - **Actions**: 
-  - Cancel (secondary button)
-  - Create/Save (primary button, disabled until title provided)
+  - Cancel (secondary button, returns to walkthrough list)
+  - Create/Save (primary button, disabled until title and type provided)
 
 **Validation**:
 - Title is required and must be unique within organization
 - Description is optional but recommended
 - Server assignment can be modified later
 
-### 3. Walkthrough Detail Page (`/dashboard/walkthroughs/[walkthroughId]`)
+### 3. Walkthrough Detail/Editor Page (`/dashboard/walkthroughs/[walkthroughId]/edit`)
 
-#### Page Layout
+#### Full-Page Editor Layout
+**Route**: `/dashboard/walkthroughs/[walkthroughId]/edit?step=[stepId]`
 **Breadcrumb**: Dashboard > Walkthroughs > [Walkthrough Title]
 
-#### Header Section
+#### Header Section (Fixed)
 - **Walkthrough Title** (inline editable with auto-save)
-- **Description** (inline editable textarea with auto-save)
-- **Version Badge** (e.g., "v2")
+- **Type Badge** (e.g., "📚 Course", "⚙️ Installer") with tooltip showing type description
+- **Description** (inline editable textarea with auto-save)  
 - **Server Assignments**: Compact badge list showing assigned servers with count
 - **Action Buttons**:
-  - "Preview" (opens preview modal)
+  - "Preview Walkthrough" (full simulation preview)
   - "Publish Changes" (if unpublished changes exist)
-  - "Assign to Servers" (opens server assignment modal)
-  - "Settings" (dropdown with version history, duplicate, delete)
+  - "Assign to Servers" (opens server assignment interface)
+  - "Settings" (dropdown with change type, version history, duplicate, delete)
 
 #### Server Assignment Quick Access
 Expandable section under header:
@@ -131,37 +138,41 @@ Expandable section under header:
 - **Assigned servers list** with individual enable/disable toggles
 - **Reorder interface** with drag handles for display order
 
-#### Two-Column Layout
+#### Three-Panel Layout
 
-**Left Column (1/3 width): Steps Navigator**
+**Left Panel (300px): Steps Navigator**
 - **Header**: "Steps" with step count badge
 - **Step List**: Ordered list of all steps
   - Step number/order indicator
   - Step title (truncated)
-  - Status indicator (published/draft)
+  - Content field completion indicators (💬 📝 🔧 ⚡)
   - Active step highlighted
 - **Drag Handles**: For reordering steps
 - **Add Step Button**: At bottom of list, creates new step at end
 - **Step Actions**: Hover reveals duplicate/delete icons
 
-**Right Column (2/3 width): Step Editor**
+**Center Panel (Flexible): Content Editor**
 - **Step Header**:
   - Step title (editable input with auto-save)
   - Step number indicator
   - Delete step button (with confirmation)
-- **Markdown Editor**:
-  - Toolbar with formatting options (bold, italic, code, link, lists, headers)
-  - **View Modes**: 
-    - Write (markdown editing)
-    - Preview (rendered markdown)
-    - Split (side-by-side)
-  - **Full-screen Mode**: Expand editor to full window
-  - **Auto-save**: With visual indicator ("Saving..." / "Saved" / "Error")
-- **Editor Features**:
-  - Syntax highlighting for markdown
-  - Line numbers
-  - Keyboard shortcuts (Ctrl+B for bold, etc.)
-  - Tab support for indentation
+- **Structured Content Sections**:
+  - **Introduction for Agent** (collapsible textarea)
+  - **Context for Agent** (collapsible textarea)
+  - **Content for User** (always expanded textarea with markdown)
+  - **Operations for Agent** (collapsible textarea)
+- **Section Features**:
+  - Character count indicators
+  - Auto-save with visual feedback
+  - Type-aware field requirements
+  - Contextual help and placeholders
+
+**Right Panel (400px): Preview Panel**
+- **Preview Modes**: 
+  - Edit (simple textareas for all fields)
+  - Preview (rendered Nunjucks template output)
+- **Navigation Controls**: Previous/Next step buttons
+- **Template Validation**: Show compilation errors and warnings
 
 #### Empty States
 - **No Steps**: "This walkthrough doesn't have any steps yet. Click 'Add Step' to get started."
@@ -196,23 +207,24 @@ Add new "Walkthroughs" tab to existing server tabs:
   - Quick actions: View, Edit, Remove assignment
 - **Empty State**: "No walkthroughs assigned. Use the selector above to assign walkthroughs to this server."
 
-### 5. Preview Mode
+### 5. Walkthrough Simulation Preview
 
-#### Preview Modal Specifications
-**Triggered by**: "Preview" button from walkthrough detail page
+#### Full Simulation Preview
+**Triggered by**: "Preview Walkthrough" button from editor header
 
-**Modal Features**:
-- **Full-Screen Modal**: Simulates MCP tool interface
+**Full-Screen Interface**:
+- **Simulated MCP Environment**: Mimics actual MCP tool interface
 - **Navigation Controls**:
   - Previous/Next step buttons
   - Step counter: "Step 2 of 5"
   - Progress bar showing completion percentage
 - **Content Display**:
-  - Rendered markdown content
-  - Simulated MCP tool UI chrome
+  - Rendered template content as seen by AI agent
+  - Simulated user experience
 - **Controls**:
   - "Exit Preview" button
   - "Edit This Step" shortcut button
+  - "Return to Editor" navigation
 
 ### 6. Step Management
 
@@ -282,15 +294,16 @@ interface DraggableWalkthroughListProps {
 }
 ```
 
-#### MarkdownEditor Component
-Advanced markdown editor with:
-- CodeMirror or Monaco integration
-- Syntax highlighting
-- Preview modes (split, tabs)
-- Auto-save with debouncing
-- Keyboard shortcuts
-- Full-screen mode
-- Error handling and recovery
+#### StepContentEditor Component
+Full-featured structured content editor with:
+- Four collapsible sections with shadcn/ui textareas for content fields
+- Type-aware field requirements (required/optional based on walkthrough type)
+- Real-time preview in adjacent panel
+- Auto-save with debouncing and visual feedback
+- Field validation and character limits
+- Contextual help and placeholders
+- Type-specific content suggestions and examples
+- Content field completion indicators
 
 #### StepsNavigator Component
 Sidebar navigation for steps:
@@ -303,7 +316,7 @@ Sidebar navigation for steps:
 ### Existing Components to Leverage
 - `DataTable` for walkthrough lists
 - `Card` for overview sections
-- `Dialog` for create/edit modals
+- `Dialog` for confirmations and settings
 - `Tabs` for navigation
 - `Button`, `Input`, `Textarea` for forms
 - `Badge` for status indicators
@@ -321,6 +334,7 @@ export const createWalkthrough = base
   .input(z.object({
     title: z.string().min(1).max(100),
     description: z.string().max(500).optional(),
+    type: z.enum(['course', 'installer', 'troubleshooting', 'integration', 'quickstart']),
     isPublished: z.boolean().default(false),
     serverIds: z.array(z.string()).optional() // Initial server assignments
   }))
@@ -338,6 +352,7 @@ export const updateWalkthrough = base
     id: z.string(),
     title: z.string().min(1).max(100).optional(),
     description: z.string().max(500).optional(),
+    type: z.enum(['course', 'installer', 'troubleshooting', 'integration', 'quickstart']).optional(),
     isPublished: z.boolean().optional()
   }))
   .handler(async ({ input, errors }) => {
@@ -546,36 +561,36 @@ export const updateWalkthroughAssignment = base
 - **Editor Crashes**: Monitor editor stability
 - **Validation Errors**: Track common validation failures
 
-## Definition of Done
+## Implementation Considerations
 
-### Phase 1: Core Authoring (Ready for Development)
-- [ ] New "Walkthroughs" sidebar section implemented
-- [ ] Walkthrough list page with data table
-- [ ] Create/Edit walkthrough modal
-- [ ] Basic walkthrough detail page with step management
-- [ ] Markdown editor with preview
-- [ ] All oRPC server actions for CRUD operations
-- [ ] Auto-save functionality with visual feedback
-- [ ] Step reordering with drag-and-drop
-- [ ] Organization scoping and authorization
-- [ ] Basic responsive design
+### Core Requirements
+- New "Walkthroughs" sidebar section
+- Walkthrough list page with data table
+- Create/Edit walkthrough modal
+- Walkthrough detail page with step management
+- Structured content editor with four textarea fields
+- Simple edit/preview toggle functionality
+- All oRPC server actions for CRUD operations
+- Auto-save functionality with visual feedback
+- Step reordering with drag-and-drop
+- Organization scoping and authorization
+- Responsive design for mobile authoring
 
-### Phase 2: Enhanced Features
-- [ ] Server assignment interface with multi-select
-- [ ] Enhanced MCP server detail page walkthrough tab
-- [ ] Preview mode functionality
-- [ ] Advanced markdown editor features
-- [ ] Comprehensive error handling and recovery
-- [ ] Mobile optimization
-- [ ] Performance optimizations
+### Enhanced Features
+- Server assignment interface with multi-select
+- Enhanced MCP server detail page walkthrough tab
+- Nunjucks template rendering system
+- Content validation and character limits
+- Comprehensive error handling and recovery
+- Performance optimizations for large walkthroughs
 
-### Phase 3: Analytics and Polish
-- [ ] Walkthrough analytics integration
-- [ ] Advanced editor features (full-screen, shortcuts)
-- [ ] Bulk operations for walkthrough management
-- [ ] Version management UI
-- [ ] Comprehensive testing coverage
-- [ ] Documentation for customers
+### Advanced Capabilities
+- Walkthrough analytics integration
+- Content templates for common step types
+- Bulk operations for walkthrough management
+- Version management and rollback functionality
+- Comprehensive testing coverage
+- User documentation and onboarding
 
 ## Related Documents
 - [UI Ideation](../thoughts/ui-ideation.md) - Detailed UI specifications and mockups
