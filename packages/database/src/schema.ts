@@ -1,6 +1,30 @@
 import { nanoid } from 'common/nanoid'
 import { type AnyPgColumn, bigint, date, index, integer, jsonb, pgEnum, pgTable, text } from 'drizzle-orm/pg-core'
+import { z } from 'zod'
 import { organization, user } from './auth-schema'
+
+export const walkthroughStepContentFieldVersion1 = z.object({
+    version: z.literal('v1'),
+    introductionForAgent: z
+        .string()
+        .optional()
+        .describe(
+            'The introduction for the agent to read. Provides information about the step and what should be done.'
+        ),
+    contextForAgent: z
+        .string()
+        .optional()
+        .describe(
+            'Information about what the context is for the stpe, and where/how the agent can find more information.'
+        ),
+    contentForUser: z.string().describe('The specifics of what the agent should say / tell the user with the step'),
+    operationsForAgent: z
+        .string()
+        .describe(
+            'A list of operations that the agent should perform including CRUD operations on files, tools, MCP tools etc.'
+        )
+})
+export const walkthroughStepContentField = z.discriminatedUnion('version', [walkthroughStepContentFieldVersion1])
 
 const supportRequestStatusValues = ['needs_email', 'pending', 'in_progress', 'resolved', 'closed'] as const
 const supportRequestMethodValues = ['slack', 'linear', 'dashboard', 'none'] as const
@@ -8,6 +32,7 @@ const mcpServerAuthTypeValues = ['platform_oauth', 'custom_oauth', 'none', 'coll
 const activityTypeValues = ['comment', 'status_change', 'assignment', 'field_update', 'system'] as const
 const priorityValues = ['low', 'medium', 'high', 'critical'] as const
 const walkthroughStatusValues = ['draft', 'published', 'archived'] as const
+const walkthroughTypeValues = ['course', 'installer', 'troubleshooting', 'integration', 'quickstart'] as const
 
 export const supportRequestStatus = pgEnum('support_request_status', supportRequestStatusValues)
 export const supportRequestMethod = pgEnum('support_request_method', supportRequestMethodValues)
@@ -15,6 +40,7 @@ export const mcpServerAuthType = pgEnum('mcp_server_auth_type', mcpServerAuthTyp
 export const supportTicketActivityType = pgEnum('support_ticket_activity_type', activityTypeValues)
 export const supportTicketPriority = pgEnum('support_ticket_priority', priorityValues)
 export const walkthroughStatus = pgEnum('walkthrough_status', walkthroughStatusValues)
+export const walkthroughType = pgEnum('walkthrough_type', walkthroughTypeValues)
 
 export const supportRequests = pgTable('support_requests', {
     id: text('id')
@@ -149,6 +175,7 @@ export const walkthroughs = pgTable(
             .notNull(),
         title: text('title').notNull(),
         description: text('description'),
+        type: walkthroughType('type').default('course'),
         status: walkthroughStatus('status').default('draft'),
         createdAt: bigint('created_at', { mode: 'number' }).$defaultFn(() => Date.now()),
         updatedAt: bigint('updated_at', { mode: 'number' }).$defaultFn(() => Date.now()),
@@ -192,7 +219,13 @@ export const walkthroughSteps = pgTable(
             .references(() => walkthroughs.id, { onDelete: 'cascade' })
             .notNull(),
         title: text('title').notNull(),
-        instructions: text('instructions').notNull(),
+        contentFields: jsonb('content_fields').$type<z.infer<typeof walkthroughStepContentField>>().notNull().default({
+            version: 'v1',
+            introductionForAgent: '',
+            contextForAgent: '',
+            contentForUser: '',
+            operationsForAgent: ''
+        }),
         displayOrder: integer('display_order').notNull().default(0),
         nextStepId: text('next_step_id').references((): AnyPgColumn => walkthroughSteps.id),
         createdAt: bigint('created_at', { mode: 'number' }).$defaultFn(() => Date.now()),
