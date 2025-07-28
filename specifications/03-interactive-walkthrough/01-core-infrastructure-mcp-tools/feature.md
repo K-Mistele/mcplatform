@@ -375,29 +375,6 @@ export const walkthroughSteps = pgTable('walkthrough_steps', {
 - [ ] End-to-end tests for walkthrough flow
 - [ ] Performance testing for linked-list operations
 
-## Success Criteria
-
-### Functional Requirements
-- [ ] End-users can discover walkthroughs via `list_walkthroughs`
-- [ ] End-users can start/resume walkthroughs via `select_walkthrough`
-- [ ] End-users can navigate steps via `next_walkthrough_step`
-- [ ] Progress persists across IDE sessions
-- [ ] Multiple users can progress through same walkthrough independently
-- [ ] Walkthrough assignments work correctly with many-to-many relationships
-
-### Technical Requirements
-- [ ] All database operations properly scoped to organizations
-- [ ] OAuth integration works seamlessly with existing sub-tenant system
-- [ ] Linked-list operations perform efficiently
-- [ ] Content versioning prevents user progress loss during updates
-- [ ] MCP tools integrate with existing server infrastructure without conflicts
-
-### Performance Requirements
-- [ ] Tool response times under 200ms for typical operations
-- [ ] Database queries optimized with proper indexing
-- [ ] Progress updates don't block content delivery
-- [ ] System handles concurrent users on same walkthrough
-
 ## Dependencies
 
 ### Internal Dependencies
