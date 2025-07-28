@@ -27,17 +27,17 @@ const statusOptions = [
 function getStatusColor(status: string) {
     switch (status) {
         case 'needs_email':
-            return 'bg-yellow-100 text-yellow-800 border-yellow-300'
+            return 'bg-amber-500 text-white border-amber-600 hover:bg-amber-600'
         case 'pending':
-            return 'bg-blue-100 text-blue-800 border-blue-300'
+            return 'bg-blue-600 text-white border-blue-700 hover:bg-blue-700'
         case 'in_progress':
-            return 'bg-purple-100 text-purple-800 border-purple-300'
+            return 'bg-purple-600 text-white border-purple-700 hover:bg-purple-700'
         case 'resolved':
-            return 'bg-green-100 text-green-800 border-green-300'
+            return 'bg-emerald-600 text-white border-emerald-700 hover:bg-emerald-700'
         case 'closed':
-            return 'bg-gray-100 text-gray-800 border-gray-300'
+            return 'bg-slate-600 text-white border-slate-700 hover:bg-slate-700'
         default:
-            return 'bg-gray-100 text-gray-800 border-gray-300'
+            return 'bg-slate-600 text-white border-slate-700 hover:bg-slate-700'
     }
 }
 
