@@ -6,6 +6,7 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { renderWalkthroughStep } from '@/lib/template-engine'
+import { MarkdownRenderer } from '@/components/support-tickets/markdown-renderer'
 import type { Walkthrough, WalkthroughStep } from 'database'
 
 interface PreviewPanelProps {
@@ -14,7 +15,7 @@ interface PreviewPanelProps {
 }
 
 export function PreviewPanel({ walkthrough, step }: PreviewPanelProps) {
-    const [previewMode, setPreviewMode] = useState<'edit' | 'template'>('edit')
+    const [previewMode, setPreviewMode] = useState<'raw' | 'rendered'>('raw')
 
     if (!step) {
         return (
@@ -30,7 +31,6 @@ export function PreviewPanel({ walkthrough, step }: PreviewPanelProps) {
         )
     }
 
-    const contentFields = step.contentFields as any
     const renderedTemplate = renderWalkthroughStep(walkthrough, step)
 
     return (
@@ -41,27 +41,27 @@ export function PreviewPanel({ walkthrough, step }: PreviewPanelProps) {
                     <h3 className="font-semibold">Preview</h3>
                     <div className="flex rounded-md border">
                         <Button
-                            variant={previewMode === 'edit' ? 'default' : 'ghost'}
+                            variant={previewMode === 'raw' ? 'default' : 'ghost'}
                             size="sm"
-                            onClick={() => setPreviewMode('edit')}
+                            onClick={() => setPreviewMode('raw')}
                             className="rounded-r-none border-r"
                         >
-                            Edit View
+                            Raw Template
                         </Button>
                         <Button
-                            variant={previewMode === 'template' ? 'default' : 'ghost'}
+                            variant={previewMode === 'rendered' ? 'default' : 'ghost'}
                             size="sm"
-                            onClick={() => setPreviewMode('template')}
+                            onClick={() => setPreviewMode('rendered')}
                             className="rounded-l-none"
                         >
-                            AI Template
+                            Rich Preview
                         </Button>
                     </div>
                 </div>
                 <p className="text-sm text-muted-foreground">
-                    {previewMode === 'edit' 
-                        ? 'Structured content breakdown'
-                        : 'Final template output for AI agent'
+                    {previewMode === 'raw' 
+                        ? 'Raw template output for AI agent'
+                        : 'Rendered markdown preview'
                     }
                 </p>
             </div>
@@ -69,89 +69,33 @@ export function PreviewPanel({ walkthrough, step }: PreviewPanelProps) {
             {/* Content */}
             <ScrollArea className="flex-1">
                 <div className="p-4">
-                    {previewMode === 'edit' ? (
-                        <div className="space-y-4">
-                            {/* Step Title */}
-                            <div className="bg-primary/5 border border-primary/20 rounded-lg p-4">
-                                <div className="flex items-center gap-2 mb-2">
-                                    <Badge variant="outline" className="text-xs">
-                                        Step {step.displayOrder}
-                                    </Badge>
-                                </div>
-                                <h4 className="font-semibold text-primary">
-                                    {step.title}
-                                </h4>
-                            </div>
-
-                            {/* Introduction for Agent */}
-                            {contentFields?.introductionForAgent?.trim() && (
-                                <div className="space-y-2">
-                                    <div className="flex items-center gap-2">
-                                        <span>💬</span>
-                                        <h5 className="font-medium text-sm">Introduction for Agent</h5>
-                                    </div>
-                                    <div className="bg-muted rounded-md p-3 text-sm whitespace-pre-wrap">
-                                        {contentFields.introductionForAgent}
-                                    </div>
-                                </div>
-                            )}
-
-                            {/* Context for Agent */}
-                            {contentFields?.contextForAgent?.trim() && (
-                                <div className="space-y-2">
-                                    <div className="flex items-center gap-2">
-                                        <span>📝</span>
-                                        <h5 className="font-medium text-sm">Context for Agent</h5>
-                                    </div>
-                                    <div className="bg-muted rounded-md p-3 text-sm whitespace-pre-wrap">
-                                        {contentFields.contextForAgent}
-                                    </div>
-                                </div>
-                            )}
-
-                            {/* Content for User */}
-                            <div className="space-y-2">
-                                <div className="flex items-center gap-2">
-                                    <span>🔧</span>
-                                    <h5 className="font-medium text-sm">Content for User</h5>
-                                    <Badge variant="destructive" className="text-xs">Required</Badge>
-                                </div>
-                                {contentFields?.contentForUser?.trim() ? (
-                                    <div className="bg-primary/5 border border-primary/20 rounded-md p-3 text-sm whitespace-pre-wrap">
-                                        {contentFields.contentForUser}
-                                    </div>
-                                ) : (
-                                    <div className="bg-destructive/5 border border-destructive/20 rounded-md p-3 text-sm text-destructive">
-                                        No user content provided. This field is required.
-                                    </div>
-                                )}
-                            </div>
-
-                            {/* Operations for Agent */}
-                            {contentFields?.operationsForAgent?.trim() && (
-                                <div className="space-y-2">
-                                    <div className="flex items-center gap-2">
-                                        <span>⚡</span>
-                                        <h5 className="font-medium text-sm">Operations for Agent</h5>
-                                    </div>
-                                    <div className="bg-muted rounded-md p-3 text-sm whitespace-pre-wrap">
-                                        {contentFields.operationsForAgent}
-                                    </div>
-                                </div>
-                            )}
-                        </div>
-                    ) : (
+                    {previewMode === 'raw' ? (
                         <div className="space-y-4">
                             <div className="bg-muted border rounded-lg p-4">
                                 <div className="flex items-center gap-2 mb-3">
-                                    <Badge variant="secondary" className="text-xs">AI Agent View</Badge>
+                                    <Badge variant="secondary" className="text-xs">Raw Template</Badge>
                                 </div>
-                                <pre className="font-mono text-sm whitespace-pre-wrap leading-relaxed">
+                                <pre className="font-mono text-sm whitespace-pre-wrap leading-relaxed overflow-x-auto">
                                     {renderedTemplate}
                                 </pre>
                             </div>
                             <p className="text-xs text-muted-foreground">
-                                This is how the step content will appear to AI agents using the walkthrough tools.
+                                This is the raw template that will be sent to AI agents.
+                            </p>
+                        </div>
+                    ) : (
+                        <div className="space-y-4">
+                            <div className="bg-background border rounded-lg p-6">
+                                <div className="flex items-center gap-2 mb-4">
+                                    <Badge variant="secondary" className="text-xs">Rendered Preview</Badge>
+                                </div>
+                                <MarkdownRenderer 
+                                    content={renderedTemplate} 
+                                    className="max-w-none"
+                                />
+                            </div>
+                            <p className="text-xs text-muted-foreground">
+                                This is how the content appears when rendered as rich text.
                             </p>
                         </div>
                     )}
