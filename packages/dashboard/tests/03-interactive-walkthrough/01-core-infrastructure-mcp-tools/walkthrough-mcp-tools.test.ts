@@ -1,3 +1,4 @@
+import type { CallToolRequest } from '@modelcontextprotocol/sdk/types.js'
 import { afterEach, beforeEach, describe, expect, test } from 'bun:test'
 import { nanoid } from 'common/nanoid'
 import {
@@ -15,8 +16,8 @@ import {
 import { and, eq } from 'drizzle-orm'
 import {
     handleGetNextStep,
-    handleGetWalkthroughDetails,
-    handleListWalkthroughs
+    handleListWalkthroughs,
+    handleStartWalkthrough
 } from '../../../src/lib/mcp/tools/walkthrough'
 
 describe('Walkthrough MCP Tools', () => {
@@ -77,7 +78,7 @@ describe('Walkthrough MCP Tools', () => {
         createdMcpServerUsers.push(testMcpServerUserId)
 
         testServerSessionId = `sess_${nanoid(12)}`
-        
+
         // Create test MCP server session
         await db.insert(mcpServerSession).values({
             mcpServerSessionId: testServerSessionId,
@@ -135,7 +136,7 @@ describe('Walkthrough MCP Tools', () => {
         for (const id of createdToolCalls) {
             await db.delete(toolCalls).where(eq(toolCalls.id, id))
         }
-        
+
         for (const id of createdMcpServerSessions) {
             await db.delete(mcpServerSession).where(eq(mcpServerSession.mcpServerSessionId, id))
         }
@@ -196,7 +197,7 @@ describe('Walkthrough MCP Tools', () => {
 
     describe('list_walkthroughs tool', () => {
         test('should list available walkthroughs with progress info', async () => {
-            const request = {
+            const request: CallToolRequest = {
                 method: 'tools/call',
                 params: {
                     name: 'list_walkthroughs',
@@ -241,7 +242,7 @@ describe('Walkthrough MCP Tools', () => {
             })
             createdWalkthroughProgress.push({ mcpServerUserId: testMcpServerUserId, walkthroughId: testWalkthroughId })
 
-            const request = {
+            const request: CallToolRequest = {
                 method: 'tools/call',
                 params: {
                     name: 'list_walkthroughs',
@@ -258,63 +259,107 @@ describe('Walkthrough MCP Tools', () => {
         })
     })
 
-    describe('get_walkthrough_details tool', () => {
-        test('should return detailed walkthrough information', async () => {
-            const request = {
+    describe('start_walkthrough tool', () => {
+        test('should start walkthrough by name and return first step', async () => {
+            const request: CallToolRequest = {
                 method: 'tools/call',
                 params: {
-                    name: 'get_walkthrough_details',
+                    name: 'start_walkthrough',
                     arguments: {
-                        walkthroughId: testWalkthroughId
+                        name: 'Test Walkthrough'
                     }
                 }
             }
 
-            const response = await handleGetWalkthroughDetails(request, createTestContext())
+            const response = await handleStartWalkthrough(request, createTestContext())
             const result = JSON.parse(response.content[0].text)
 
             expect(result.walkthrough.id).toBe(testWalkthroughId)
             expect(result.walkthrough.title).toBe('Test Walkthrough')
-            expect(result.walkthrough.totalSteps).toBe(3)
-            expect(result.walkthrough.completedSteps).toBe(0)
-            expect(result.walkthrough.progressPercent).toBe(0)
-            expect(result.walkthrough.currentStepId).toBe(testStepIds[0])
-            expect(result.walkthrough.isCompleted).toBe(false)
+            expect(result.walkthrough.type).toBe('course')
+            expect(result.nextStep.id).toBe(testStepIds[0])
+            expect(result.nextStep.title).toBe('Test Step 1')
+            expect(result.progress.totalSteps).toBe(3)
+            expect(result.progress.completedCount).toBe(0)
+            expect(result.progress.progressPercent).toBe(0)
+            expect(result.progress.isCompleted).toBe(false)
+            expect(result.progress.wasRestarted).toBe(false)
 
             // Verify tool call was tracked
             const trackedCall = await db
                 .select()
                 .from(toolCalls)
-                .where(eq(toolCalls.toolName, 'get_walkthrough_details'))
+                .where(eq(toolCalls.toolName, 'start_walkthrough'))
                 .limit(1)
 
             expect(trackedCall).toHaveLength(1)
+            expect(trackedCall[0].output.walkthroughId).toBe(testWalkthroughId)
         })
 
-        test('should throw error for nonexistent walkthrough', async () => {
-            const request = {
+        test('should restart walkthrough when restart=true', async () => {
+            // First create some progress
+            await db.insert(walkthroughProgress).values({
+                mcpServerUserId: testMcpServerUserId,
+                walkthroughId: testWalkthroughId,
+                completedSteps: [testStepIds[0]],
+                startedAt: Date.now(),
+                lastActivityAt: Date.now()
+            })
+            createdWalkthroughProgress.push({ mcpServerUserId: testMcpServerUserId, walkthroughId: testWalkthroughId })
+
+            const request: CallToolRequest = {
                 method: 'tools/call',
                 params: {
-                    name: 'get_walkthrough_details',
+                    name: 'start_walkthrough',
                     arguments: {
-                        walkthroughId: `invalid_${nanoid(8)}`
+                        name: 'Test Walkthrough',
+                        restart: true
                     }
                 }
             }
 
-            await expect(handleGetWalkthroughDetails(request, createTestContext())).rejects.toThrow()
+            const response = await handleStartWalkthrough(request, createTestContext())
+            const result = JSON.parse(response.content[0].text)
+
+            expect(result.nextStep.id).toBe(testStepIds[0]) // Back to first step
+            expect(result.progress.completedCount).toBe(0) // Progress reset
+            expect(result.progress.wasRestarted).toBe(true)
+        })
+
+        test('should throw error for nonexistent walkthrough', async () => {
+            const request: CallToolRequest = {
+                method: 'tools/call',
+                params: {
+                    name: 'start_walkthrough',
+                    arguments: {
+                        name: 'Nonexistent Walkthrough'
+                    }
+                }
+            }
+
+            await expect(handleStartWalkthrough(request, createTestContext())).rejects.toThrow(
+                "Walkthrough 'Nonexistent Walkthrough' not found"
+            )
         })
     })
 
     describe('get_next_step tool', () => {
-        test('should return first step for new user without completing any step', async () => {
-            const request = {
+        test('should return next step for active walkthrough without completing any step', async () => {
+            // First start a walkthrough to create active progress
+            await db.insert(walkthroughProgress).values({
+                mcpServerUserId: testMcpServerUserId,
+                walkthroughId: testWalkthroughId,
+                completedSteps: [],
+                startedAt: Date.now(),
+                lastActivityAt: Date.now()
+            })
+            createdWalkthroughProgress.push({ mcpServerUserId: testMcpServerUserId, walkthroughId: testWalkthroughId })
+
+            const request: CallToolRequest = {
                 method: 'tools/call',
                 params: {
                     name: 'get_next_step',
-                    arguments: {
-                        walkthroughId: testWalkthroughId
-                    }
+                    arguments: {}
                 }
             }
 
@@ -330,29 +375,25 @@ describe('Walkthrough MCP Tools', () => {
             expect(result.progress.progressPercent).toBe(0)
             expect(result.progress.isWalkthroughCompleted).toBe(false)
             expect(result.completedStep).toBeUndefined()
-
-            // Should have created progress record
-            const progress = await db
-                .select()
-                .from(walkthroughProgress)
-                .where(
-                    and(
-                        eq(walkthroughProgress.mcpServerUserId, testMcpServerUserId),
-                        eq(walkthroughProgress.walkthroughId, testWalkthroughId)
-                    )
-                )
-                .limit(1)
-
-            expect(progress).toHaveLength(1)
+            expect(result.walkthroughId).toBe(testWalkthroughId)
         })
 
         test('should complete current step and return next step', async () => {
-            const request = {
+            // First create active progress
+            await db.insert(walkthroughProgress).values({
+                mcpServerUserId: testMcpServerUserId,
+                walkthroughId: testWalkthroughId,
+                completedSteps: [],
+                startedAt: Date.now(),
+                lastActivityAt: Date.now()
+            })
+            createdWalkthroughProgress.push({ mcpServerUserId: testMcpServerUserId, walkthroughId: testWalkthroughId })
+
+            const request: CallToolRequest = {
                 method: 'tools/call',
                 params: {
                     name: 'get_next_step',
                     arguments: {
-                        walkthroughId: testWalkthroughId,
                         currentStepId: testStepIds[0]
                     }
                 }
@@ -368,6 +409,7 @@ describe('Walkthrough MCP Tools', () => {
             expect(result.progress.completedCount).toBe(1)
             expect(result.progress.progressPercent).toBe(33)
             expect(result.progress.isWalkthroughCompleted).toBe(false)
+            expect(result.walkthroughId).toBe(testWalkthroughId)
 
             // Verify progress was actually saved
             const progress = await db
@@ -390,11 +432,9 @@ describe('Walkthrough MCP Tools', () => {
                 .where(eq(toolCalls.toolName, 'get_next_step'))
                 .limit(1)
 
-            expect(trackedCall[0].output).toEqual({
-                completedStepId: testStepIds[0],
-                nextStepId: testStepIds[1],
-                isWalkthroughCompleted: false
-            })
+            expect(trackedCall[0].output.completedStepId).toBe(testStepIds[0])
+            expect(trackedCall[0].output.nextStepId).toBe(testStepIds[1])
+            expect(trackedCall[0].output.walkthroughId).toBe(testWalkthroughId)
         })
 
         test('should return next uncompleted step for user with existing progress', async () => {
@@ -408,13 +448,11 @@ describe('Walkthrough MCP Tools', () => {
             })
             createdWalkthroughProgress.push({ mcpServerUserId: testMcpServerUserId, walkthroughId: testWalkthroughId })
 
-            const request = {
+            const request: CallToolRequest = {
                 method: 'tools/call',
                 params: {
                     name: 'get_next_step',
-                    arguments: {
-                        walkthroughId: testWalkthroughId
-                    }
+                    arguments: {}
                 }
             }
 
@@ -426,6 +464,7 @@ describe('Walkthrough MCP Tools', () => {
             expect(result.progress.completedCount).toBe(1)
             expect(result.progress.progressPercent).toBe(33)
             expect(result.completedStep).toBeUndefined()
+            expect(result.walkthroughId).toBe(testWalkthroughId)
         })
 
         test('should indicate completion when completing final step', async () => {
@@ -440,12 +479,11 @@ describe('Walkthrough MCP Tools', () => {
             createdWalkthroughProgress.push({ mcpServerUserId: testMcpServerUserId, walkthroughId: testWalkthroughId })
 
             // Complete final step via tool
-            const request = {
+            const request: CallToolRequest = {
                 method: 'tools/call',
                 params: {
                     name: 'get_next_step',
                     arguments: {
-                        walkthroughId: testWalkthroughId,
                         currentStepId: testStepIds[2]
                     }
                 }
@@ -459,6 +497,7 @@ describe('Walkthrough MCP Tools', () => {
             expect(result.progress.completedCount).toBe(3)
             expect(result.progress.progressPercent).toBe(100)
             expect(result.progress.isWalkthroughCompleted).toBe(true)
+            expect(result.walkthroughId).toBe(testWalkthroughId)
 
             // Verify completedAt timestamp was set
             const progress = await db
@@ -475,13 +514,34 @@ describe('Walkthrough MCP Tools', () => {
             expect(progress[0].completedAt).toBeGreaterThan(0)
         })
 
+        test('should throw error when no active walkthrough', async () => {
+            const request: CallToolRequest = {
+                method: 'tools/call',
+                params: {
+                    name: 'get_next_step',
+                    arguments: {}
+                }
+            }
+
+            await expect(handleGetNextStep(request, createTestContext())).rejects.toThrow('No active walkthrough found')
+        })
+
         test('should throw error for invalid step', async () => {
-            const request = {
+            // First create active progress
+            await db.insert(walkthroughProgress).values({
+                mcpServerUserId: testMcpServerUserId,
+                walkthroughId: testWalkthroughId,
+                completedSteps: [],
+                startedAt: Date.now(),
+                lastActivityAt: Date.now()
+            })
+            createdWalkthroughProgress.push({ mcpServerUserId: testMcpServerUserId, walkthroughId: testWalkthroughId })
+
+            const request: CallToolRequest = {
                 method: 'tools/call',
                 params: {
                     name: 'get_next_step',
                     arguments: {
-                        walkthroughId: testWalkthroughId,
                         currentStepId: `invalid_${nanoid(8)}`
                     }
                 }
@@ -491,11 +551,10 @@ describe('Walkthrough MCP Tools', () => {
         })
     })
 
-
     describe('Tool Integration', () => {
         test('should work together for a complete walkthrough flow', async () => {
             // 1. List walkthroughs
-            let request = {
+            let request: CallToolRequest = {
                 method: 'tools/call',
                 params: { name: 'list_walkthroughs', arguments: {} }
             }
@@ -503,24 +562,24 @@ describe('Walkthrough MCP Tools', () => {
             let result = JSON.parse(response.content[0].text)
             expect(result.walkthroughs[0].progressPercent).toBe(0)
 
-            // 2. Get walkthrough details
+            // 2. Start walkthrough
             request = {
                 method: 'tools/call',
                 params: {
-                    name: 'get_walkthrough_details',
-                    arguments: { walkthroughId: testWalkthroughId }
+                    name: 'start_walkthrough',
+                    arguments: { name: 'Test Walkthrough' }
                 }
             }
-            response = await handleGetWalkthroughDetails(request, createTestContext())
+            response = await handleStartWalkthrough(request, createTestContext())
             result = JSON.parse(response.content[0].text)
-            expect(result.walkthrough.currentStepId).toBe(testStepIds[0])
+            expect(result.nextStep.id).toBe(testStepIds[0])
 
-            // 3. Get next step (first step for new user)
+            // 3. Get next step (should continue from active walkthrough)
             request = {
                 method: 'tools/call',
                 params: {
                     name: 'get_next_step',
-                    arguments: { walkthroughId: testWalkthroughId }
+                    arguments: {}
                 }
             }
             response = await handleGetNextStep(request, createTestContext())
@@ -533,7 +592,6 @@ describe('Walkthrough MCP Tools', () => {
                 params: {
                     name: 'get_next_step',
                     arguments: {
-                        walkthroughId: testWalkthroughId,
                         currentStepId: testStepIds[0]
                     }
                 }

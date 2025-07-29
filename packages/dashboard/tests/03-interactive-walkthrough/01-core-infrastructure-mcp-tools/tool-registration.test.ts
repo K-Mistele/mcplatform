@@ -172,12 +172,12 @@ describe('Tool Registration Integration', () => {
             const toolNames = toolsList.tools.map((tool: any) => tool.name)
 
             expect(toolNames).toContain('list_walkthroughs')
-            expect(toolNames).toContain('get_walkthrough_details')
+            expect(toolNames).toContain('start_walkthrough')
             expect(toolNames).toContain('get_next_step')
 
             // Verify we can call walkthrough tools
             expect(mockServer.handlers.has('list_walkthroughs')).toBe(true)
-            expect(mockServer.handlers.has('get_walkthrough_details')).toBe(true)
+            expect(mockServer.handlers.has('start_walkthrough')).toBe(true)
             expect(mockServer.handlers.has('get_next_step')).toBe(true)
         })
 
@@ -228,7 +228,7 @@ describe('Tool Registration Integration', () => {
 
             // Verify walkthrough tools are NOT registered
             expect(mockServer.handlers.has('list_walkthroughs')).toBe(false)
-            expect(mockServer.handlers.has('get_walkthrough_details')).toBe(false)
+            expect(mockServer.handlers.has('start_walkthrough')).toBe(false)
             expect(mockServer.handlers.has('get_next_step')).toBe(false)
         })
 
@@ -265,7 +265,7 @@ describe('Tool Registration Integration', () => {
 
             // Verify walkthrough tools are NOT registered
             expect(mockServer.handlers.has('list_walkthroughs')).toBe(false)
-            expect(mockServer.handlers.has('get_walkthrough_details')).toBe(false)
+            expect(mockServer.handlers.has('start_walkthrough')).toBe(false)
             expect(mockServer.handlers.has('get_next_step')).toBe(false)
         })
 
@@ -316,7 +316,7 @@ describe('Tool Registration Integration', () => {
 
             // Verify walkthrough tools are NOT registered
             expect(mockServer.handlers.has('list_walkthroughs')).toBe(false)
-            expect(mockServer.handlers.has('get_walkthrough_details')).toBe(false)
+            expect(mockServer.handlers.has('start_walkthrough')).toBe(false)
             expect(mockServer.handlers.has('get_next_step')).toBe(false)
         })
 
@@ -386,7 +386,7 @@ describe('Tool Registration Integration', () => {
 
             // Verify walkthrough tools ARE registered (because there's at least one published walkthrough)
             expect(mockServer.handlers.has('list_walkthroughs')).toBe(true)
-            expect(mockServer.handlers.has('get_walkthrough_details')).toBe(true)
+            expect(mockServer.handlers.has('start_walkthrough')).toBe(true)
             expect(mockServer.handlers.has('get_next_step')).toBe(true)
         })
     })

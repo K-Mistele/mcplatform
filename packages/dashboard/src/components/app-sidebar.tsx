@@ -13,6 +13,7 @@ import {
     IconSettings,
     IconUsers
 } from '@tabler/icons-react'
+import { BookOpenIcon } from 'lucide-react'
 import type * as React from 'react'
 
 import { NavMain } from '@/components/nav-main'
@@ -41,6 +42,12 @@ export const data = {
             url: '/dashboard/mcp-servers',
             icon: IconServer2,
             description: 'Create and manage MCP servers for your different products, applications and solutions.'
+        },
+        {
+            title: 'Walkthroughs',
+            url: '/dashboard/walkthroughs',
+            icon: BookOpenIcon,
+            description: 'Create and manage interactive walkthroughs for your users'
         },
         {
             title: 'Users',

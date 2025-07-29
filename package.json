@@ -9,10 +9,13 @@
     },
     "devDependencies": {
         "@types/bun": "latest",
+        "@types/nunjucks": "^3.2.6",
         "@types/prop-types": "^15.7.15"
     },
     "peerDependencies": {
         "typescript": "^5"
     },
-    "dependencies": {}
+    "dependencies": {
+        "nunjucks": "^3.2.4"
+    }
 }
