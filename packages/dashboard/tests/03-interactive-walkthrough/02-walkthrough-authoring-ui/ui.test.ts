@@ -40,7 +40,7 @@ describe('Walkthrough Authoring UI - Puppeteer Tests', () => {
             await page.waitForSelector('h1')
 
             // Look for "Create Walkthrough" button
-            let createButton = await page.evaluate(() => {
+            const createButton = await page.evaluate(() => {
                 const buttons = Array.from(document.querySelectorAll('button'))
                 const button = buttons.find(btn => {
                     const hasIcon = btn.querySelector('svg')

@@ -3,7 +3,7 @@
 
 import fs from "node:fs/promises";
 import path from "node:path";
-import { CourseState } from "./01-course-types-and-interfaces.js";
+import type { CourseState } from "./01-course-types-and-interfaces.js";
 
 // CRITICAL: Course directory path - must point to course content
 const courseDir = fromPackageRoot(".docs/raw/course"); // This would be your content directory

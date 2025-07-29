@@ -2,7 +2,7 @@
 // Extracted from: packages/mcp-docs-server/src/tools/course.ts
 
 import http from "node:http";
-import { CourseState, RegistrationResponse, DeviceCredentials } from "./01-course-types-and-interfaces.js";
+import { type CourseState, type RegistrationResponse, DeviceCredentials } from "./01-course-types-and-interfaces.js";
 
 // User registration - Production API
 export async function registerUser(email: string): Promise<RegistrationResponse> {

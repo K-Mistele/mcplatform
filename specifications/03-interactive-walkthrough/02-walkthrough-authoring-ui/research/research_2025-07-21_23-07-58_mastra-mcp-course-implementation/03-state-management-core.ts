@@ -5,7 +5,7 @@ import { existsSync, mkdirSync } from "node:fs";
 import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
-import { CourseState, DeviceCredentials } from "./01-course-types-and-interfaces.js";
+import type { CourseState, DeviceCredentials } from "./01-course-types-and-interfaces.js";
 
 // Device credential management
 export async function getDeviceIdPath(): Promise<string> {

@@ -2,13 +2,13 @@
 // Extracted and condensed from: packages/mcp-docs-server/src/tools/course.ts
 
 import { z } from "zod";
-import { MCPTool } from "./02-mcp-server-setup.js";
+import type { MCPTool } from "./02-mcp-server-setup.js";
 import { 
   courseLessonSchema, 
   confirmationSchema,
-  CourseLessonParams, 
-  ConfirmationParams,
-  CourseState 
+  type CourseLessonParams, 
+  type ConfirmationParams,
+  type CourseState 
 } from "./01-course-types-and-interfaces.js";
 import {
   getDeviceCredentials,
