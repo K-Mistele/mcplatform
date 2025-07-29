@@ -78,6 +78,13 @@
       "when": 1753223843428,
       "tag": "0010_lethal_slayback",
       "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "7",
+      "when": 1753808165255,
+      "tag": "0011_nifty_lady_vermin",
+      "breakpoints": true
     }
   ]
 }
