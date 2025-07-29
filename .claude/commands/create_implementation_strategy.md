@@ -187,9 +187,13 @@ Then wait for the user's input.
 **File**: `path/to/file.ext`
 **Changes**: [Summary of changes]
 
-   ```language
-   // specific code to add/modify
-   ```
+**Implementation Requirements:**
+- [High-level description of what needs to be implemented]
+- [Key functionality and behavior requirements] 
+- [Integration points and dependencies]
+- [UI/UX specifications without code]
+- [Data flow and state management approach]
+- [Error handling and edge cases to consider]
 
 [Add additional phases as necessary]
 
@@ -281,11 +285,21 @@ Then wait for the user's input.
 - The implementation plan must be complete and actionable
 - Every decision must be made before finalizing the plan
 
+7. **Avoid Code Snippets in Implementation Plans**:
+- Implementation plans should contain instructions and requirements, NOT actual code
+- Use high-level descriptions of what needs to be implemented instead of code examples
+- Focus on architectural decisions, patterns to follow, and integration requirements
+- Include references to existing code patterns and examples by file:line, but don't copy code
+- Code snippets make documents harder to maintain and quickly become outdated
+- Reserve actual code for the implementation phase, not the planning phase
+
 ### Focus on Implementation Details
 - Break down requirements into specific, actionable tasks
 - Include exact file paths and component names where possible
-- Reference existing patterns and examples
+- Reference existing patterns and examples by file:line location
 - Plan for incremental development and testing
+- Describe WHAT needs to be implemented and HOW it should work, not the actual code
+- Provide sufficient detail for implementation without including code snippets
 
 ### Follow Project Patterns
 - Use established oRPC patterns for data operations
