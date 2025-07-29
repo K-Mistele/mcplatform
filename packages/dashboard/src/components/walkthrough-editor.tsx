@@ -36,7 +36,7 @@ export function WalkthroughEditor({
     const steps = use(stepsPromise)
     const router = useRouter()
     const searchParams = useSearchParams()
-    const [saveStatus, setSaveStatus] = useState<'saved' | 'saving' | 'error'>('saved')
+    const [saveStatus, setSaveStatus] = useState<'saved' | 'saving' | 'error' | 'unsaved'>('saved')
 
     // Determine current step - use selectedStepId from URL or first step
     const currentStep = selectedStepId 
@@ -54,7 +54,7 @@ export function WalkthroughEditor({
         router.push(`?${params.toString()}`)
     }
 
-    const handleSaveStatusChange = (status: 'saved' | 'saving' | 'error') => {
+    const handleSaveStatusChange = (status: 'saved' | 'saving' | 'error' | 'unsaved') => {
         setSaveStatus(status)
     }
 
@@ -90,11 +90,13 @@ export function WalkthroughEditor({
                         <div className="flex items-center gap-2 text-sm">
                             <div className={`w-2 h-2 rounded-full ${
                                 saveStatus === 'saved' ? 'bg-green-500' : 
-                                saveStatus === 'saving' ? 'bg-yellow-500' : 'bg-red-500'
+                                saveStatus === 'saving' ? 'bg-blue-500' : 
+                                saveStatus === 'unsaved' ? 'bg-yellow-500' : 'bg-red-500'
                             }`} />
                             <span className="text-muted-foreground">
                                 {saveStatus === 'saved' ? 'Saved' : 
-                                 saveStatus === 'saving' ? 'Saving...' : 'Error saving'}
+                                 saveStatus === 'saving' ? 'Saving...' : 
+                                 saveStatus === 'unsaved' ? 'Unsaved changes' : 'Error saving'}
                             </span>
                         </div>
                     </div>

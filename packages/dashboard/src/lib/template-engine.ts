@@ -1,5 +1,5 @@
-import nunjucks from 'nunjucks'
 import type { Walkthrough, WalkthroughStep } from 'database'
+import nunjucks from 'nunjucks'
 
 // Configure Nunjucks without autoescape since we're templating markdown, not HTML
 const env = new nunjucks.Environment(null, {
@@ -12,26 +12,29 @@ const WALKTHROUGH_TEMPLATE = `
 
 ## Step {{ displayOrder }}: {{ stepTitle }}
 
-{% if introductionForAgent %}
-### Step Context
+{% if introductionForAgent and introductionForAgent.trim() %}
+<step_information>
 {{ introductionForAgent }}
-
+</step_information>
 {% endif %}
-{% if contextForAgent %}
-### Background Information
+
+{% if contextForAgent and contextForAgent.trim() %}
+<background_information_context>
 {{ contextForAgent }}
-
+</background_information_context>
 {% endif %}
-{% if operationsForAgent %}
-### Operations to Perform
+
+{% if operationsForAgent and operationsForAgent.trim() %}
+<operations_to_perform>
 {{ operationsForAgent }}
-
+</operations_to_perform>
 {% endif %}
-## User Content
 
-<StepContent>
+{% if contentForUser and contentForUser.trim() %}
+<step_content>
 {{ contentForUser }}
-</StepContent>
+</step_content>
+{% endif %}
 
 ---
 
@@ -42,12 +45,9 @@ const WALKTHROUGH_TEMPLATE = `
  * Renders a walkthrough step using the Nunjucks template engine
  * Combines walkthrough and step data into a structured template for AI agent consumption
  */
-export function renderWalkthroughStep(
-    walkthrough: Walkthrough,
-    step: WalkthroughStep
-): string {
+export function renderWalkthroughStep(walkthrough: Walkthrough, step: WalkthroughStep): string {
     const contentFields = step.contentFields as any
-    
+
     const templateData = {
         walkthroughTitle: walkthrough.title,
         stepTitle: step.title,

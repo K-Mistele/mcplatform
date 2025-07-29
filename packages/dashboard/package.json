@@ -6,7 +6,8 @@
         "dev": "TERM=dumb next dev --turbopack 2>&1 | tee .next.log",
         "build": "next build",
         "start": "next start",
-        "lint": "bunx @biomejs/biome lint ./src --write"
+        "lint": "bunx @biomejs/biome lint ./src --write",
+        "tests": "bun test --timeout=15000"
     },
     "dependencies": {
         "@dnd-kit/core": "^6.3.1",
@@ -87,9 +88,11 @@
     "devDependencies": {
         "@tailwindcss/postcss": "^4",
         "@types/node": "^20",
+        "@types/puppeteer": "^7.0.4",
         "@types/react": "^19",
         "@types/react-dom": "^19",
         "drizzle-kit": "^0.31.4",
+        "puppeteer": "^24.15.0",
         "tailwindcss": "^4",
         "tw-animate-css": "^1.3.5",
         "typescript": "^5"
