@@ -3,7 +3,7 @@
 import { use, useEffect, useState } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
-import { ArrowLeftIcon, SettingsIcon } from 'lucide-react'
+import { ArrowLeftIcon } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Separator } from '@/components/ui/separator'
@@ -97,13 +97,6 @@ export function WalkthroughEditor({
                                  saveStatus === 'saving' ? 'Saving...' : 'Error saving'}
                             </span>
                         </div>
-                        <Button variant="outline" size="sm">
-                            Preview
-                        </Button>
-                        <Button variant="outline" size="sm">
-                            <SettingsIcon className="h-4 w-4 mr-2" />
-                            Settings
-                        </Button>
                     </div>
                 </div>
             </div>

@@ -1,24 +1,24 @@
 'use client'
 
-import { zodResolver } from '@hookform/resolvers/zod'
-import { useEffect, useState } from 'react'
-import { useForm } from 'react-hook-form'
-import { z } from 'zod'
-import { ChevronDownIcon, ChevronRightIcon, InfoIcon, SaveIcon } from 'lucide-react'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible'
-import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form'
+import { Form, FormControl, FormDescription, FormField, FormItem, FormMessage } from '@/components/ui/form'
 import { Input } from '@/components/ui/input'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { Textarea } from '@/components/ui/textarea'
 import { updateWalkthroughStepAction } from '@/lib/orpc/actions'
+import { zodResolver } from '@hookform/resolvers/zod'
 import { isDefinedError, onError, onSuccess } from '@orpc/client'
 import { useServerAction } from '@orpc/react/hooks'
-import { toast } from 'sonner'
 import type { Walkthrough, WalkthroughStep } from 'database'
+import { ChevronDownIcon, ChevronRightIcon, InfoIcon, SaveIcon } from 'lucide-react'
+import { useEffect, useState } from 'react'
+import { useForm } from 'react-hook-form'
+import { toast } from 'sonner'
+import { z } from 'zod'
 
 const contentEditorSchema = z.object({
     title: z.string().min(1, 'Title is required').max(200, 'Title must be 200 characters or less'),
@@ -80,8 +80,8 @@ export function ContentEditor({ walkthrough, step, onSaveStatusChange }: Content
     })
     const [hasDraft, setHasDraft] = useState(false)
     const [showDraftAlert, setShowDraftAlert] = useState(false)
-    
-    const requirements = walkthroughFieldRequirements[walkthrough.type] || {
+
+    const requirements = walkthroughFieldRequirements[walkthrough.type!] || {
         introductionForAgent: false,
         contextForAgent: false,
         contentForUser: true,
@@ -124,25 +124,47 @@ export function ContentEditor({ walkthrough, step, onSaveStatusChange }: Content
         ]
     })
 
-    // Check for existing draft on mount
+    // Reset form state when step changes
     useEffect(() => {
+        // Create the default values for the new step
+        const defaultValues = {
+            title: step.title,
+            contentFields: {
+                version: 'v1' as const,
+                introductionForAgent: (step.contentFields as any)?.introductionForAgent || '',
+                contextForAgent: (step.contentFields as any)?.contextForAgent || '',
+                contentForUser: (step.contentFields as any)?.contentForUser || '',
+                operationsForAgent: (step.contentFields as any)?.operationsForAgent || ''
+            }
+        }
+
+        // Check for existing draft for this step
         const savedDraft = localStorage.getItem(draftKey)
+        let shouldUseDraft = false
+        let draftData = null
+
         if (savedDraft) {
             try {
-                const draftData = JSON.parse(savedDraft)
-                // Compare with current data to see if draft is different
-                const currentData = form.getValues()
-                const isDifferent = JSON.stringify(draftData) !== JSON.stringify(currentData)
+                draftData = JSON.parse(savedDraft)
+                // Compare draft with remote data to see if draft is different
+                const isDifferent = JSON.stringify(draftData) !== JSON.stringify(defaultValues)
                 if (isDifferent) {
-                    setHasDraft(true)
-                    setShowDraftAlert(true)
+                    shouldUseDraft = true
                 }
             } catch (e) {
                 // Invalid draft, remove it
                 localStorage.removeItem(draftKey)
             }
         }
-    }, [draftKey, form])
+
+        // Reset form with either draft data or remote data
+        const dataToUse = shouldUseDraft ? draftData : defaultValues
+        form.reset(dataToUse)
+
+        // Update draft state
+        setHasDraft(shouldUseDraft)
+        setShowDraftAlert(shouldUseDraft)
+    }, [step.id, step.title, step.contentFields, draftKey, form])
 
     // Auto-save to localStorage when form changes
     useEffect(() => {
@@ -202,7 +224,7 @@ export function ContentEditor({ walkthrough, step, onSaveStatusChange }: Content
     }
 
     const toggleSection = (section: string) => {
-        setExpandedSections(prev => ({
+        setExpandedSections((prev) => ({
             ...prev,
             [section]: !prev[section]
         }))
@@ -282,8 +304,8 @@ export function ContentEditor({ walkthrough, step, onSaveStatusChange }: Content
                             </Card>
 
                             {/* Introduction for Agent */}
-                            <Collapsible 
-                                open={expandedSections.introduction} 
+                            <Collapsible
+                                open={expandedSections.introduction}
                                 onOpenChange={() => toggleSection('introduction')}
                             >
                                 <Card>
@@ -293,7 +315,9 @@ export function ContentEditor({ walkthrough, step, onSaveStatusChange }: Content
                                                 <div className="flex items-center gap-3">
                                                     <span className="text-lg">💬</span>
                                                     <div>
-                                                        <CardTitle className="text-lg">Introduction for Agent</CardTitle>
+                                                        <CardTitle className="text-lg">
+                                                            Introduction for Agent
+                                                        </CardTitle>
                                                         <p className="text-sm text-muted-foreground mt-1">
                                                             Brief context and learning objectives for this step
                                                         </p>
@@ -301,9 +325,13 @@ export function ContentEditor({ walkthrough, step, onSaveStatusChange }: Content
                                                 </div>
                                                 <div className="flex items-center gap-2">
                                                     {requirements.introductionForAgent ? (
-                                                        <Badge variant="destructive" className="text-xs">Required</Badge>
+                                                        <Badge variant="destructive" className="text-xs">
+                                                            Required
+                                                        </Badge>
                                                     ) : (
-                                                        <Badge variant="secondary" className="text-xs">Optional</Badge>
+                                                        <Badge variant="secondary" className="text-xs">
+                                                            Optional
+                                                        </Badge>
                                                     )}
                                                     {expandedSections.introduction ? (
                                                         <ChevronDownIcon className="h-4 w-4" />
@@ -341,10 +369,7 @@ export function ContentEditor({ walkthrough, step, onSaveStatusChange }: Content
                             </Collapsible>
 
                             {/* Context for Agent */}
-                            <Collapsible 
-                                open={expandedSections.context} 
-                                onOpenChange={() => toggleSection('context')}
-                            >
+                            <Collapsible open={expandedSections.context} onOpenChange={() => toggleSection('context')}>
                                 <Card>
                                     <CollapsibleTrigger asChild>
                                         <CardHeader className="cursor-pointer hover:bg-muted/50 transition-colors">
@@ -360,9 +385,13 @@ export function ContentEditor({ walkthrough, step, onSaveStatusChange }: Content
                                                 </div>
                                                 <div className="flex items-center gap-2">
                                                     {requirements.contextForAgent ? (
-                                                        <Badge variant="destructive" className="text-xs">Required</Badge>
+                                                        <Badge variant="destructive" className="text-xs">
+                                                            Required
+                                                        </Badge>
                                                     ) : (
-                                                        <Badge variant="secondary" className="text-xs">Optional</Badge>
+                                                        <Badge variant="secondary" className="text-xs">
+                                                            Optional
+                                                        </Badge>
                                                     )}
                                                     {expandedSections.context ? (
                                                         <ChevronDownIcon className="h-4 w-4" />
@@ -410,7 +439,9 @@ export function ContentEditor({ walkthrough, step, onSaveStatusChange }: Content
                                                 Main instructional content that users will see
                                             </p>
                                         </div>
-                                        <Badge variant="destructive" className="text-xs ml-auto">Required</Badge>
+                                        <Badge variant="destructive" className="text-xs ml-auto">
+                                            Required
+                                        </Badge>
                                     </div>
                                 </CardHeader>
                                 <CardContent>
@@ -427,7 +458,8 @@ export function ContentEditor({ walkthrough, step, onSaveStatusChange }: Content
                                                     />
                                                 </FormControl>
                                                 <FormDescription>
-                                                    {getCharacterCount(field.value || '')} characters • Supports Markdown
+                                                    {getCharacterCount(field.value || '')} characters • Supports
+                                                    Markdown
                                                 </FormDescription>
                                                 <FormMessage />
                                             </FormItem>
@@ -437,8 +469,8 @@ export function ContentEditor({ walkthrough, step, onSaveStatusChange }: Content
                             </Card>
 
                             {/* Operations for Agent */}
-                            <Collapsible 
-                                open={expandedSections.operations} 
+                            <Collapsible
+                                open={expandedSections.operations}
                                 onOpenChange={() => toggleSection('operations')}
                             >
                                 <Card>
@@ -456,9 +488,13 @@ export function ContentEditor({ walkthrough, step, onSaveStatusChange }: Content
                                                 </div>
                                                 <div className="flex items-center gap-2">
                                                     {requirements.operationsForAgent ? (
-                                                        <Badge variant="destructive" className="text-xs">Required</Badge>
+                                                        <Badge variant="destructive" className="text-xs">
+                                                            Required
+                                                        </Badge>
                                                     ) : (
-                                                        <Badge variant="secondary" className="text-xs">Optional</Badge>
+                                                        <Badge variant="secondary" className="text-xs">
+                                                            Optional
+                                                        </Badge>
                                                     )}
                                                     {expandedSections.operations ? (
                                                         <ChevronDownIcon className="h-4 w-4" />
