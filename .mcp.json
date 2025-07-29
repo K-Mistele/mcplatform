@@ -1,0 +1,20 @@
+{
+    "mcpServers": {
+        "puppeteer": {
+            "command": "npx",
+            "args": ["-y", "@modelcontextprotocol/server-puppeteer"],
+            "env": {
+                "PUPPETEER_LAUNCH_OPTIONS": "{ \"headless\": true}",
+                "ALLOW_DANGEROUS": "true",
+                "CHROME_USER_DATA_DIR": "/Users/kyle/Library/Application Support/Google/Chrome/Default"
+            }
+        },
+        "postgres": {
+            "command": "uvx",
+            "args": ["postgres-mcp", "--access-mode=unrestricted"],
+            "env": {
+                "DATABASE_URI": "postgresql://postgres:postgres@127.0.0.1:5432/postgres"
+            }
+        }
+    }
+}
