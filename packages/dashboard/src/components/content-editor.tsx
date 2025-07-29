@@ -13,6 +13,7 @@ import { updateWalkthroughStepAction } from '@/lib/orpc/actions'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { isDefinedError, onError, onSuccess } from '@orpc/client'
 import { useServerAction } from '@orpc/react/hooks'
+import useLocalStorage from '@/hooks/use-local-storage'
 import type { Walkthrough, WalkthroughStep } from 'database'
 import { ChevronDownIcon, ChevronRightIcon, InfoIcon, SaveIcon } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
@@ -90,6 +91,7 @@ export function ContentEditor({ walkthrough, step, onSaveStatusChange }: Content
         operationsForAgent: false
     }
     const draftKey = `walkthrough-step-draft-${step.id}`
+    const [draftData, setDraftData, draftChecked] = useLocalStorage<ContentEditorFormData | null>(draftKey, null)
 
     const form = useForm<ContentEditorFormData>({
         resolver: zodResolver(contentEditorSchema),
@@ -111,7 +113,7 @@ export function ContentEditor({ walkthrough, step, onSaveStatusChange }: Content
                 toast.success('Step saved successfully')
                 onSaveStatusChange('saved')
                 // Clear draft after successful save
-                localStorage.removeItem(draftKey)
+                setDraftData(null)
                 setHasDraft(false)
                 setShowDraftAlert(false)
             }),
@@ -128,37 +130,32 @@ export function ContentEditor({ walkthrough, step, onSaveStatusChange }: Content
 
     // Separate draft detection from form reset to avoid race conditions
     useEffect(() => {
-        const savedDraft = localStorage.getItem(draftKey)
+        if (!draftChecked) return
+        
         let hasDraftData = false
 
-        if (savedDraft) {
-            try {
-                const draftData = JSON.parse(savedDraft)
-                const defaultValues = {
-                    title: step.title,
-                    contentFields: {
-                        version: 'v1' as const,
-                        introductionForAgent: (step.contentFields as any)?.introductionForAgent || '',
-                        contextForAgent: (step.contentFields as any)?.contextForAgent || '',
-                        contentForUser: (step.contentFields as any)?.contentForUser || '',
-                        operationsForAgent: (step.contentFields as any)?.operationsForAgent || ''
-                    }
+        if (draftData) {
+            const defaultValues = {
+                title: step.title,
+                contentFields: {
+                    version: 'v1' as const,
+                    introductionForAgent: (step.contentFields as any)?.introductionForAgent || '',
+                    contextForAgent: (step.contentFields as any)?.contextForAgent || '',
+                    contentForUser: (step.contentFields as any)?.contentForUser || '',
+                    operationsForAgent: (step.contentFields as any)?.operationsForAgent || ''
                 }
-                // Compare draft with remote data to see if draft is different
-                const isDifferent = JSON.stringify(draftData) !== JSON.stringify(defaultValues)
-                if (isDifferent) {
-                    hasDraftData = true
-                }
-            } catch (e) {
-                // Invalid draft, remove it
-                localStorage.removeItem(draftKey)
+            }
+            // Compare draft with remote data to see if draft is different
+            const isDifferent = JSON.stringify(draftData) !== JSON.stringify(defaultValues)
+            if (isDifferent) {
+                hasDraftData = true
             }
         }
 
         // Only update draft state, don't reset form here
         setHasDraft(hasDraftData)
         setShowDraftAlert(hasDraftData)
-    }, [step.id, draftKey])
+    }, [step.id, draftKey, draftData, draftChecked])
 
     // Form reset logic - only when step actually changes and user is not typing
     useEffect(() => {
@@ -186,7 +183,7 @@ export function ContentEditor({ walkthrough, step, onSaveStatusChange }: Content
         const subscription = form.watch((data) => {
             // Only save if form is dirty and user is actively interacting
             if (form.formState.isDirty && isUserInteracting.current) {
-                localStorage.setItem(draftKey, JSON.stringify(data))
+                setDraftData(data as ContentEditorFormData)
                 setHasDraft(true)
                 onSaveStatusChange('unsaved')
                 // Hide the draft alert once user starts editing (they've made their choice)
@@ -194,7 +191,7 @@ export function ContentEditor({ walkthrough, step, onSaveStatusChange }: Content
             }
         })
         return () => subscription.unsubscribe()
-    }, [form, draftKey, onSaveStatusChange])
+    }, [form, setDraftData, onSaveStatusChange])
 
     // Keyboard shortcut for save
     useEffect(() => {
@@ -222,30 +219,24 @@ export function ContentEditor({ walkthrough, step, onSaveStatusChange }: Content
     }
 
     const restoreDraft = () => {
-        const savedDraft = localStorage.getItem(draftKey)
-        if (savedDraft) {
-            try {
-                const draftData = JSON.parse(savedDraft)
-                form.reset(draftData)
-                setShowDraftAlert(false)
-                // Mark form as dirty since we're loading unsaved changes
-                form.setValue('title', draftData.title, { shouldDirty: true })
-                if (draftData.contentFields) {
-                    Object.entries(draftData.contentFields).forEach(([key, value]) => {
-                        form.setValue(`contentFields.${key}` as any, value, { shouldDirty: true })
-                    })
-                }
-                // Update status to unsaved since we're showing draft content
-                onSaveStatusChange('unsaved')
-                toast.success('Draft restored')
-            } catch (e) {
-                toast.error('Failed to restore draft')
+        if (draftData) {
+            form.reset(draftData)
+            setShowDraftAlert(false)
+            // Mark form as dirty since we're loading unsaved changes
+            form.setValue('title', draftData.title, { shouldDirty: true })
+            if (draftData.contentFields) {
+                Object.entries(draftData.contentFields).forEach(([key, value]) => {
+                    form.setValue(`contentFields.${key}` as any, value, { shouldDirty: true })
+                })
             }
+            // Update status to unsaved since we're showing draft content
+            onSaveStatusChange('unsaved')
+            toast.success('Draft restored')
         }
     }
 
     const discardDraft = () => {
-        localStorage.removeItem(draftKey)
+        setDraftData(null)
         setHasDraft(false)
         setShowDraftAlert(false)
         

@@ -1,12 +1,12 @@
 'use client'
 
-import { useState } from 'react'
 import { EyeIcon } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { renderWalkthroughStep } from '@/lib/template-engine'
 import { MarkdownRenderer } from '@/components/support-tickets/markdown-renderer'
+import useLocalStorage from '@/hooks/use-local-storage'
 import type { Walkthrough, WalkthroughStep } from 'database'
 
 interface PreviewPanelProps {
@@ -14,8 +14,10 @@ interface PreviewPanelProps {
     step: WalkthroughStep | null
 }
 
+type PreviewMode = 'raw' | 'rendered'
+
 export function PreviewPanel({ walkthrough, step }: PreviewPanelProps) {
-    const [previewMode, setPreviewMode] = useState<'raw' | 'rendered'>('raw')
+    const [previewMode, setPreviewMode] = useLocalStorage<PreviewMode>('walkthrough-preview-mode', 'raw')
 
     if (!step) {
         return (
