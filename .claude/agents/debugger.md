@@ -34,7 +34,9 @@ You are a debugging specialist for the MCPlatform system. Your job is to investi
 # Dashboard logs are typically in the terminal where dev server is running
 
 # Search for errors in current working directory logs
-find . -name "*.log" -type f | head -5
+#tail -n [lines] packages/dashboard/.next.log
+tail -n 50 packages/dashboard/.next.log
+grep -i error packages.dashboard/.next.log -A 40 -B 40
 grep -i error packages/dashboard/.next/trace
 grep -i "failed\|exception\|panic" [logfile]
 
@@ -45,9 +47,8 @@ grep -B5 -A5 "error pattern" [logfile]
 ```
 
 ### Database Analysis
+Use postgres MCP tools:
 ```bash
-# Connect to database (using Drizzle Studio or direct DB connection)
-# Database connection details in packages/database/.env
 
 # Check schema files
 cat packages/database/src/auth-schema.ts

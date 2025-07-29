@@ -1,5 +1,5 @@
 ---
-name: codebase_locator
+name: codebase-locator
 description: Locates files, directories, and components relevant to a feature or task. Returns structured lists of file paths organized by purpose (implementation, tests, configs, etc). Does not analyze code content - only finds where things are located. <example>Context: User needs to find all files related to webhook handling.user: "Find all files related to webhook handling"assistant: "I'll use the codebase-locator agent to find webhook-related files"<commentary>The user needs to locate code, so use codebase-locator to find all relevant file paths.</commentary></example><example>Context: Planning to implement a new feature and need to know what files to modify.user: "Where is the authentication logic implemented?"assistant: "Let me use the codebase-locator agent to find authentication-related files"<commentary>Finding file locations is codebase-locator's specialty.</commentary></example>
 tools: Grep, Glob, LS
 ---

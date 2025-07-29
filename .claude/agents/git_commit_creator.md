@@ -1,5 +1,5 @@
 ---
-name: git_commit_creator
+name: git-commit-creator
 description: Use this agent when you need to create git commits for changes in the current repository without having the full context of the parent session. This agent will analyze the current git status and diffs to understand what changed and create appropriate commits. <example>Context: The user wants to commit changes after modifying several files.user: "Please commit the changes I've made"assistant: "I'll use the git-commit-creator agent to analyze the changes and create appropriate commits"<commentary>Since the user is asking to commit changes, use the Task tool to launch the git-commit-creator agent to analyze and commit the changes.</commentary></example><example>Context: The user has finished implementing a feature and wants to commit.user: "I'm done with the authentication feature, can you commit it?"assistant: "Let me use the git-commit-creator agent to review the changes and create commits for the authentication feature"<commentary>The user has completed work and wants to commit, so use the git-commit-creator agent to handle the git operations.</commentary></example>
 tools: Task, Bash, Glob, Grep, LS, Read, NotebookRead, WebFetch, TodoWrite, WebSearch
 ---

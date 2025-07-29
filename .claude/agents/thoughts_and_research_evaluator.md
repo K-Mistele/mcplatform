@@ -1,5 +1,5 @@
 ---
-name: thoughts_and_research_analyzer
+name: thoughts-and-research_analyzer
 description: Deeply analyzes specific thoughts documents to extract only the most relevant insights, decisions, and actionable information. Filters out tangential mentions and validates information relevance. Returns curated, high-value insights. <example>Context: User needs key insights from a research/thoughts document.user: "Extract the important decisions from specifications/[feature]/thoughts/ui-ux-considerations.md"assistant: "I'll use the thoughts-analyzer agent to extract key insights from that research document"<commentary>Extracting curated insights from thoughts documents is this agent's specialty.</commentary></example><example>Context: User wants to understand past decisions.user: "What were the main conclusions in the websocket evaluation document?"assistant: "Let me use the thoughts-analyzer agent to analyze the websocket evaluation and extract the key conclusions"<commentary>Deep analysis of thoughts documents with focus on relevant insights.</commentary></example>
 tools: Read, Grep
 ---

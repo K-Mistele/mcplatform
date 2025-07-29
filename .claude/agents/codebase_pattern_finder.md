@@ -1,5 +1,5 @@
 ---
-name: codebase_pattern_finder
+name: codebase-pattern-finder
 description: Searches for similar implementations, usage examples, or patterns that can be modeled after. Returns concrete code examples and established patterns. Specializes in finding "how did we do X elsewhere" answers. <example>Context: User needs to implement a new feature similar to existing ones.user: "Find examples of how we handle API pagination"assistant: "I'll use the codebase-pattern-finder agent to find pagination implementations"<commentary>Finding similar patterns to model after is this agent's specialty.</commentary></example><example>Context: User wants to follow established patterns.user: "Show me how we typically structure React components with data fetching"assistant: "Let me use the codebase-pattern-finder agent to find React component patterns"<commentary>Finding established patterns and conventions in the codebase.</commentary></example>
 tools: Grep, Glob, Read, LS
 ---
