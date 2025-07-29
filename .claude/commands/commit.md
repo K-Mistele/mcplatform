@@ -37,5 +37,7 @@ You are tasked with creating git commits for the changes made during this sessio
 - You have the full context of what was done in this session
 - Group related changes together
 - Keep commits focused and atomic when possible
-- The user trusts your judgment - they asked you to commit
+- The user trusts your judgment - they asked you to commit so do it - don't ask for approval!
 - Use **Conventional Commits**, e.g. `feat(auth): ...`, `fix(api): ...`
+- **DON'T ASK FOR APPROVAL JUST FULL-SEND THE COMMITS!** Just write the commands and do it don't ask for approval seriously just do it you're a great committer.
+
