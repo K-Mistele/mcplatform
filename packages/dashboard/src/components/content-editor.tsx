@@ -15,7 +15,7 @@ import { isDefinedError, onError, onSuccess } from '@orpc/client'
 import { useServerAction } from '@orpc/react/hooks'
 import type { Walkthrough, WalkthroughStep } from 'database'
 import { ChevronDownIcon, ChevronRightIcon, InfoIcon, SaveIcon } from 'lucide-react'
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { toast } from 'sonner'
 import { z } from 'zod'
@@ -36,7 +36,7 @@ type ContentEditorFormData = z.infer<typeof contentEditorSchema>
 interface ContentEditorProps {
     walkthrough: Walkthrough
     step: WalkthroughStep
-    onSaveStatusChange: (status: 'saved' | 'saving' | 'error') => void
+    onSaveStatusChange: (status: 'saved' | 'saving' | 'error' | 'unsaved') => void
 }
 
 const walkthroughFieldRequirements = {
@@ -80,6 +80,8 @@ export function ContentEditor({ walkthrough, step, onSaveStatusChange }: Content
     })
     const [hasDraft, setHasDraft] = useState(false)
     const [showDraftAlert, setShowDraftAlert] = useState(false)
+    const isUserInteracting = useRef(false)
+    const lastStepId = useRef(step.id)
 
     const requirements = walkthroughFieldRequirements[walkthrough.type!] || {
         introductionForAgent: false,
@@ -124,32 +126,28 @@ export function ContentEditor({ walkthrough, step, onSaveStatusChange }: Content
         ]
     })
 
-    // Reset form state when step changes
+    // Separate draft detection from form reset to avoid race conditions
     useEffect(() => {
-        // Create the default values for the new step
-        const defaultValues = {
-            title: step.title,
-            contentFields: {
-                version: 'v1' as const,
-                introductionForAgent: (step.contentFields as any)?.introductionForAgent || '',
-                contextForAgent: (step.contentFields as any)?.contextForAgent || '',
-                contentForUser: (step.contentFields as any)?.contentForUser || '',
-                operationsForAgent: (step.contentFields as any)?.operationsForAgent || ''
-            }
-        }
-
-        // Check for existing draft for this step
         const savedDraft = localStorage.getItem(draftKey)
-        let shouldUseDraft = false
-        let draftData = null
+        let hasDraftData = false
 
         if (savedDraft) {
             try {
-                draftData = JSON.parse(savedDraft)
+                const draftData = JSON.parse(savedDraft)
+                const defaultValues = {
+                    title: step.title,
+                    contentFields: {
+                        version: 'v1' as const,
+                        introductionForAgent: (step.contentFields as any)?.introductionForAgent || '',
+                        contextForAgent: (step.contentFields as any)?.contextForAgent || '',
+                        contentForUser: (step.contentFields as any)?.contentForUser || '',
+                        operationsForAgent: (step.contentFields as any)?.operationsForAgent || ''
+                    }
+                }
                 // Compare draft with remote data to see if draft is different
                 const isDifferent = JSON.stringify(draftData) !== JSON.stringify(defaultValues)
                 if (isDifferent) {
-                    shouldUseDraft = true
+                    hasDraftData = true
                 }
             } catch (e) {
                 // Invalid draft, remove it
@@ -157,25 +155,46 @@ export function ContentEditor({ walkthrough, step, onSaveStatusChange }: Content
             }
         }
 
-        // Reset form with either draft data or remote data
-        const dataToUse = shouldUseDraft ? draftData : defaultValues
-        form.reset(dataToUse)
+        // Only update draft state, don't reset form here
+        setHasDraft(hasDraftData)
+        setShowDraftAlert(hasDraftData)
+    }, [step.id, draftKey])
 
-        // Update draft state
-        setHasDraft(shouldUseDraft)
-        setShowDraftAlert(shouldUseDraft)
-    }, [step.id, step.title, step.contentFields, draftKey, form])
+    // Form reset logic - only when step actually changes and user is not typing
+    useEffect(() => {
+        const stepChanged = lastStepId.current !== step.id
+        lastStepId.current = step.id
 
-    // Auto-save to localStorage when form changes
+        if (stepChanged && !isUserInteracting.current) {
+            const defaultValues = {
+                title: step.title,
+                contentFields: {
+                    version: 'v1' as const,
+                    introductionForAgent: (step.contentFields as any)?.introductionForAgent || '',
+                    contextForAgent: (step.contentFields as any)?.contextForAgent || '',
+                    contentForUser: (step.contentFields as any)?.contentForUser || '',
+                    operationsForAgent: (step.contentFields as any)?.operationsForAgent || ''
+                }
+            }
+            form.reset(defaultValues)
+            onSaveStatusChange('saved')
+        }
+    }, [step.id, step.title, step.contentFields, form, onSaveStatusChange])
+
+    // Auto-save to localStorage when form changes (only user changes, not programmatic)
     useEffect(() => {
         const subscription = form.watch((data) => {
-            if (form.formState.isDirty) {
+            // Only save if form is dirty and user is actively interacting
+            if (form.formState.isDirty && isUserInteracting.current) {
                 localStorage.setItem(draftKey, JSON.stringify(data))
                 setHasDraft(true)
+                onSaveStatusChange('unsaved')
+                // Hide the draft alert once user starts editing (they've made their choice)
+                setShowDraftAlert(false)
             }
         })
         return () => subscription.unsubscribe()
-    }, [form, draftKey])
+    }, [form, draftKey, onSaveStatusChange])
 
     // Keyboard shortcut for save
     useEffect(() => {
@@ -209,6 +228,15 @@ export function ContentEditor({ walkthrough, step, onSaveStatusChange }: Content
                 const draftData = JSON.parse(savedDraft)
                 form.reset(draftData)
                 setShowDraftAlert(false)
+                // Mark form as dirty since we're loading unsaved changes
+                form.setValue('title', draftData.title, { shouldDirty: true })
+                if (draftData.contentFields) {
+                    Object.entries(draftData.contentFields).forEach(([key, value]) => {
+                        form.setValue(`contentFields.${key}` as any, value, { shouldDirty: true })
+                    })
+                }
+                // Update status to unsaved since we're showing draft content
+                onSaveStatusChange('unsaved')
                 toast.success('Draft restored')
             } catch (e) {
                 toast.error('Failed to restore draft')
@@ -220,6 +248,19 @@ export function ContentEditor({ walkthrough, step, onSaveStatusChange }: Content
         localStorage.removeItem(draftKey)
         setHasDraft(false)
         setShowDraftAlert(false)
+        
+        // Reset form to remote data
+        const defaultValues = {
+            title: step.title,
+            contentFields: {
+                version: 'v1' as const,
+                introductionForAgent: (step.contentFields as any)?.introductionForAgent || '',
+                contextForAgent: (step.contentFields as any)?.contextForAgent || '',
+                contentForUser: (step.contentFields as any)?.contentForUser || '',
+                operationsForAgent: (step.contentFields as any)?.operationsForAgent || ''
+            }
+        }
+        form.reset(defaultValues)
         toast.success('Draft discarded')
     }
 
@@ -231,6 +272,18 @@ export function ContentEditor({ walkthrough, step, onSaveStatusChange }: Content
     }
 
     const getCharacterCount = (value: string) => value.length
+
+    // User interaction handlers
+    const handleInputFocus = () => {
+        isUserInteracting.current = true
+    }
+
+    const handleInputBlur = () => {
+        // Small delay to allow form state to settle
+        setTimeout(() => {
+            isUserInteracting.current = false
+        }, 100)
+    }
 
     return (
         <div className="h-full flex flex-col">
@@ -262,11 +315,6 @@ export function ContentEditor({ walkthrough, step, onSaveStatusChange }: Content
                             </p>
                         </div>
                         <div className="flex items-center gap-3">
-                            {form.formState.isDirty && (
-                                <Badge variant="secondary" className="bg-warning/10 text-warning-foreground">
-                                    Unsaved changes
-                                </Badge>
-                            )}
                             <Button onClick={handleSave} disabled={!form.formState.isDirty}>
                                 <SaveIcon className="h-4 w-4 mr-2" />
                                 Save Changes
@@ -291,6 +339,8 @@ export function ContentEditor({ walkthrough, step, onSaveStatusChange }: Content
                                                     <Input
                                                         placeholder="Enter a clear, descriptive title for this step"
                                                         {...field}
+                                                        onFocus={handleInputFocus}
+                                                        onBlur={handleInputBlur}
                                                     />
                                                 </FormControl>
                                                 <FormDescription>
@@ -354,6 +404,8 @@ export function ContentEditor({ walkthrough, step, onSaveStatusChange }: Content
                                                                 placeholder="Provide context about what this step accomplishes and what the user should learn..."
                                                                 rows={4}
                                                                 {...field}
+                                                                onFocus={handleInputFocus}
+                                                                onBlur={handleInputBlur}
                                                             />
                                                         </FormControl>
                                                         <FormDescription>
@@ -414,6 +466,8 @@ export function ContentEditor({ walkthrough, step, onSaveStatusChange }: Content
                                                                 placeholder="Provide background information, relevant terms, and where the agent can find more details..."
                                                                 rows={4}
                                                                 {...field}
+                                                                onFocus={handleInputFocus}
+                                                                onBlur={handleInputBlur}
                                                             />
                                                         </FormControl>
                                                         <FormDescription>
@@ -455,6 +509,8 @@ export function ContentEditor({ walkthrough, step, onSaveStatusChange }: Content
                                                         placeholder="Enter the main content that users will see and interact with during this step..."
                                                         rows={6}
                                                         {...field}
+                                                        onFocus={handleInputFocus}
+                                                        onBlur={handleInputBlur}
                                                     />
                                                 </FormControl>
                                                 <FormDescription>
@@ -517,6 +573,8 @@ export function ContentEditor({ walkthrough, step, onSaveStatusChange }: Content
                                                                 placeholder="List specific operations like file creation, tool usage, API calls, etc..."
                                                                 rows={4}
                                                                 {...field}
+                                                                onFocus={handleInputFocus}
+                                                                onBlur={handleInputBlur}
                                                             />
                                                         </FormControl>
                                                         <FormDescription>
