@@ -1,9 +1,9 @@
 import nunjucks from 'nunjucks'
 import type { Walkthrough, WalkthroughStep } from 'database'
 
-// Configure Nunjucks with autoescape enabled for security
+// Configure Nunjucks without autoescape since we're templating markdown, not HTML
 const env = new nunjucks.Environment(null, {
-    autoescape: true,
+    autoescape: false,
     throwOnUndefined: false
 })
 
