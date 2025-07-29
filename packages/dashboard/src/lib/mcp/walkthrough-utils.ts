@@ -13,12 +13,35 @@ import {
 export interface WalkthroughStepInfo {
     id: string
     title: string
-    instructions: string
+    instructions: string // Rendered content for backward compatibility with MCP tools
     displayOrder: number
     isCompleted: boolean
     totalSteps: number
     completedCount: number
     progressPercent: number
+}
+
+// Helper function to render step content from contentFields
+function renderStepInstructions(step: WalkthroughStep): string {
+    const fields = step.contentFields as any
+    
+    let content = ''
+    
+    if (fields.introductionForAgent) {
+        content += `## Step Context\n${fields.introductionForAgent}\n\n`
+    }
+    
+    if (fields.contextForAgent) {
+        content += `## Background Information\n${fields.contextForAgent}\n\n`
+    }
+    
+    content += `## User Content\n${fields.contentForUser}\n\n`
+    
+    if (fields.operationsForAgent) {
+        content += `## Operations to Perform\n${fields.operationsForAgent}\n\n`
+    }
+    
+    return content
 }
 
 export interface WalkthroughInfo extends Omit<Walkthrough, 'organizationId'> {
@@ -77,7 +100,7 @@ export async function calculateNextStep(
         return {
             id: lastStep.id,
             title: lastStep.title,
-            instructions: lastStep.instructions,
+            instructions: renderStepInstructions(lastStep),
             displayOrder: lastStep.displayOrder,
             isCompleted: true,
             totalSteps: steps.length,
@@ -89,7 +112,7 @@ export async function calculateNextStep(
     return {
         id: nextStep.id,
         title: nextStep.title,
-        instructions: nextStep.instructions,
+        instructions: renderStepInstructions(nextStep),
         displayOrder: nextStep.displayOrder,
         isCompleted: false,
         totalSteps: steps.length,
@@ -337,7 +360,7 @@ export async function getWalkthroughStepsWithProgress(
         return steps.map(step => ({
             id: step.id,
             title: step.title,
-            instructions: step.instructions,
+            instructions: renderStepInstructions(step),
             displayOrder: step.displayOrder,
             isCompleted: false,
             totalSteps: steps.length,

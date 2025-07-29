@@ -156,92 +156,13 @@ export async function handleGetWalkthroughDetails(
 }
 
 /**
- * Tool: get_current_step
- * Gets the current step for a user in a walkthrough with detailed information
+ * Tool: get_next_step
+ * Gets the next step in a walkthrough, optionally completing the current step first
+ * This follows Mastra's pattern of combining step completion and progression
  */
-export const getCurrentStepTool: Tool = {
-    name: 'get_current_step',
-    description: 'Gets the current step for a user in a walkthrough with detailed instructions and progress',
-    inputSchema: {
-        type: 'object',
-        properties: {
-            walkthroughId: {
-                type: 'string',
-                description: 'The ID of the walkthrough'
-            }
-        },
-        required: ['walkthroughId']
-    }
-}
-
-const getCurrentStepInputSchema = z.object({
-    walkthroughId: z.string()
-})
-
-export async function handleGetCurrentStep(
-    request: CallToolRequest,
-    context: {
-        mcpServerId: string
-        mcpServerUserId: string
-        serverSessionId: string
-    }
-): Promise<any> {
-    try {
-        const { walkthroughId } = getCurrentStepInputSchema.parse(request.params.arguments)
-
-        // Initialize progress if not exists
-        await getOrInitializeProgress(context.mcpServerUserId, walkthroughId)
-
-        const currentStep = await calculateNextStep(context.mcpServerUserId, walkthroughId)
-
-        if (!currentStep) {
-            throw new Error('Walkthrough not found or has no steps')
-        }
-
-        // Track the tool call
-        await db.insert(toolCalls).values({
-            mcpServerId: context.mcpServerId,
-            toolName: 'get_current_step',
-            mcpServerUserId: context.mcpServerUserId,
-            mcpServerSessionId: context.serverSessionId,
-            input: request.params.arguments,
-            output: { stepId: currentStep.id, isCompleted: currentStep.isCompleted }
-        })
-
-        return {
-            content: [
-                {
-                    type: 'text',
-                    text: JSON.stringify({
-                        currentStep: {
-                            id: currentStep.id,
-                            title: currentStep.title,
-                            instructions: currentStep.instructions,
-                            displayOrder: currentStep.displayOrder,
-                            isCompleted: currentStep.isCompleted,
-                            progress: {
-                                totalSteps: currentStep.totalSteps,
-                                completedCount: currentStep.completedCount,
-                                progressPercent: currentStep.progressPercent
-                            }
-                        }
-                    }, null, 2)
-                }
-            ]
-        }
-    } catch (error) {
-        console.error('Error in get_current_step:', error)
-        throw error
-    }
-}
-
-/**
- * Tool: complete_step
- * Marks a step as completed and advances progress
- */
-export const completeStepTool: Tool = {
-    name: 'complete_step',
-    description: 'Marks a step as completed and advances progress in the walkthrough',
+export const getNextStepTool: Tool = {
+    name: 'get_next_step',
+    description: 'Gets the next step in a walkthrough. If currentStepId is provided, marks it as completed first before returning the next step.',
     inputSchema: {
         type: 'object',
         properties: {
@@ -249,106 +170,21 @@ export const completeStepTool: Tool = {
                 type: 'string',
                 description: 'The ID of the walkthrough'
             },
-            stepId: {
+            currentStepId: {
                 type: 'string',
-                description: 'The ID of the step to mark as completed'
-            }
-        },
-        required: ['walkthroughId', 'stepId']
-    }
-}
-
-const completeStepInputSchema = z.object({
-    walkthroughId: z.string(),
-    stepId: z.string()
-})
-
-export async function handleCompleteStep(
-    request: CallToolRequest,
-    context: {
-        mcpServerId: string
-        mcpServerUserId: string
-        serverSessionId: string
-    }
-): Promise<any> {
-    try {
-        const { walkthroughId, stepId } = completeStepInputSchema.parse(request.params.arguments)
-
-        await completeStep(context.mcpServerUserId, walkthroughId, stepId)
-
-        // Get updated progress after completion
-        const nextStep = await calculateNextStep(context.mcpServerUserId, walkthroughId)
-
-        // Track the tool call
-        await db.insert(toolCalls).values({
-            mcpServerId: context.mcpServerId,
-            toolName: 'complete_step',
-            mcpServerUserId: context.mcpServerUserId,
-            mcpServerSessionId: context.serverSessionId,
-            input: request.params.arguments,
-            output: { 
-                completedStepId: stepId,
-                nextStepId: nextStep?.id || null,
-                isWalkthroughCompleted: nextStep?.isCompleted || false
-            }
-        })
-
-        return {
-            content: [
-                {
-                    type: 'text',
-                    text: JSON.stringify({
-                        success: true,
-                        completedStep: {
-                            stepId,
-                            walkthroughId
-                        },
-                        progress: nextStep ? {
-                            nextStep: nextStep.isCompleted ? null : {
-                                id: nextStep.id,
-                                title: nextStep.title,
-                                instructions: nextStep.instructions,
-                                displayOrder: nextStep.displayOrder
-                            },
-                            totalSteps: nextStep.totalSteps,
-                            completedCount: nextStep.completedCount,
-                            progressPercent: nextStep.progressPercent,
-                            isWalkthroughCompleted: nextStep.isCompleted
-                        } : null
-                    }, null, 2)
-                }
-            ]
-        }
-    } catch (error) {
-        console.error('Error in complete_step:', error)
-        throw error
-    }
-}
-
-/**
- * Tool: get_walkthrough_steps
- * Gets all steps for a walkthrough with their completion status
- */
-export const getWalkthroughStepsTool: Tool = {
-    name: 'get_walkthrough_steps',
-    description: 'Gets all steps for a walkthrough with their completion status and progress information',
-    inputSchema: {
-        type: 'object',
-        properties: {
-            walkthroughId: {
-                type: 'string',
-                description: 'The ID of the walkthrough to get steps for'
+                description: 'Optional: The ID of the current step to mark as completed before getting the next step'
             }
         },
         required: ['walkthroughId']
     }
 }
 
-const getWalkthroughStepsInputSchema = z.object({
-    walkthroughId: z.string()
+const getNextStepInputSchema = z.object({
+    walkthroughId: z.string(),
+    currentStepId: z.string().optional()
 })
 
-export async function handleGetWalkthroughSteps(
+export async function handleGetNextStep(
     request: CallToolRequest,
     context: {
         mcpServerId: string
@@ -357,18 +193,35 @@ export async function handleGetWalkthroughSteps(
     }
 ): Promise<any> {
     try {
-        const { walkthroughId } = getWalkthroughStepsInputSchema.parse(request.params.arguments)
+        const { walkthroughId, currentStepId } = getNextStepInputSchema.parse(request.params.arguments)
 
-        const steps = await getWalkthroughStepsWithProgress(walkthroughId, context.mcpServerUserId)
+        // Initialize progress if not exists
+        await getOrInitializeProgress(context.mcpServerUserId, walkthroughId)
+
+        // If currentStepId is provided, mark it as completed first
+        if (currentStepId) {
+            await completeStep(context.mcpServerUserId, walkthroughId, currentStepId)
+        }
+
+        // Get the next step (or current if no step was completed)
+        const nextStep = await calculateNextStep(context.mcpServerUserId, walkthroughId)
+
+        if (!nextStep) {
+            throw new Error('Walkthrough not found or has no steps')
+        }
 
         // Track the tool call
         await db.insert(toolCalls).values({
             mcpServerId: context.mcpServerId,
-            toolName: 'get_walkthrough_steps',
+            toolName: 'get_next_step',
             mcpServerUserId: context.mcpServerUserId,
             mcpServerSessionId: context.serverSessionId,
             input: request.params.arguments,
-            output: { walkthroughId, stepCount: steps.length }
+            output: { 
+                completedStepId: currentStepId || null,
+                nextStepId: nextStep.id,
+                isWalkthroughCompleted: nextStep.isCompleted
+            }
         })
 
         return {
@@ -376,30 +229,34 @@ export async function handleGetWalkthroughSteps(
                 {
                     type: 'text',
                     text: JSON.stringify({
-                        walkthrough: {
-                            id: walkthroughId,
-                            steps: steps.map(step => ({
-                                id: step.id,
-                                title: step.title,
-                                instructions: step.instructions,
-                                displayOrder: step.displayOrder,
-                                isCompleted: step.isCompleted
-                            })),
-                            progress: {
-                                totalSteps: steps[0]?.totalSteps || 0,
-                                completedCount: steps[0]?.completedCount || 0,
-                                progressPercent: steps[0]?.progressPercent || 0
+                        ...(currentStepId && {
+                            completedStep: {
+                                stepId: currentStepId,
+                                walkthroughId
                             }
+                        }),
+                        nextStep: nextStep.isCompleted ? null : {
+                            id: nextStep.id,
+                            title: nextStep.title,
+                            instructions: nextStep.instructions,
+                            displayOrder: nextStep.displayOrder
+                        },
+                        progress: {
+                            totalSteps: nextStep.totalSteps,
+                            completedCount: nextStep.completedCount,
+                            progressPercent: nextStep.progressPercent,
+                            isWalkthroughCompleted: nextStep.isCompleted
                         }
                     }, null, 2)
                 }
             ]
         }
     } catch (error) {
-        console.error('Error in get_walkthrough_steps:', error)
+        console.error('Error in get_next_step:', error)
         throw error
     }
 }
+
 
 // Export all tools and handlers as a registry
 export const walkthroughTools = {
@@ -411,16 +268,8 @@ export const walkthroughTools = {
         tool: getWalkthroughDetailsTool,
         handler: handleGetWalkthroughDetails
     },
-    get_current_step: {
-        tool: getCurrentStepTool,
-        handler: handleGetCurrentStep
-    },
-    complete_step: {
-        tool: completeStepTool,
-        handler: handleCompleteStep
-    },
-    get_walkthrough_steps: {
-        tool: getWalkthroughStepsTool,
-        handler: handleGetWalkthroughSteps
+    get_next_step: {
+        tool: getNextStepTool,
+        handler: handleGetNextStep
     }
 }
