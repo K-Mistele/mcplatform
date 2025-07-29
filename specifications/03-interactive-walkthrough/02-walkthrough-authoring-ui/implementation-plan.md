@@ -7,7 +7,7 @@ repository: mcplatform
 topic: "Walkthrough Authoring & Management UI Implementation Strategy"
 tags: [implementation, strategy, walkthrough-authoring, ui, content-management]
 status: complete
-last_updated: 2025-07-28
+last_updated: 2025-07-29
 last_updated_by: Claude
 type: implementation_strategy
 ---
@@ -42,30 +42,108 @@ This implementation creates a comprehensive dashboard interface that allows MCPl
 
 ### Critical Issue Identified
 - **Schema mismatch**: Utility functions in `packages/dashboard/src/lib/mcp/walkthrough-utils.ts` reference deprecated `instructions` field instead of new `contentFields` structure
-- **Migration incomplete**: Data may exist in old format requiring migration to structured content
+- **No migration needed**: No walkthroughs have been created yet, so we can update utilities without data migration
 
 ## What We're NOT Doing
 
-- Auto-save functionality (requirements specify manual save with visual feedback)
-- Advanced collaborative editing features
+- Auto-save functionality to server (manual save only, but local draft recovery)
+- Advanced collaborative editing features (last save wins)
 - Rich text editing beyond basic markdown for user content
-- Advanced template validation or debugging tools
+- Character limit enforcement or markdown/template validation (just text)
+- List virtualization for steps navigator (using TanStack Virtual)
 - Analytics integration (future enhancement)
 - Walkthrough versioning beyond draft/published status
 - Mobile responsive design optimization (desktop-first approach)
+- Permission system beyond organization membership
+- Edit locking or conflict resolution (last save wins)
 
 ## Implementation Approach
 
 Multi-phase implementation focusing on core authoring experience first, then enhancing with preview capabilities. The approach follows MCPlatform's established patterns with Server Components for data fetching, oRPC actions for mutations, and three-panel layout using responsive grid systems.
 
-## Phase 1: Core Infrastructure and Navigation
+## Phase 1: Fix Utility Functions and Core Infrastructure
+
+### Overview
+Fix the schema mismatch in utility functions and establish foundation with navigation, basic CRUD operations, and walkthrough management interface.
+
+### Changes Required:
+
+#### 1. Update Walkthrough Utilities
+**File**: `packages/dashboard/src/lib/mcp/walkthrough-utils.ts`
+**Changes**: Fix references to use contentFields instead of instructions
+
+```typescript
+// Replace lines 16, 80, 92, 340, 367 that reference step.instructions
+// with step.contentFields.contentForUser
+
+// Example changes:
+// OLD: step.instructions
+// NEW: step.contentFields.contentForUser
+
+// Function: getWalkthroughStepsWithProgress (around line 340)
+steps: steps.map(step => ({
+    id: step.id,
+    title: step.title,
+    // OLD: instructions: step.instructions,
+    contentFields: step.contentFields, // Use full structured content
+    displayOrder: step.displayOrder,
+    isCompleted: progress?.some(p => p.stepId === step.id && p.isCompleted) || false
+}))
+
+// Function: getWalkthroughDetails (around line 367)  
+currentStep: currentStep ? {
+    id: currentStep.id,
+    title: currentStep.title,
+    // OLD: instructions: currentStep.instructions,
+    contentFields: currentStep.contentFields, // Use full structured content
+    displayOrder: currentStep.displayOrder
+} : null
+```
+
+#### 2. Update MCP Tools Content Rendering
+**File**: `packages/dashboard/src/lib/mcp/tools/walkthrough.ts`
+**Changes**: Update step content rendering to use structured fields
+
+```typescript
+// In get_current_step tool, replace simple instructions with structured template
+// Around line 150-160, replace:
+// OLD: step.instructions
+// NEW: Render structured content using a simple template
+
+const renderStepContent = (step: any): string => {
+    const fields = step.contentFields
+    
+    let content = ''
+    
+    if (fields.introductionForAgent) {
+        content += `## Step Context\n${fields.introductionForAgent}\n\n`
+    }
+    
+    if (fields.contextForAgent) {
+        content += `## Background Information\n${fields.contextForAgent}\n\n`
+    }
+    
+    content += `## User Content\n${fields.contentForUser}\n\n`
+    
+    if (fields.operationsForAgent) {
+        content += `## Operations to Perform\n${fields.operationsForAgent}\n\n`
+    }
+    
+    return content
+}
+
+// Update the tool response to use:
+instructions: renderStepContent(step)
+```
+
+## Phase 2: Navigation and Basic CRUD
 
 ### Overview
 Establish the foundation with navigation, basic CRUD operations, and walkthrough management interface.
 
 ### Changes Required:
 
-#### 1. Navigation Infrastructure
+#### 3. Navigation Infrastructure
 **File**: `packages/dashboard/src/components/app-sidebar.tsx`
 **Changes**: Add "Walkthroughs" navigation item
 
@@ -78,7 +156,7 @@ Establish the foundation with navigation, basic CRUD operations, and walkthrough
 }
 ```
 
-#### 2. oRPC Actions
+#### 4. oRPC Actions
 **File**: `packages/dashboard/src/lib/orpc/actions.ts`  
 **Changes**: Add comprehensive walkthrough management actions
 
@@ -158,7 +236,7 @@ export const deleteWalkthroughAction = base
     .actionable({})
 ```
 
-#### 3. Step Management Actions
+#### 5. Step Management Actions
 **File**: `packages/dashboard/src/lib/orpc/actions.ts`
 **Changes**: Add step CRUD operations
 
@@ -253,7 +331,7 @@ export const deleteWalkthroughStepAction = base
     .actionable({})
 ```
 
-#### 4. Main Walkthroughs List Page
+#### 6. Main Walkthroughs List Page
 **File**: `packages/dashboard/src/app/dashboard/walkthroughs/page.tsx`
 **Changes**: Create new walkthrough management page
 
@@ -295,7 +373,7 @@ export default async function WalkthroughsPage() {
 }
 ```
 
-#### 5. Walkthroughs Data Table Component
+#### 7. Walkthroughs Data Table Component
 **File**: `packages/dashboard/src/components/walkthroughs-client.tsx`
 **Changes**: Create comprehensive walkthrough management interface
 
@@ -487,8 +565,10 @@ export function WalkthroughsClient({
 
 **Automated verification**
 - [ ] no linter errors
+- [ ] no TypeScript errors about missing instructions field
 
 **Manual Verification**
+- [ ] MCP walkthrough tools continue to work properly with new contentFields structure
 - [ ] Navigation shows "Walkthroughs" item in sidebar
 - [ ] Walkthroughs page displays data table with existing walkthroughs
 - [ ] Empty state shows when no walkthroughs exist
@@ -496,7 +576,13 @@ export function WalkthroughsClient({
 - [ ] Created walkthroughs appear in the list
 - [ ] Edit links navigate to correct URLs
 
-## Phase 2: Create/Edit Modal and Basic Forms
+**Unit Tests**
+- [ ] Test all oRPC actions with valid and invalid inputs
+- [ ] Test authorization checks (requireSession)
+- [ ] Test data validation with zod schemas
+- [ ] Test revalidatePath calls
+
+## Phase 3: Create/Edit Modal and Basic Forms
 
 ### Overview
 Implement walkthrough creation and basic metadata editing through modal forms.
@@ -510,7 +596,6 @@ Implement walkthrough creation and basic metadata editing through modal forms.
 ```typescript
 'use client'
 
-import { useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
@@ -710,19 +795,81 @@ export function CreateWalkthroughModal({
 
 **Manual Verification**
 - [ ] Create walkthrough modal opens with proper form fields
-- [ ] Form validation works for title and description length limits
+- [ ] Form validation works with react-hook-form and zod
 - [ ] Walkthrough type selection shows descriptions
 - [ ] Form submission creates walkthrough and redirects to editor
 - [ ] Error handling displays appropriate messages
 
-## Phase 3: Full-Page Editor with Three-Panel Layout
+**Unit Tests**
+- [ ] Test form validation with react-hook-form
+- [ ] Test zod schema validation
+- [ ] Test modal state management
+
+## Phase 4: Full-Page Editor with Three-Panel Layout and Template Engine
+
+### Overview
+Implement the comprehensive editing interface with steps navigator, content editor, preview panel, and template rendering engine for proper content display.
+
+### Changes Required:
+
+#### 1. Template Engine Implementation
+**File**: `packages/dashboard/src/lib/template-engine.ts`
+**Changes**: Create template rendering system early since preview depends on it
+
+```typescript
+import nunjucks from 'nunjucks'
+
+const env = nunjucks.configure({ autoescape: true })
+
+export function renderWalkthroughStep(
+    step: WalkthroughStep,
+    walkthrough: Walkthrough
+): string {
+    const template = `
+{# Agent Instruction Prompt #}
+This is an interactive walkthrough to guide users through {{ walkthroughTitle }}.
+You are an expert instructor helping users learn step by step.
+
+{% if introductionForAgent %}
+## Step Context
+{{ introductionForAgent }}
+{% endif %}
+
+{% if contextForAgent %}
+## Background Information
+{{ contextForAgent }}
+{% endif %}
+
+{% if operationsForAgent %}
+## Operations to Perform
+{{ operationsForAgent }}
+{% endif %}
+
+## User Content
+Present the following content to the user:
+
+<StepContent>
+{{ contentForUser }}
+</StepContent>
+
+## Navigation
+When the user is ready to continue, guide them to use the appropriate walkthrough navigation tools.
+`
+
+    return env.renderString(template, {
+        walkthroughTitle: walkthrough.title,
+        stepTitle: step.title,
+        ...step.contentFields
+    })
+}
+```
 
 ### Overview
 Implement the comprehensive editing interface with steps navigator, content editor, and preview panel.
 
 ### Changes Required:
 
-#### 1. Walkthrough Editor Page
+#### 2. Walkthrough Editor Page
 **File**: `packages/dashboard/src/app/dashboard/walkthroughs/[walkthroughId]/edit/page.tsx`
 **Changes**: Create full-page editor route
 
@@ -777,7 +924,7 @@ export default async function WalkthroughEditPage({
 }
 ```
 
-#### 2. Three-Panel Editor Component
+#### 3. Three-Panel Editor Component
 **File**: `packages/dashboard/src/components/walkthrough-editor.tsx`
 **Changes**: Create comprehensive editing interface
 
@@ -976,7 +1123,7 @@ export function WalkthroughEditor({
 }
 ```
 
-#### 3. Steps Navigator Component
+#### 4. Steps Navigator Component
 **File**: `packages/dashboard/src/components/steps-navigator.tsx`
 **Changes**: Create step management interface
 
@@ -1133,18 +1280,24 @@ export function StepsNavigator({
 - [ ] no linter errors
 
 **Manual Verification**
+- [ ] Template engine renders content properly
 - [ ] Full-page editor loads with three-panel layout
 - [ ] Header shows walkthrough metadata and action buttons
 - [ ] Steps navigator shows all steps with completion indicators
 - [ ] Clicking steps updates URL and selects step
 - [ ] Add step button creates new step and selects it
-- [ ] Content editor panel displays (implementation in Phase 4)
-- [ ] Preview panel displays (implementation in Phase 4)
+- [ ] Content editor panel displays (implementation in Phase 5)
+- [ ] Preview panel displays (implementation in Phase 5)
 
-## Phase 4: Structured Content Editor and Manual Save
+**Integration Tests**
+- [ ] Test navigation between steps updates URL correctly
+- [ ] Test step creation flow end-to-end
+- [ ] Test template rendering with various content combinations
+
+## Phase 5: Structured Content Editor with Local Draft Recovery
 
 ### Overview
-Implement the four-field content editing interface with manual save functionality and visual feedback.
+Implement the four-field content editing interface with manual save, local draft recovery, and visual feedback using react-hook-form.
 
 ### Changes Required:
 
@@ -1156,6 +1309,9 @@ Implement the four-field content editing interface with manual save functionalit
 'use client'
 
 import { useState, useCallback, useEffect } from 'react'
+import { useForm, Controller } from 'react-hook-form'
+import { zodResolver } from '@hookform/resolvers/zod'
+import { z } from 'zod'
 import { useServerAction } from '@orpc/react/hooks'
 import { onError, onSuccess } from '@orpc/client'
 import { toast } from 'sonner'
@@ -1165,7 +1321,8 @@ import { Textarea } from '@/components/ui/textarea'
 import { Label } from '@/components/ui/label'
 import { Badge } from '@/components/ui/badge'
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible'
-import { ChevronDownIcon, ChevronRightIcon, InfoIcon } from '@tabler/icons-react'
+import { ChevronDownIcon, ChevronRightIcon, InfoIcon, AlertCircleIcon } from '@tabler/icons-react'
+import { Alert, AlertDescription } from '@/components/ui/alert'
 
 import { updateWalkthroughStepAction } from '@/lib/orpc/actions'
 
@@ -1194,6 +1351,19 @@ const fieldRequirements = {
     quickstart: { contentForUser: true }
 }
 
+// Form validation schema
+const formSchema = z.object({
+    title: z.string().min(1, 'Title is required'),
+    contentFields: z.object({
+        introductionForAgent: z.string(),
+        contextForAgent: z.string(),
+        contentForUser: z.string(),
+        operationsForAgent: z.string()
+    })
+})
+
+type FormData = z.infer<typeof formSchema>
+
 export function ContentEditor({
     step,
     walkthroughType
@@ -1201,11 +1371,7 @@ export function ContentEditor({
     step: WalkthroughStep
     walkthroughType: WalkthroughType
 }) {
-    const [formData, setFormData] = useState({
-        title: step.title,
-        contentFields: { ...step.contentFields }
-    })
-    const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false)
+    const [hasLocalDraft, setHasLocalDraft] = useState(false)
     const [collapsedSections, setCollapsedSections] = useState({
         introduction: true,
         context: true,
@@ -1214,10 +1380,20 @@ export function ContentEditor({
     
     const requirements = fieldRequirements[walkthroughType] || {}
     
+    const form = useForm<FormData>({
+        resolver: zodResolver(formSchema),
+        defaultValues: {
+            title: step.title,
+            contentFields: { ...step.contentFields }
+        }
+    })
+    
     const { execute: updateStep, status } = useServerAction(updateWalkthroughStepAction, {
         interceptors: [
             onSuccess(() => {
-                setHasUnsavedChanges(false)
+                // Clear local draft on successful save
+                localStorage.removeItem(`walkthrough-step-draft-${step.id}`)
+                setHasLocalDraft(false)
                 toast.success('Step saved')
             }),
             onError(() => {
@@ -1226,36 +1402,83 @@ export function ContentEditor({
         ]
     })
     
-    // Update form data when step changes
+    // Check for local draft on mount
     useEffect(() => {
-        setFormData({
+        const localDraftKey = `walkthrough-step-draft-${step.id}`
+        const localDraft = localStorage.getItem(localDraftKey)
+        
+        if (localDraft) {
+            try {
+                const draftData = JSON.parse(localDraft)
+                const remoteData = {
+                    title: step.title,
+                    contentFields: step.contentFields
+                }
+                
+                // Check if local draft differs from remote
+                if (JSON.stringify(draftData) !== JSON.stringify(remoteData)) {
+                    setHasLocalDraft(true)
+                }
+            } catch (e) {
+                // Invalid draft, remove it
+                localStorage.removeItem(localDraftKey)
+            }
+        }
+    }, [step.id, step.title, step.contentFields])
+    
+    // Auto-save to local storage on changes
+    useEffect(() => {
+        const subscription = form.watch((data) => {
+            if (form.formState.isDirty) {
+                const localDraftKey = `walkthrough-step-draft-${step.id}`
+                localStorage.setItem(localDraftKey, JSON.stringify(data))
+            }
+        })
+        return () => subscription.unsubscribe()
+    }, [form, step.id])
+    
+    // Update form when step changes
+    useEffect(() => {
+        form.reset({
             title: step.title,
             contentFields: { ...step.contentFields }
         })
-        setHasUnsavedChanges(false)
-    }, [step.id, step.title, step.contentFields])
+    }, [step.id, form])
     
-    const handleFieldChange = useCallback((field: string, value: string) => {
-        setFormData(prev => {
-            if (field === 'title') {
-                return { ...prev, title: value }
-            } else {
-                return {
-                    ...prev,
-                    contentFields: { ...prev.contentFields, [field]: value }
-                }
+    const handleRestoreDraft = useCallback(() => {
+        const localDraftKey = `walkthrough-step-draft-${step.id}`
+        const localDraft = localStorage.getItem(localDraftKey)
+        
+        if (localDraft) {
+            try {
+                const draftData = JSON.parse(localDraft)
+                form.reset(draftData)
+                setHasLocalDraft(false)
+                toast.success('Draft restored')
+            } catch (e) {
+                toast.error('Failed to restore draft')
             }
-        })
-        setHasUnsavedChanges(true)
-    }, [])
+        }
+    }, [step.id, form])
     
-    const handleSave = useCallback(() => {
+    const handleDiscardDraft = useCallback(() => {
+        const localDraftKey = `walkthrough-step-draft-${step.id}`
+        localStorage.removeItem(localDraftKey)
+        setHasLocalDraft(false)
+        form.reset({
+            title: step.title,
+            contentFields: { ...step.contentFields }
+        })
+        toast.success('Draft discarded')
+    }, [step.id, step.title, step.contentFields, form])
+    
+    const handleSave = form.handleSubmit((data) => {
         updateStep({
             id: step.id,
-            title: formData.title,
-            contentFields: formData.contentFields
+            title: data.title,
+            contentFields: data.contentFields
         })
-    }, [updateStep, step.id, formData])
+    })
     
     const toggleSection = useCallback((section: keyof typeof collapsedSections) => {
         setCollapsedSections(prev => ({ ...prev, [section]: !prev[section] }))
@@ -1278,19 +1501,44 @@ export function ContentEditor({
     
     return (
         <div className="p-6 space-y-6">
+            {/* Local Draft Alert */}
+            {hasLocalDraft && (
+                <Alert>
+                    <AlertCircleIcon className="h-4 w-4" />
+                    <AlertDescription className="flex items-center justify-between">
+                        <span>You have unsaved changes from a previous session.</span>
+                        <div className="flex gap-2">
+                            <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={handleDiscardDraft}
+                            >
+                                Discard
+                            </Button>
+                            <Button
+                                size="sm"
+                                onClick={handleRestoreDraft}
+                            >
+                                Restore Draft
+                            </Button>
+                        </div>
+                    </AlertDescription>
+                </Alert>
+            )}
+            
             {/* Step Metadata */}
             <div className="space-y-4">
                 <div className="flex items-center justify-between">
                     <h2 className="text-lg font-semibold">Step Content</h2>
                     <div className="flex items-center gap-2">
-                        {hasUnsavedChanges && (
+                        {form.formState.isDirty && (
                             <Badge variant="outline" className="text-amber-600">
                                 Unsaved changes
                             </Badge>
                         )}
                         <button
                             onClick={handleSave}
-                            disabled={!hasUnsavedChanges || status === 'pending'}
+                            disabled={!form.formState.isDirty || status === 'pending'}
                             className="px-3 py-1 text-sm bg-primary text-primary-foreground rounded disabled:opacity-50"
                         >
                             {status === 'pending' ? 'Saving...' : 'Save'}
@@ -1300,11 +1548,23 @@ export function ContentEditor({
                 
                 <div className="space-y-2">
                     <Label htmlFor="step-title">Step Title</Label>
-                    <Input
-                        id="step-title"
-                        value={formData.title}
-                        onChange={(e) => handleFieldChange('title', e.target.value)}
-                        placeholder="Enter step title..."
+                    <Controller
+                        name="title"
+                        control={form.control}
+                        render={({ field, fieldState }) => (
+                            <>
+                                <Input
+                                    id="step-title"
+                                    {...field}
+                                    placeholder="Enter step title..."
+                                />
+                                {fieldState.error && (
+                                    <p className="text-sm text-red-500">
+                                        {fieldState.error.message}
+                                    </p>
+                                )}
+                            </>
+                        )}
                     />
                 </div>
             </div>
@@ -1334,15 +1594,22 @@ export function ContentEditor({
                                 This helps the AI agent understand the purpose and context.
                             </p>
                         </div>
-                        <Textarea
-                            value={formData.contentFields.introductionForAgent}
-                            onChange={(e) => handleFieldChange('introductionForAgent', e.target.value)}
-                            placeholder="Guide the user through creating their first agent. This step focuses on..."
-                            rows={3}
+                        <Controller
+                            name="contentFields.introductionForAgent"
+                            control={form.control}
+                            render={({ field }) => (
+                                <>
+                                    <Textarea
+                                        {...field}
+                                        placeholder="Guide the user through creating their first agent. This step focuses on..."
+                                        rows={3}
+                                    />
+                                    <div className="text-xs text-muted-foreground text-right">
+                                        {field.value.length} characters
+                                    </div>
+                                </>
+                            )}
                         />
-                        <div className="text-xs text-muted-foreground text-right">
-                            {formData.contentFields.introductionForAgent.length}/500
-                        </div>
                     </div>
                 </CollapsibleContent>
             </Collapsible>
@@ -1372,15 +1639,22 @@ export function ContentEditor({
                                 the agent can use to provide better assistance.
                             </p>
                         </div>
-                        <Textarea
-                            value={formData.contentFields.contextForAgent}
-                            onChange={(e) => handleFieldChange('contextForAgent', e.target.value)}
-                            placeholder="Key concepts: AI agents, autonomous decision-making&#10;Related docs: /docs/agents/overview&#10;Search terms: 'Mastra agent', 'AI agent framework'"
-                            rows={4}
+                        <Controller
+                            name="contentFields.contextForAgent"
+                            control={form.control}
+                            render={({ field }) => (
+                                <>
+                                    <Textarea
+                                        {...field}
+                                        placeholder="Key concepts: AI agents, autonomous decision-making&#10;Related docs: /docs/agents/overview&#10;Search terms: 'Mastra agent', 'AI agent framework'"
+                                        rows={4}
+                                    />
+                                    <div className="text-xs text-muted-foreground text-right">
+                                        {field.value.length} characters
+                                    </div>
+                                </>
+                            )}
                         />
-                        <div className="text-xs text-muted-foreground text-right">
-                            {formData.contentFields.contextForAgent.length}/1000
-                        </div>
                     </div>
                 </CollapsibleContent>
             </Collapsible>
@@ -1399,16 +1673,23 @@ export function ContentEditor({
                             Supports markdown formatting for rich content.
                         </p>
                     </div>
-                    <Textarea
-                        value={formData.contentFields.contentForUser}
-                        onChange={(e) => handleFieldChange('contentForUser', e.target.value)}
-                        placeholder="# Creating Your Financial Agent&#10;&#10;Let's create a simple agent that will help users analyze financial transaction data.&#10;&#10;```typescript&#10;import { Agent } from '@mastra/core/agent'&#10;// ... rest of code example&#10;```"
-                        rows={10}
-                        className="font-mono text-sm"
+                    <Controller
+                        name="contentFields.contentForUser"
+                        control={form.control}
+                        render={({ field }) => (
+                            <>
+                                <Textarea
+                                    {...field}
+                                    placeholder="# Creating Your Financial Agent&#10;&#10;Let's create a simple agent that will help users analyze financial transaction data.&#10;&#10;```typescript&#10;import { Agent } from '@mastra/core/agent'&#10;// ... rest of code example&#10;```"
+                                    rows={10}
+                                    className="font-mono text-sm"
+                                />
+                                <div className="text-xs text-muted-foreground text-right mt-2">
+                                    {field.value.length} characters
+                                </div>
+                            </>
+                        )}
                     />
-                    <div className="text-xs text-muted-foreground text-right mt-2">
-                        {formData.contentFields.contentForUser.length}/2000
-                    </div>
                 </div>
             </div>
             
@@ -1437,15 +1718,22 @@ export function ContentEditor({
                                 validations, and other concrete tasks.
                             </p>
                         </div>
-                        <Textarea
-                            value={formData.contentFields.operationsForAgent}
-                            onChange={(e) => handleFieldChange('operationsForAgent', e.target.value)}
-                            placeholder="CREATE: src/mastra/agents/financial-agent.ts&#10;READ: Check if src/mastra/ directory exists, create if missing&#10;VALIDATE: Ensure agent imports are correct&#10;NEXT_STEP_PREP: Mention that tools will be added in the next step"
-                            rows={4}
+                        <Controller
+                            name="contentFields.operationsForAgent"
+                            control={form.control}
+                            render={({ field }) => (
+                                <>
+                                    <Textarea
+                                        {...field}
+                                        placeholder="CREATE: src/mastra/agents/financial-agent.ts&#10;READ: Check if src/mastra/ directory exists, create if missing&#10;VALIDATE: Ensure agent imports are correct&#10;NEXT_STEP_PREP: Mention that tools will be added in the next step"
+                                        rows={4}
+                                    />
+                                    <div className="text-xs text-muted-foreground text-right">
+                                        {field.value.length} characters
+                                    </div>
+                                </>
+                            )}
                         />
-                        <div className="text-xs text-muted-foreground text-right">
-                            {formData.contentFields.operationsForAgent.length}/1000
-                        </div>
                     </div>
                 </CollapsibleContent>
             </Collapsible>
@@ -1454,7 +1742,7 @@ export function ContentEditor({
 }
 ```
 
-#### 2. Preview Panel Component
+#### 2. Preview Panel Component with Template Rendering
 **File**: `packages/dashboard/src/components/preview-panel.tsx`
 **Changes**: Create basic preview interface
 
@@ -1467,6 +1755,8 @@ import { Button } from '@/components/ui/button'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { EyeIcon, EditIcon, ChevronLeftIcon, ChevronRightIcon } from '@tabler/icons-react'
+
+import { renderWalkthroughStep } from '@/lib/template-engine'
 
 type WalkthroughStep = {
     id: string
@@ -1610,39 +1900,8 @@ export function PreviewPanel({
                                 <div className="text-sm text-muted-foreground mb-4">
                                     This is how the content will appear to the AI agent:
                                 </div>
-                                <div className="bg-gray-50 p-4 rounded font-mono text-xs space-y-2">
-                                    <div>
-                                        <strong>Walkthrough:</strong> {walkthrough.title}
-                                    </div>
-                                    <div>
-                                        <strong>Step:</strong> {step.title}
-                                    </div>
-                                    <div className="border-t pt-2">
-                                        {step.contentFields.introductionForAgent && (
-                                            <div className="mb-2">
-                                                <strong>Context:</strong><br />
-                                                {step.contentFields.introductionForAgent}
-                                            </div>
-                                        )}
-                                        {step.contentFields.contextForAgent && (
-                                            <div className="mb-2">
-                                                <strong>Background:</strong><br />
-                                                {step.contentFields.contextForAgent}
-                                            </div>
-                                        )}
-                                        <div className="mb-2">
-                                            <strong>User Content:</strong><br />
-                                            <div className="bg-white p-2 rounded">
-                                                {step.contentFields.contentForUser}
-                                            </div>
-                                        </div>
-                                        {step.contentFields.operationsForAgent && (
-                                            <div>
-                                                <strong>Operations:</strong><br />
-                                                {step.contentFields.operationsForAgent}
-                                            </div>
-                                        )}
-                                    </div>
+                                <div className="bg-gray-50 p-4 rounded font-mono text-xs whitespace-pre-wrap">
+                                    {renderWalkthroughStep(step, walkthrough)}
                                 </div>
                             </div>
                         </div>
@@ -1660,100 +1919,22 @@ export function PreviewPanel({
 - [ ] no linter errors
 
 **Manual Verification**
-- [ ] Content editor displays four collapsible sections with proper labels
+- [ ] Content editor uses react-hook-form with zod validation
+- [ ] Local draft recovery prompt appears when appropriate
+- [ ] Auto-save to local storage works on field changes
+- [ ] Manual save button works and clears local draft
+- [ ] Form validation shows errors appropriately
 - [ ] Required/optional badges display based on walkthrough type
-- [ ] Manual save button works and shows proper status feedback
-- [ ] Unsaved changes indicator appears when content is modified
+- [ ] Unsaved changes indicator appears when form is dirty
 - [ ] Ctrl+S keyboard shortcut triggers save
-- [ ] Preview panel shows structured field view and basic template preview
-- [ ] Character limits display and update in real-time
-- [ ] Field validation works properly
+- [ ] Preview panel shows template-rendered output
+- [ ] Character counts display in real-time
 
-## Phase 5: Fix Schema Migration and Utility Functions
+**Unit Tests**
+- [ ] Test form validation with react-hook-form and zod
+- [ ] Test local storage draft save/restore functionality
+- [ ] Test template rendering with various content
 
-### Overview
-Address the critical schema mismatch where utility functions reference deprecated `instructions` field instead of new `contentFields` structure.
-
-### Changes Required:
-
-#### 1. Update Walkthrough Utilities
-**File**: `packages/dashboard/src/lib/mcp/walkthrough-utils.ts`
-**Changes**: Fix references to use contentFields instead of instructions
-
-```typescript
-// Replace lines 16, 80, 92, 340, 367 that reference step.instructions
-// with step.contentFields.contentForUser
-
-// Example changes:
-// OLD: step.instructions
-// NEW: step.contentFields.contentForUser
-
-// Function: getWalkthroughStepsWithProgress (around line 340)
-steps: steps.map(step => ({
-    id: step.id,
-    title: step.title,
-    // OLD: instructions: step.instructions,
-    contentFields: step.contentFields, // Use full structured content
-    displayOrder: step.displayOrder,
-    isCompleted: progress?.some(p => p.stepId === step.id && p.isCompleted) || false
-}))
-
-// Function: getWalkthroughDetails (around line 367)  
-currentStep: currentStep ? {
-    id: currentStep.id,
-    title: currentStep.title,
-    // OLD: instructions: currentStep.instructions,
-    contentFields: currentStep.contentFields, // Use full structured content
-    displayOrder: currentStep.displayOrder
-} : null
-```
-
-#### 2. Update MCP Tools Content Rendering
-**File**: `packages/dashboard/src/lib/mcp/tools/walkthrough.ts`
-**Changes**: Update step content rendering to use structured fields
-
-```typescript
-// In get_current_step tool, replace simple instructions with structured template
-// Around line 150-160, replace:
-// OLD: step.instructions
-// NEW: Render structured content using a simple template
-
-const renderStepContent = (step: any): string => {
-    const fields = step.contentFields
-    
-    let content = ''
-    
-    if (fields.introductionForAgent) {
-        content += `## Step Context\n${fields.introductionForAgent}\n\n`
-    }
-    
-    if (fields.contextForAgent) {
-        content += `## Background Information\n${fields.contextForAgent}\n\n`
-    }
-    
-    content += `## User Content\n${fields.contentForUser}\n\n`
-    
-    if (fields.operationsForAgent) {
-        content += `## Operations to Perform\n${fields.operationsForAgent}\n\n`
-    }
-    
-    return content
-}
-
-// Update the tool response to use:
-instructions: renderStepContent(step)
-```
-
-### Success Criteria:
-
-**Automated verification**
-- [ ] no linter errors
-- [ ] no TypeScript errors about missing instructions field
-
-**Manual Verification**  
-- [ ] MCP walkthrough tools continue to work properly
-- [ ] Step content renders properly in MCP tool responses
-- [ ] No references to deprecated instructions field remain
 
 ## Phase 6: Enhanced Features and Polish
 
@@ -1879,18 +2060,43 @@ import { renderWalkthroughStep } from '@/lib/template-engine'
 
 ## Performance Considerations
 
-- **Debounced auto-save**: 2-second delay after last keystroke to prevent excessive server requests
-- **Code splitting**: Lazy load markdown editor and preview components for faster initial load
-- **Optimistic updates**: Immediate UI feedback with server sync for better user experience
+- **Local draft recovery**: Auto-save to local storage prevents data loss without server requests
+- **Form state management**: react-hook-form provides optimized re-renders
+- **No list virtualization needed**: Even 100+ steps remain performant as simple text
+- **Template rendering**: Nunjucks is fast enough for real-time preview updates
 
-## Migration Notes
+## Testing Strategy
 
-The existing `walkthroughSteps` table data needs migration from `instructions` field to `contentFields` structure. A migration script should:
+### Unit Tests (using bun:test)
+1. **oRPC Actions** (`packages/dashboard/tests/walkthrough-authoring/actions.test.ts`)
+   - Test authorization (requireSession)
+   - Test input validation with zod schemas
+   - Test CRUD operations
+   - Test revalidatePath calls
+   - Test error handling
 
-1. Read existing steps with `instructions` field
-2. Convert to structured format with content in `contentForUser` field
-3. Set other fields to empty strings
-4. Update `contentFields` column with versioned structure
+2. **Form Components** (`packages/dashboard/tests/walkthrough-authoring/forms.test.ts`)
+   - Test react-hook-form validation
+   - Test local storage draft functionality
+   - Test form submission
+
+3. **Template Engine** (`packages/dashboard/tests/walkthrough-authoring/template.test.ts`)
+   - Test Nunjucks rendering with various inputs
+   - Test edge cases (empty fields, special characters)
+
+### Integration Tests
+1. **End-to-End Flows** (`packages/dashboard/tests/walkthrough-authoring/e2e.test.ts`)
+   - Create walkthrough → Add steps → Edit content → Save
+   - Navigation between steps
+   - Draft recovery flow
+
+### Manual Testing Checklist
+1. Create walkthrough of each type
+2. Add multiple steps
+3. Test local draft recovery
+4. Verify template preview
+5. Test keyboard shortcuts
+6. Verify last-save-wins behavior
 
 ## References 
 
