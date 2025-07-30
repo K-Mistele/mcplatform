@@ -202,15 +202,15 @@ describe('Walkthrough Authoring Integration Tests', () => {
             const renderedStep1 = renderWalkthroughStep(newWalkthrough, updatedStep1)
             expect(renderedStep1).toContain('# Walkthrough: Complete Integration Guide')
             expect(renderedStep1).toContain('## Step 1: API Setup and Configuration')
-            expect(renderedStep1).toContain('### Step Context')
+            expect(renderedStep1).toContain('<step_information_and_objectives>')
             expect(renderedStep1).toContain('Guide user through comprehensive API setup')
-            expect(renderedStep1).toContain('### Background Information')
+            expect(renderedStep1).toContain('<background_information_context>')
             expect(renderedStep1).toContain('User needs to configure API keys, endpoints')
-            expect(renderedStep1).toContain('### Operations to Perform')
+            expect(renderedStep1).toContain('<operations_to_perform>')
             expect(renderedStep1).toContain('Verify API key format, test initial connection')
-            expect(renderedStep1).toContain('<StepContent>')
+            expect(renderedStep1).toContain('<step_content>')
             expect(renderedStep1).toContain('Copy this key as you will need it')
-            expect(renderedStep1).toContain('</StepContent>')
+            expect(renderedStep1).toContain('</step_content>')
 
             const renderedStep2 = renderWalkthroughStep(newWalkthrough, step2)
             expect(renderedStep2).toContain('## Step 2: Authentication Configuration')
@@ -371,7 +371,7 @@ describe('Walkthrough Authoring Integration Tests', () => {
             const renderedInstaller = renderWalkthroughStep(installerWalkthrough, installerStep)
             expect(renderedInstaller).toContain('Required: Install the software')
             expect(renderedInstaller).toContain('Required: Execute installation commands')
-            expect(renderedInstaller).toContain('### Operations to Perform')
+            expect(renderedInstaller).toContain('<operations_to_perform>')
 
             // Test troubleshooting type (requires contextForAgent)
             const troubleshootingWalkthroughId = `wt_${nanoid(8)}`
@@ -413,7 +413,7 @@ describe('Walkthrough Authoring Integration Tests', () => {
             const renderedTroubleshooting = renderWalkthroughStep(troubleshootingWalkthrough, troubleshootingStep)
             expect(renderedTroubleshooting).toContain('Required: Check your firewall settings')
             expect(renderedTroubleshooting).toContain('Required: Common connection issues')
-            expect(renderedTroubleshooting).toContain('### Background Information')
+            expect(renderedTroubleshooting).toContain('<background_information_context>')
         })
     })
 
