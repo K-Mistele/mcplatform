@@ -1,20 +1,11 @@
-import { type NextRequest, NextResponse } from 'next/server'
+import { inngest } from '@/lib/inngest/client'
+import * as functions from '@/lib/inngest/functions'
+import { serve } from 'inngest/next'
 
-// export const { GET, POST, PUT } = serve({
-//     client: inngest,
-//     functions: []
-// })
-export async function GET(request: NextRequest) {
-    console.log('request', request)
-    return NextResponse.json({ message: 'Hello, world!' })
-}
 
-export async function POST(request: NextRequest) {
-    console.log('request', request)
-    return NextResponse.json({ message: 'Hello, world!' })
-}
-
-export async function PUT(request: NextRequest) {
-    console.log('request', request)
-    return NextResponse.json({ message: 'Hello, world!' })
-}
+// Create the API handler for Inngest
+export const { GET, POST, PUT } = serve({
+    client: inngest,
+    functions: Object.values(functions),
+    baseUrl: process.env.INNGEST_BASE_URL
+})

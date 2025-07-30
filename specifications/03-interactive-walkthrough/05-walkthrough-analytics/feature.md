@@ -6,9 +6,9 @@ branch: master
 repository: mcplatform
 topic: "Sub-Feature: Walkthrough Analytics & Insights"
 tags: [sub-feature-definition, interactive-walkthrough, analytics, insights]
-status: complete
-last_updated: 2025-07-22
-last_updated_by: Kyle Mistele
+status: in_progress
+last_updated: 2025-07-30
+last_updated_by: Claude
 type: sub_feature_definition
 ---
 
@@ -296,7 +296,104 @@ Leverage charting library (Chart.js/Recharts) with:
 - Export functionality libraries
 - Real-time data processing capabilities
 
+## Enhanced Analytics Requirements (2025-07-30)
+
+### Documentation Search Integration
+
+The analytics system will integrate with a separate documentation search MCP tool to provide unified user journey analytics:
+
+#### Data Correlation
+- Track documentation searches within the context of walkthrough sessions using `mcpServerSessionId`
+- Correlate search queries with current walkthrough and step IDs
+- Store search query embeddings for clustering and categorization
+
+#### Search Analytics Metrics
+- **Query Volume**: Number of searches per walkthrough/step
+- **Query Clustering**: Group similar queries using embeddings and LLM categorization
+- **Search Timing**: When users search relative to walkthrough progress
+- **Content Gaps**: Identify topics users search for that aren't covered in walkthroughs
+
+### Advanced Visualization: Sankey Diagrams
+
+#### User Flow Visualization
+- **Intra-Walkthrough Flows**: Step-by-step progression within a single walkthrough
+- **Inter-Walkthrough Flows**: User navigation between different walkthroughs
+- **Documentation Search Integration**: Show when users branch to documentation search and return
+- **Drop-off Points**: Visual representation of where users abandon walkthroughs
+
+#### Flow Data Structure
+```typescript
+type SankeyFlowData = {
+  nodes: Array<{
+    id: string // step_id, "doc_search", or "walkthrough_[id]"
+    label: string
+    type: 'step' | 'search' | 'walkthrough'
+  }>
+  links: Array<{
+    source: string
+    target: string
+    value: number // user count
+    metadata?: {
+      avgTimeSeconds?: number
+      searchQueries?: string[] // for doc search nodes
+    }
+  }>
+}
+```
+
+### Processing Architecture with Inngest
+
+#### Durable Execution
+- Use Inngest for reliable processing of analytics data
+- Handle rate limiting and throttling for expensive operations
+- Support both scheduled batch processing and event-driven updates
+
+#### Analytics Processing Jobs
+1. **Flow Matrix Computation**: Build Sankey diagram data from walkthrough progress events
+2. **Query Clustering**: Process search query embeddings and categorize with LLM
+3. **Correlation Analysis**: Link documentation searches with walkthrough contexts
+4. **Aggregation Jobs**: Compute organization-wide and server-specific metrics
+
+### User Journey Analytics Dashboard
+
+#### Unified View
+- Single dashboard combining walkthrough and documentation search analytics
+- Time-based filtering with customizable date ranges
+- Export capabilities for detailed analysis
+
+#### Key Visualizations
+1. **Journey Sankey Diagram**: Complete user flow across walkthroughs and searches
+2. **Search Query Heatmap**: When and where users search for documentation
+3. **Content Gap Analysis**: Topics frequently searched but not covered in walkthroughs
+4. **Correlation Metrics**: Relationship between search behavior and completion rates
+
+### Meta Analytics Enhancements
+
+#### Walkthrough Performance Metrics
+- Start counts per walkthrough
+- Step-by-step completion rates
+- Time spent per step
+- Documentation search frequency per walkthrough
+
+#### Comparative Analysis
+- Cross-walkthrough performance comparison
+- Server-specific performance variations
+- User cohort analysis (once cohort definitions are established)
+
+### Implementation Considerations
+
+#### Database Schema Extension
+- New table for documentation search queries with embeddings
+- Pre-computed flow matrices for efficient Sankey rendering
+- Cached aggregations for dashboard performance
+
+#### Integration Points
+- Unified session tracking via `mcpServerSessionId`
+- Real-time event streaming for immediate updates
+- Batch processing for expensive computations
+
 ## Related Documents
 - [UI Ideation](../thoughts/ui-ideation.md) - Analytics UI specifications and component details
 - [Technical Specification](../thoughts/technical-specification.md) - Database schema and implementation patterns
 - [Main Feature Document](../feature.md) - Overall context and success metrics
+- [Documentation Retrieval Feature](../04-documentation-retrieval/feature.md) - Documentation search MCP tool specification (to be created)

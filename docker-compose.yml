@@ -3,28 +3,54 @@ services:
     postgres:
         image: pgvector/pgvector:pg17
         ports:
-            - 127.0.0.1:5432:5432
+            - 5432:5432
         environment:
             POSTGRES_USER: postgres
             POSTGRES_PASSWORD: postgres
             POSTGRES_DB: postgres
         volumes:
             - pgvector_data:/var/lib/postgresql/data
+        healthcheck:
+            test: ["CMD-SHELL", "pg_isready -U postgres -d inngest && pg_isready -U postgres -d postgres"]
+            interval: 5s
+            timeout: 5s
+            retries: 5
 
     valkey:
         image: valkey/valkey:latest
         ports:
-            - 127.0.0.1:6379:6379
+            - 6379:6379
         volumes:
             - valkey_data:/data
-
-    # inngest: 
-    #     image: inngest/inngest:latest
-    #     command: inngest dev -u http://host.docker.internal:3000/api/inngest
-    #     ports: 
-    #         - 127.0.0.1:8288:8288
-        
-
+        healthcheck:
+            test: ["CMD", "redis-cli", "ping"]
+            interval: 5s
+            timeout: 3s
+            retries: 5
+           
+    inngest: 
+        image: inngest/inngest:latest
+        command: "inngest start"
+        ports: 
+            - 8288:8288
+            - 8289:8289
+        environment:
+            INNGEST_EVENT_KEY: ${INNGEST_EVENT_KEY}
+            INNGEST_SIGNING_KEY: ${INNGEST_SIGNING_KEY}
+            INNGEST_POSTGRES_URI: postgres://postgres:postgres@postgres:5432/inngest
+            INNGEST_REDIS_URI: redis://valkey:6379
+        depends_on:
+            postgres:
+                condition: service_healthy
+            valkey:
+                condition: service_healthy
+        healthcheck:
+            test: ["CMD", "curl", "-f", "http://localhost:8288/health"]
+            interval: 30s
+            timeout: 10s
+            retries: 3
+            start_period: 40s
+ 
 volumes:    
   pgvector_data:
   valkey_data:

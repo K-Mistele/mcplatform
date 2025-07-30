@@ -7,7 +7,7 @@ repository: mcplatform
 topic: "Feature Definition Checklist: Interactive Walkthrough"
 tags: [checklist, feature-definition, interactive-walkthrough, tracking]
 status: in_progress
-last_updated: 2025-07-22
+last_updated: 2025-07-30
 last_updated_by: Claude
 type: checklist
 ---
@@ -38,14 +38,19 @@ This checklist tracks the progress of defining and implementing the requirements
   - [ ] UI components implementation
   - [ ] Testing and verification
 
-- [ ] **04: Walkthrough Analytics & Insights**
-  - [ ] Requirements definition
+- [x] **04: Documentation Retrieval**
+  - [x] Requirements definition (2025-07-30)
+  - [ ] Implementation plan
+  - [ ] API and ingestion pipeline
+  - [ ] MCP search tool implementation
+  - [ ] Testing and verification
+
+- [ ] **05: Walkthrough Analytics & Insights**
+  - [x] Requirements definition (partial - enhanced 2025-07-30)
   - [ ] Implementation plan
   - [ ] Analytics implementation
   - [ ] Dashboard components
   - [ ] Testing and verification
-
-- [ ] ~~**05: Advanced UX & Editor Enhancements**~~ (Scoped out for now)
 
 ## Implementation Notes
 
@@ -56,5 +61,16 @@ This checklist tracks the progress of defining and implementing the requirements
 - **Testing**: 38 comprehensive tests with 100% pass rate
 - **Next**: Database migration required before sub-feature 02 can begin
 
+### Sub-feature 04: Documentation Retrieval
+- **Status**: Requirements defined (2025-07-30)
+- **Purpose**: Enable AI agents to search customer documentation via MCP tool
+- **Key Components**: Namespace management, GitHub ingestion, Turbo Puffer search
+- **Dependencies**: Requires stable walkthrough step IDs for analytics correlation
+
+### Sub-feature 05: Walkthrough Analytics & Insights
+- **Status**: Requirements enhanced with documentation search integration (2025-07-30)
+- **Enhancements**: Sankey diagrams, search correlation, unified journey analytics
+- **Dependencies**: Requires documentation retrieval for full analytics capabilities
+
 ### Remaining Sub-features
-Sub-features 02-04 depend on the database schema from sub-feature 01. Once migrations are applied, development can proceed on the dashboard UI components and analytics features.
+Sub-features 02-05 depend on the database schema from sub-feature 01. Once migrations are applied, development can proceed on the dashboard UI components, documentation retrieval, and enhanced analytics features.
