@@ -1,5 +1,5 @@
 import { nanoid } from 'common/nanoid'
-import { type AnyPgColumn, bigint, date, index, integer, jsonb, pgEnum, pgTable, text } from 'drizzle-orm/pg-core'
+import { type AnyPgColumn, bigint, date, index, integer, jsonb, pgEnum, pgTable, text, unique } from 'drizzle-orm/pg-core'
 import { z } from 'zod'
 import { organization, user } from './auth-schema'
 
@@ -208,7 +208,8 @@ export const mcpServerWalkthroughs = pgTable(
     (t) => [
         index('mcp_server_walkthroughs_server_id_idx').on(t.mcpServerId),
         index('mcp_server_walkthroughs_walkthrough_id_idx').on(t.walkthroughId),
-        index('mcp_server_walkthroughs_display_order_idx').on(t.displayOrder)
+        index('mcp_server_walkthroughs_display_order_idx').on(t.displayOrder),
+        unique('mcp_server_walkthroughs_server_walkthrough_unique').on(t.mcpServerId, t.walkthroughId)
     ]
 )
 
