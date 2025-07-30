@@ -1,7 +1,7 @@
 import { afterAll, beforeAll, describe, expect, test } from 'bun:test'
 import { act, cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { MultiSelect } from '../../src/components/ui/multi-select'
+import type { MultiSelect } from '../../src/components/ui/multi-select'
 import { WandSparkles } from 'lucide-react'
 
 // Mock options for testing

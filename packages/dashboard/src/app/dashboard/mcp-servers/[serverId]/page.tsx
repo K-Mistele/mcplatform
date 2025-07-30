@@ -2,15 +2,19 @@ import { CursorInstallLink } from '@/components/cursor-install-link'
 import { EditServerConfiguration } from '@/components/edit-server-configuration'
 import { McpServerUsersCard } from '@/components/mcp-server-users-card'
 import { ServerUrlDisplay } from '@/components/server-url-display'
+import { WalkthroughAssignmentCard } from '@/components/walkthrough-assignment-card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { CardSkeleton } from '@/components/card-skeleton'
 import { requireSession } from '@/lib/auth/auth'
 import { db, schema } from 'database'
-import { eq } from 'drizzle-orm'
+import { and, eq } from 'drizzle-orm'
 import { ArrowLeftIcon, CalendarIcon, ServerIcon } from 'lucide-react'
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
+import { Suspense } from 'react'
+import { ErrorBoundary } from 'react-error-boundary'
 
 interface McpServerDetailsPageProps {
     params: Promise<{ serverId: string }>
@@ -36,6 +40,77 @@ export default async function McpServerDetailsPage(props: McpServerDetailsPagePr
     if (!server || server.organizationId !== session.session.activeOrganizationId) {
         notFound()
     }
+
+    // Fetch available walkthroughs for the organization
+    const availableWalkthroughsPromise = db
+        .select({
+            id: schema.walkthroughs.id,
+            title: schema.walkthroughs.title,
+            type: schema.walkthroughs.type,
+            stepCount: schema.walkthroughSteps.id
+        })
+        .from(schema.walkthroughs)
+        .leftJoin(schema.walkthroughSteps, eq(schema.walkthroughs.id, schema.walkthroughSteps.walkthroughId))
+        .where(eq(schema.walkthroughs.organizationId, session.session.activeOrganizationId))
+        .then(results => {
+            // Group by walkthrough and count steps
+            const walkthroughMap = new Map<string, { id: string; title: string; type: string; stepCount: number }>()
+            
+            results.forEach(row => {
+                if (!walkthroughMap.has(row.id)) {
+                    walkthroughMap.set(row.id, {
+                        id: row.id,
+                        title: row.title,
+                        type: row.type,
+                        stepCount: 0
+                    })
+                }
+                if (row.stepCount) {
+                    const walkthrough = walkthroughMap.get(row.id)!
+                    walkthrough.stepCount++
+                }
+            })
+            
+            return Array.from(walkthroughMap.values())
+        })
+
+    // Fetch assigned walkthroughs for this server
+    const assignedWalkthroughsPromise = db
+        .select({
+            id: schema.walkthroughs.id,
+            title: schema.walkthroughs.title,
+            type: schema.walkthroughs.type,
+            displayOrder: schema.mcpServerWalkthroughs.displayOrder,
+            isEnabled: schema.mcpServerWalkthroughs.isEnabled
+        })
+        .from(schema.mcpServerWalkthroughs)
+        .innerJoin(schema.walkthroughs, eq(schema.mcpServerWalkthroughs.walkthroughId, schema.walkthroughs.id))
+        .where(eq(schema.mcpServerWalkthroughs.mcpServerId, params.serverId))
+        .orderBy(schema.mcpServerWalkthroughs.displayOrder)
+        .then(async walkthroughs => {
+            // Count steps for each assigned walkthrough
+            const walkthroughsWithStepCount = await Promise.all(
+                walkthroughs.map(async w => {
+                    const [stepCountResult] = await db
+                        .select({ count: schema.walkthroughSteps.id })
+                        .from(schema.walkthroughSteps)
+                        .where(eq(schema.walkthroughSteps.walkthroughId, w.id))
+                    
+                    const stepCount = await db
+                        .select({ count: schema.walkthroughSteps.id })
+                        .from(schema.walkthroughSteps)
+                        .where(eq(schema.walkthroughSteps.walkthroughId, w.id))
+                        .then(results => results.length)
+                    
+                    return {
+                        ...w,
+                        stepCount
+                    }
+                })
+            )
+            
+            return walkthroughsWithStepCount
+        })
 
     const slug = server.slug as string
     console.log('slug', slug)
@@ -124,6 +199,25 @@ export default async function McpServerDetailsPage(props: McpServerDetailsPagePr
 
                     {/* Cursor Install Link Card */}
                     <CursorInstallLink serverName={server.name} serverUrl={url} />
+
+                    {/* Walkthrough Assignment Card */}
+                    <ErrorBoundary
+                        fallback={
+                            <Card>
+                                <CardContent className="text-center py-8">
+                                    <p className="text-destructive">Failed to load walkthroughs</p>
+                                </CardContent>
+                            </Card>
+                        }
+                    >
+                        <Suspense fallback={<CardSkeleton />}>
+                            <WalkthroughAssignmentCard
+                                serverId={server.id}
+                                availableWalkthroughsPromise={availableWalkthroughsPromise}
+                                assignedWalkthroughsPromise={assignedWalkthroughsPromise}
+                            />
+                        </Suspense>
+                    </ErrorBoundary>
                 </div>
             </div>
         </div>

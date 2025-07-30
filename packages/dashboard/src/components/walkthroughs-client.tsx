@@ -1,6 +1,6 @@
 'use client'
 
-import { BookOpenIcon, ChevronDownIcon, ColumnsIcon, PlusIcon } from 'lucide-react'
+import { BookOpenIcon, ChevronDownIcon, ColumnsIcon, PlusIcon, SettingsIcon } from 'lucide-react'
 import {
     type ColumnDef,
     type ColumnFiltersState,
@@ -168,6 +168,12 @@ const columns: ColumnDef<WalkthroughTableData>[] = [
                         <Link href={`/dashboard/walkthroughs/${walkthrough.id}/edit`}>
                             <EyeIcon className="h-4 w-4 mr-1" />
                             Edit
+                        </Link>
+                    </Button>
+                    <Button variant="outline" size="sm" asChild>
+                        <Link href={`/dashboard/walkthroughs/${walkthrough.id}/settings`}>
+                            <SettingsIcon className="h-4 w-4 mr-1" />
+                            Settings
                         </Link>
                     </Button>
                 </div>
