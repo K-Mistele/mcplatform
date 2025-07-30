@@ -201,11 +201,14 @@ export const mcpServerWalkthroughs = pgTable(
         walkthroughId: text('walkthrough_id')
             .references(() => walkthroughs.id, { onDelete: 'cascade' })
             .notNull(),
+        displayOrder: integer('display_order').notNull().default(0),
+        isEnabled: text('is_enabled').$type<'true' | 'false'>().notNull().default('true'),
         createdAt: bigint('created_at', { mode: 'number' }).$defaultFn(() => Date.now())
     },
     (t) => [
         index('mcp_server_walkthroughs_server_id_idx').on(t.mcpServerId),
-        index('mcp_server_walkthroughs_walkthrough_id_idx').on(t.walkthroughId)
+        index('mcp_server_walkthroughs_walkthrough_id_idx').on(t.walkthroughId),
+        index('mcp_server_walkthroughs_display_order_idx').on(t.displayOrder)
     ]
 )
 

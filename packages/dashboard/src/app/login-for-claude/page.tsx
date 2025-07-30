@@ -26,7 +26,7 @@ export default function LoginForClaudePage() {
             .then(() => {
                 authClient.organization
                     .setActive({
-                        organizationId: '6A0FiFkRLHlTC665fUjFBhePGXk2raqC'
+                        organizationId: 'tsOFOnQpLEzfLMGR2Ve3MDSZN2SxRUg5'
                     })
                     .then(() => router.push('/dashboard'))
             })

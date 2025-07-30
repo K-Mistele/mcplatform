@@ -1,14 +1,14 @@
 ---
-date: 2025-07-22T15:03:35-05:00
+date: 2025-07-29T20:55:24-05:00
 researcher: Kyle Mistele
-git_commit: 7c31f4d2919859faae85690b10736e1ca77046ee
+git_commit: 5bc7c239881ace5c7b067f5684cd0b5694df2a3d
 branch: master
 repository: mcplatform
 topic: "Sub-Feature: Server Assignment & Configuration UI"
 tags: [sub-feature-definition, interactive-walkthrough, server-assignment, configuration]
 status: complete
-last_updated: 2025-07-22
-last_updated_by: Kyle Mistele
+last_updated: 2025-07-29
+last_updated_by: Claude
 type: sub_feature_definition
 ---
 
@@ -20,254 +20,182 @@ type: sub_feature_definition
 ## Overview
 This sub-feature focuses on the UI components that allow customers to connect their centrally-managed walkthroughs to their specific MCP servers. It provides the interface for creating and managing the many-to-many relationship between walkthroughs and servers, including controls for ordering and visibility. This functionality will be integrated directly into the existing MCP server detail pages and also accessible from the main walkthrough management interface.
 
-## Business Context
-The server assignment UI is critical for the decoupled architecture where walkthroughs are managed independently but can be deployed across multiple MCP servers. This allows customers to:
-- **Reuse Content**: Assign the same walkthrough to multiple servers without duplication
-- **Context-Specific Deployment**: Control which walkthroughs appear on each server based on their user audience
-- **Flexible Management**: Temporarily disable walkthroughs on specific servers without affecting other assignments
-- **Optimized User Experience**: Control the order in which walkthroughs are presented to end-users
+## Important Context
+Note: all paths provided in this document are relative to `packages/dashboard`, the dashboard package in this monorepo.
+Exceptions: 
+* All database-related paths such as `schema.ts`, `auth-schema.ts` and `mcp-auth-schema.ts` are under `packages/database/src`, and are exported under `packages/database/index.ts`
+* Any paths beginning with `specification/` are at the top level of the repository and NOT under `packages/`; the `specification/` directory is at the SAME LEVEL as the `packages/` directory.
 
-## Data Model Context
-The UI manages the `mcp_server_walkthroughs` junction table, which contains:
-- `mcpServerId` and `walkthroughId` for the many-to-many relationship
-- `displayOrder` for controlling presentation order
-- `isEnabled` for temporary disable/enable without removing assignments
-- `assignedAt` for tracking assignment history
-- Unique constraint to prevent duplicate assignments
+### Current Implementation
+Walkthroughs and step management are already built via the authoring UI sub-feature. This feature focuses purely on the assignment relationship between existing walkthroughs and MCP servers.
 
-## Core Components
+### Composition Pattern
+Follows the standard async server component pattern with promises passed to client components; oRPC server actions for mutations; React 19 `use()` hook for data unwrapping in client components.
 
-### 1. Server Detail Page Enhancement
-**Location**: `/dashboard/servers/[serverId]` - Add new "Walkthroughs" tab
+### Data Model
+The UI manages the `mcp_server_walkthroughs` junction table with fields for `mcpServerId`, `walkthroughId`, `displayOrder`, `isEnabled`, and `assignedAt`.
 
-#### Tab Navigation Update
-```
-[Configuration] [Users] [Sessions] [Walkthroughs] [Analytics]
-```
+## Business Value
 
-#### Tab Header Section
-- **Title**: "Assigned Walkthroughs"
-- **Description**: "Interactive guides available on this server"
-- **Call-to-Action**: Prominently display assignment interface
+### For MCPlatform Customers
+- **Content Reusability**: Create walkthroughs once and deploy across multiple servers efficiently
+- **Flexible Deployment**: Control which guidance appears where based on server context and audience
+- **Operational Efficiency**: Manage walkthrough assignments centrally without duplicating content
+- **User Experience Control**: Fine-tune the order and availability of guidance per server
 
-### 2. Multi-Select Assignment Component
-**Primary Interface**: Based on shadcn-multi-select-component for attaching/detaching walkthroughs
+### For End-Users
+- **Contextual Guidance**: Receive relevant walkthroughs tailored to their specific server/product context
+- **Organized Experience**: Walkthroughs presented in logical order as determined by the customer
+- **Consistent Quality**: Same high-quality walkthrough content deployed consistently across servers
 
-#### Component Specifications
-```typescript
-interface WalkthroughAssignmentProps {
-  availableWalkthroughs: Array<{
-    id: string;
-    title: string;
-    description?: string;
-    stepCount: number;
-  }>;
-  assignedWalkthroughs: string[]; // walkthrough IDs
-  onAssignmentChange: (walkthroughIds: string[]) => void;
-}
-```
+## User Stories
 
-#### Multi-Select Features
-- **Placeholder Text**: "Select walkthroughs to assign..."
-- **Search Functionality**: Filter walkthroughs by title with real-time search
-- **Custom Badge Display**: Shows "walkthrough title + step count" format
-- **Max Count Display**: Show first 3 selections, then "+X more" format
-- **Optional Icons**: Walkthrough type icons for visual differentiation
-- **Smooth Animations**: Bounce animation for selection feedback
-- **Keyboard Navigation**: Full keyboard support for accessibility
-- **Select All/Clear All**: Bulk action options
-- **Responsive Design**: Mobile-compatible layout
+### Primary Users (MCPlatform Customers)
+1. **Server Manager**: **Given** I'm viewing my MCP server details, **when** I want to add interactive guidance, **then** I can assign walkthroughs using a multi-select interface and see them listed with reorder/toggle controls
 
-#### Advanced Multi-Select Props
-```typescript
-interface MultiSelectWalkthroughsProps {
-  availableWalkthroughs: Array<{
-    id: string;
-    title: string;
-    stepCount: number;
-    description?: string;
-  }>;
-  selectedWalkthroughs: string[];
-  onSelectionChange: (selectedIds: string[]) => void;
-  placeholder?: string;
-  maxCount?: number;
-  searchable?: boolean;
-  animation?: "none" | "bounce" | "fade";
-  disabled?: boolean;
-}
-```
+2. **Content Manager**: **Given** I have multiple walkthroughs created, **when** I want to deploy them strategically, **then** I can assign the same walkthrough to multiple servers and control the display order per server
 
-### 3. Assigned Walkthroughs Management Interface
-**Below Multi-Select**: Comprehensive management of current assignments
+3. **Server Administrator**: **Given** I have walkthroughs assigned to my server, **when** I need to temporarily disable guidance without removing it, **then** I can toggle individual walkthroughs on/off and drag to reorder them
 
-#### Draggable Walkthrough List
-- **Drag Handles**: Visual drag indicators for reordering
-- **Display Order Control**: Updates `displayOrder` field in junction table
-- **Visual Feedback**: Clear drag states and drop zones
-- **Reorder Persistence**: Real-time updates to database via oRPC server actions
+4. **Organization Owner**: **Given** I'm managing multiple servers, **when** I want consistent user experiences, **then** I can see which walkthroughs are assigned where and make bulk assignment changes
 
-#### Enable/Disable Toggles
-- **Per-Walkthrough Control**: Individual enable/disable switches
-- **Visual State Indicators**: Clear enabled/disabled visual states
-- **Immediate Feedback**: Optimistic UI updates with server confirmation
-- **Batch Operations**: Select multiple walkthroughs for bulk enable/disable
+## Core Functionality
 
-#### Quick Action Menu
-For each assigned walkthrough:
-- **View**: Navigate to walkthrough detail page
-- **Edit**: Direct link to walkthrough editor
-- **Remove Assignment**: Remove from server (with confirmation dialog)
-- **Preview**: Test walkthrough experience in context
+### Server Detail Page Enhancement
+- **New Walkthroughs Tab**: Add "Walkthroughs" tab to existing server detail page tab navigation
+- **Assignment Interface**: Prominent multi-select component for attaching/detaching walkthroughs
+- **Management Controls**: Drag-and-drop reordering and enable/disable toggles for assigned walkthroughs
 
-### 4. Configuration Controls
+### Multi-Select Assignment Component
+- **Shared Component**: Uses the same `MultiSelectWalkthroughs` component established in the authoring UI feature
+- **Search and Filter**: Real-time search functionality with walkthrough title filtering
+- **Visual Feedback**: Custom badge display showing walkthrough title and step count
+- **Accessibility**: Full keyboard navigation and screen reader support
 
-#### Drag-and-Drop Reordering
-- **Implementation**: Using @dnd-kit or react-beautiful-dnd
-- **Visual Feedback**: Clear drag states, drop zones, and reordering previews
-- **Persistence**: Real-time updates via oRPC server actions
-- **Error Handling**: Rollback on failure with user notification
-- **Accessibility**: Keyboard-based reordering alternative
+### Assigned Walkthroughs Management
+- **Drag-and-Drop Reordering**: Visual drag handles for reordering walkthroughs with display order persistence
+- **Enable/Disable Toggles**: Individual switches to temporarily disable walkthroughs without removing assignments
+- **Quick Actions**: View walkthrough details, remove assignments with confirmation dialogs
+- **Visual State Management**: Clear enabled/disabled visual states with optimistic UI updates
 
-#### Enable/Disable Toggle System
-- **Per-Assignment Control**: Each server assignment can be independently enabled/disabled
-- **Visual States**: Clear indication of enabled (active) vs disabled (muted) walkthroughs
-- **Bulk Operations**: Select multiple assignments for batch toggle operations
-- **Status Persistence**: Updates `isEnabled` field in junction table
-- **Real-time Updates**: Immediate UI feedback with server synchronization
+### Cross-Interface Consistency
+- **Bidirectional Assignment**: Same assignment interface accessible from both server detail pages and walkthrough detail pages
+- **Consistent UX**: Same interaction patterns and visual design across both contexts
+- **Shared Components**: Single implementation maintained for reuse across interfaces
 
-### 5. Empty States & User Guidance
+## Requirements
 
-#### No Walkthroughs Assigned State
-- **Visual**: Empty state illustration or icon
-- **Message**: "No walkthroughs assigned"
-- **Guidance**: "Use the selector above to assign walkthroughs to this server"
-- **Call-to-Action**: Prominent "Assign Walkthroughs" button
+### Functional Requirements
+- **Assignment Management**: Create, read, update, and delete walkthrough-to-server assignments
+- **Display Order Control**: Drag-and-drop reordering that updates the `displayOrder` field in real-time
+- **Enable/Disable Functionality**: Toggle walkthrough visibility per server without removing assignments
+- **Search and Filter**: Real-time search within multi-select for organizations with many walkthroughs
+- **Empty State Handling**: Appropriate messaging for no assignments and no available walkthroughs
 
-#### No Available Walkthroughs State
-- **Context**: When organization has no published walkthroughs
-- **Message**: "No walkthroughs available"
-- **Guidance**: "Create walkthroughs in the Walkthroughs section first"
-- **Action**: Link to walkthrough creation flow
+### Non-Functional Requirements
 
-### 6. Real-Time Assignment Updates
-- **Optimistic Updates**: Immediate UI feedback for assignment changes
-- **Server Synchronization**: All changes persisted via oRPC server actions
-- **Error Handling**: Graceful rollback on server errors with user notification
-- **Cross-Tab Updates**: Changes reflected across multiple browser tabs/windows
-- **Conflict Resolution**: Handle concurrent assignment changes by multiple users
+#### Security & Permissions
+- **Organization Scoping**: All operations restricted to user's organization
+- **Server Ownership Validation**: Users can only assign walkthroughs to servers they own
+- **Walkthrough Access Control**: Users can only assign walkthroughs they have access to
 
-### 7. Component Integration Patterns
+#### User Experience
+- **Optimistic Updates**: Immediate UI feedback before server confirmation
+- **Error Recovery**: Automatic rollback on server action failures with clear user messaging
+- **Responsive Design**: Interface works effectively on mobile and desktop devices
 
-#### oRPC Server Actions Integration
-All assignment operations handled via server actions:
-```typescript
-// Example server actions for assignment management
-export const assignWalkthroughToServer = base
-    .input(z.object({
-        serverId: z.string(),
-        walkthroughId: z.string(),
-        displayOrder: z.number().optional()
-    }))
-    .handler(async ({ input, errors }) => {
-        const session = await requireSession()
-        // Business logic for assignment
-        await db.insert(mcpServerWalkthroughs).values({...})
-        revalidatePath(`/dashboard/servers/${input.serverId}`)
-        return { success: true }
-    })
-    .actionable({})
-
-export const updateWalkthroughOrder = base
-    .input(z.object({
-        serverId: z.string(),
-        walkthroughOrders: z.array(z.object({
-            walkthroughId: z.string(),
-            displayOrder: z.number()
-        }))
-    }))
-    .handler(async ({ input, errors }) => {
-        // Batch update display orders
-        // Revalidate affected paths
-    })
-    .actionable({})
-```
-
-#### State Management Architecture
-- **Server-Side State**: All assignment data managed server-side
-- **Client-Side Optimistic Updates**: Immediate UI feedback before server confirmation
-- **Error Recovery**: Automatic rollback on server action failures
-- **URL State Integration**: Using `nuqs` for assignment filter states
-
-### 8. Cross-Interface Consistency
-
-#### Walkthrough Detail Page Integration
-**Quick Server Assignment Section**: 
-- Expandable section in walkthrough detail pages
-- Same multi-select component for consistent UX
-- Live preview of which servers have this walkthrough assigned
-
-#### Bidirectional Assignment Flow
-- **From Server Page**: Assign any available walkthrough to current server
-- **From Walkthrough Page**: Assign current walkthrough to any available server
-- **Consistent UI**: Same components and patterns in both contexts
-
-### 9. Performance Optimizations
-
-#### Component-Level Optimizations
-- **Lazy Loading**: Walkthrough content loaded on-demand
-- **Virtual Scrolling**: For organizations with many walkthroughs
-- **Debounced Search**: Efficient filtering without excessive API calls
-- **Memoized Components**: Prevent unnecessary re-renders during drag operations
-
-#### Data Fetching Strategy
-- **Server Components**: Pass data promises from server components
-- **Client Components**: Use React 19 `use()` hook to unwrap promises
-- **Caching**: Strategic caching of walkthrough lists for multi-select components
-
-### 10. Accessibility & Usability
-
-#### Keyboard Navigation
-- **Multi-Select**: Full keyboard support for selection operations
-- **Drag-and-Drop**: Keyboard alternative for reordering
-- **Toggle Controls**: Space/Enter activation for enable/disable toggles
-
-#### Screen Reader Support
-- **Aria Labels**: Comprehensive labeling for all interactive elements
-- **Live Regions**: Announcements for assignment changes
-- **Focus Management**: Proper focus handling during dynamic updates
-
-#### Mobile Responsiveness
-- **Touch-Friendly**: Larger touch targets for mobile interaction
+#### Mobile Support
+- **Touch-Friendly Interactions**: Larger touch targets for mobile drag-and-drop operations
 - **Responsive Layout**: Stacked layout on smaller screens
-- **Gesture Support**: Touch-based drag and drop for reordering
+- **Gesture Support**: Touch-based interactions for reordering
 
-## Technical Implementation Details
+## Design Considerations
 
-### Database Operations
-All assignment operations interact with the `mcp_server_walkthroughs` junction table:
-- **CREATE**: Add new walkthrough assignments
-- **UPDATE**: Modify display order and enable/disable status
-- **DELETE**: Remove walkthrough assignments
-- **READ**: Query assignments for display and management
+### Layout & UI
+- **Tab Integration**: New "Walkthroughs" card in existing server detail page tab navigation
+- **Assignment Section**: Multi-select component prominently displayed with clear call-to-action
+- **Management List**: Assigned walkthroughs displayed below with drag handles and toggles
+- **Empty States**: Consistent with existing dashboard empty state patterns
 
-### Security & Authorization
-- **Organization Scoping**: All operations properly scoped to user's organization
-- **Server Ownership**: Users can only assign walkthroughs to servers they own
-- **Permission Validation**: Server-side validation of all assignment operations
+### Responsive Behavior
+- **Desktop Layout**: Full three-column layout with multi-select, assigned list, and quick actions
+- **Tablet Layout**: Condensed layout with collapsible sections
+- **Mobile Layout**: Single-column stacked layout with touch-optimized controls
 
-### Error Handling & Edge Cases
-- **Concurrent Updates**: Handle multiple users modifying assignments simultaneously
-- **Network Failures**: Graceful degradation and retry mechanisms
-- **Data Consistency**: Ensure junction table integrity during bulk operations
-- **Validation**: Client and server-side validation of assignment constraints
+### State Management
+- **Server-Side State**: All assignment data managed server-side with proper organization scoping
+- **Error Handling**: user notification on server action failures
 
-## Success Metrics
-- **Assignment Completion Rate**: % of walkthroughs that get assigned to at least one server
-- **Multi-Server Usage**: Average number of servers per walkthrough assignment
-- **Configuration Changes**: Frequency of reordering and enable/disable operations
-- **User Task Completion**: Time to complete walkthrough assignment tasks
+## Implementation Considerations
+
+### Technical Architecture
+- **Junction Table Operations**: All assignment operations interact with `mcp_server_walkthroughs` table
+- **oRPC Server Actions**: Assignment operations handled via server actions with proper validation
+- **Component Reuse**: Leverage existing `MultiSelectWalkthroughs` component from authoring UI
+
+### Dependencies
+- **Walkthrough Authoring UI**: Depends on completed walkthrough and step management functionality
+- **Existing Server Detail Page**: Integrates with current server detail page tab structure
+- **Multi-Select Component**: Requires shared component implementation
+
+## Success Criteria
+
+### Core Functionality
+- **Assignment Interface Works**: Users can successfully assign/remove walkthroughs to/from servers
+- **Reordering Functions**: Drag-and-drop reordering updates display order correctly
+- **Toggle Controls Operate**: Enable/disable toggles work without removing assignments
+- **Empty States Guide Users**: Clear guidance when no walkthroughs are assigned or available
+
+### User Experience
+- **Consistent Patterns**: Same multi-select component behavior across server and walkthrough pages
+- **Responsive Design**: Interface works effectively on mobile and desktop
+- **Error Recovery**: Failed operations provide clear feedback and recovery options
+
+### Technical Implementation
+- **Organization Scoping**: All operations properly restricted to user's organization
+- **Data Integrity**: Junction table operations maintain referential integrity
+- **Performance**: Interface remains responsive with large numbers of walkthroughs
+
+## Scope Boundaries
+
+### Definitely In Scope
+- **Multi-select assignment interface** for attaching/detaching walkthroughs to servers
+- **Drag-and-drop reordering** of assigned walkthroughs with display order persistence
+- **Enable/disable toggles** for temporarily disabling walkthroughs per server
+- **Empty state handling** for no assignments and no available walkthroughs
+- **Bidirectional assignment flow** from both server and walkthrough detail pages
+
+### Definitely Out of Scope
+- **Walkthrough creation/editing** (handled by authoring UI sub-feature)
+- **Step management** (handled by existing walkthrough authoring)
+- **Content editing** (handled by existing walkthrough editor)
+- **Analytics/reporting** (separate feature area)
+- **Bulk walkthrough operations** across multiple servers
+
+### Future Considerations
+- **Assignment templates** for quickly assigning common walkthrough sets
+- **Assignment analytics** showing usage patterns across servers
+- **Conditional assignments** based on server properties or user segments
+
+## Open Questions & Risks
+
+### Questions Needing Resolution
+- **Drag Library Choice**: Confirm @dnd-kit vs react-beautiful-dnd for drag-and-drop implementation
+- **Mobile UX**: Validate touch-based reordering experience on mobile devices
+- **Performance Limits**: Determine virtual scrolling requirements for large walkthrough lists
+
+### Identified Risks
+- **Component Coordination**: Risk of inconsistent behavior between shared multi-select components
+- **Data Consistency**: Risk of junction table integrity issues during concurrent operations
+- **User Confusion**: Risk of unclear assignment state when walkthroughs are disabled vs removed
+
+## Next Steps
+- **Component Implementation**: Build shared `MultiSelectWalkthroughs` component if not already complete
+- **Server Detail Page Integration**: Add new "Walkthroughs" tab to existing server detail pages
+- **Server Actions**: Implement oRPC actions for assignment operations with proper validation
+- Ready for implementation planning
 
 ## Related Documents
-- [UI Ideation](../thoughts/ui-ideation.md) - Detailed UI specifications and component designs
-- [Technical Specification](../thoughts/technical-specification.md) - Database schema and data architecture
+- [Walkthrough Authoring UI](../02-walkthrough-authoring-ui/feature.md) - Complementary authoring interface
 - [Parent Feature](../feature.md) - Overall interactive walkthrough system context
+- [UI Ideation](../thoughts/ui-ideation.md) - Detailed UI specifications and component designs

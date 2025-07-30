@@ -16,13 +16,13 @@ When this command is invoked:
 I'll help you create a detailed implementation strategy. Let me start by understanding the requirements.
 
 Please provide:
-1. The requirements document path (e.g., specifications/feature-name/requirements.md)
+1. The requirements document path (e.g., specifications/feature-name/feature.md)
 2. Any existing research or related implementations
 3. Any technical constraints or preferences
 
 I'll analyze the requirements and work with you to create a comprehensive implementation strategy.
 
-Tip: You can invoke this command with requirements: `/create_implementation_strategy specifications/feature-name/requirements.md`
+Tip: You can invoke this command with requirements: `/create_implementation_strategy specifications/feature-name/feature.md`
 ```
 
 Then wait for the user's input.
@@ -32,7 +32,7 @@ Then wait for the user's input.
 ### Step 1: Requirements Analysis & Research
 
 1. **Read requirements document completely**:
-   should be at `specifications/feature-name/requirements.md` or similar.
+   should be at `specifications/feature-name/feature.md` or similar.
    - Use the Read tool WITHOUT limit/offset parameters
    - Understand all user stories and functional requirements
    - Note any design considerations and constraints
@@ -218,7 +218,7 @@ Then wait for the user's input.
 [If applicable, how to handle existing data/systems]
 
 ## References 
-* Original ticket: `specifications/feature-name/requirements.md`
+* Original ticket: `specifications/feature-name/feature.md`
 * related research: `specifications/feature-name/artifacts/something.md`, `specifications/artifacts/something-else.md`
 * similar implementation: `/path/to/file.ext:line`
 

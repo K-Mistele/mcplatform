@@ -152,7 +152,7 @@ In contrast, the 01-better-session-support implementation plan contains **partia
 ## Specification Document Status Assessment
 
 ### 03-Interactive-Walkthrough Specifications: ✅ UP-TO-DATE
-- **requirements.md**: Accurately reflects implemented functionality
+- **feature.md**: Accurately reflects implemented functionality
 - **feature.md**: Matches actual architecture and capabilities
 - **implementation-plan.md**: Status marked as "implemented" and is accurate
 

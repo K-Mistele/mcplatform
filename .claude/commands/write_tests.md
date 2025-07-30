@@ -51,25 +51,38 @@ Then wait for the user's input.
 
 ## Test Setup
 
-### Database Setup
+### Database Setup and Resource Tracking
 ```typescript
+import { afterAll, beforeAll, beforeEach, describe, expect, test } from 'bun:test'
 import { db, schema } from 'database'
 import { nanoid } from 'common/nanoid'
 
+// CRITICAL: Track all created resources for cleanup
+const createdResources = {
+    organizations: new Set<string>(),
+    servers: new Set<string>(),
+    walkthroughs: new Set<string>(),
+    assignments: new Set<string>(),
+    steps: new Set<string>(),
+    users: new Set<string>(),
+    sessions: new Set<string>()
+}
+
 // Use the real database - tests should run against a test database
-// Create real records, don't mock them
-const testOrg = await db.insert(schema.organization).values({
+// Create real records and TRACK THEM
+const [testOrg] = await db.insert(schema.organization).values({
     id: `org_${nanoid(8)}`,
     name: 'Test Organization',
     slug: 'test-org',
     createdAt: new Date()
 }).returning()
+createdResources.organizations.add(testOrg.id)
 ```
 
 ### Authentication Setup
 ```typescript
-// Create real sessions and users in the database
-const testUser = await db.insert(schema.user).values({
+// Create real sessions and users in the database AND TRACK THEM
+const [testUser] = await db.insert(schema.user).values({
     id: `user_${nanoid(8)}`,
     email: 'test@example.com',
     emailVerified: true,
@@ -77,11 +90,12 @@ const testUser = await db.insert(schema.user).values({
     createdAt: new Date(),
     updatedAt: new Date()
 }).returning()
+createdResources.users.add(testUser.id)
 
-const testSession = await db.insert(schema.session).values({
+const [testSession] = await db.insert(schema.session).values({
     id: `sess_${nanoid(8)}`,
-    userId: testUser[0].id,
-    activeOrganizationId: testOrg[0].id,
+    userId: testUser.id,
+    activeOrganizationId: testOrg.id,
     expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000),
     token: `token_${nanoid(16)}`,
     ipAddress: '127.0.0.1',
@@ -89,6 +103,7 @@ const testSession = await db.insert(schema.session).values({
     createdAt: new Date(),
     updatedAt: new Date()
 }).returning()
+createdResources.sessions.add(testSession.id)
 ```
 
 ## Testing oRPC Actions
@@ -132,32 +147,80 @@ import { headers } from 'next/headers'
 
 ### Good Test File Structure
 ```typescript
-import { afterAll, beforeAll, describe, expect, test } from 'bun:test'
+import { afterAll, beforeAll, beforeEach, describe, expect, test } from 'bun:test'
 import { db, schema } from 'database'
 import { nanoid } from 'common/nanoid'
+import { eq } from 'drizzle-orm'
 import { actualActionFromApp } from '@/lib/orpc/actions'
 
 describe('Feature: Walkthrough Management', () => {
-    // Track created resources for cleanup
-    const cleanup = {
-        organizations: [],
-        users: [],
-        sessions: [],
-        walkthroughs: []
+    // Track created resources for cleanup - USE SETS TO AVOID DUPLICATES
+    const createdResources = {
+        organizations: new Set<string>(),
+        servers: new Set<string>(),
+        walkthroughs: new Set<string>(),
+        assignments: new Set<string>(),
+        steps: new Set<string>(),
+        users: new Set<string>(),
+        sessions: new Set<string>()
     }
     
     beforeAll(async () => {
         // Set up test data using real database
+        // TRACK EVERY RESOURCE YOU CREATE
     })
     
     afterAll(async () => {
-        // Clean up all created DB records reverse order of creation
-        // Respect foreign key constraints
+        // Clean up ONLY the specific resources we created
+        // Delete in reverse order of foreign key dependencies
+        
+        // Delete assignments first (they reference servers and walkthroughs)
+        for (const serverId of createdResources.servers) {
+            await db.delete(schema.mcpServerWalkthroughs)
+                .where(eq(schema.mcpServerWalkthroughs.mcpServerId, serverId))
+        }
+        
+        // Delete steps (they reference walkthroughs)
+        for (const stepId of createdResources.steps) {
+            await db.delete(schema.walkthroughSteps)
+                .where(eq(schema.walkthroughSteps.id, stepId))
+        }
+        
+        // Delete walkthroughs
+        for (const walkthroughId of createdResources.walkthroughs) {
+            await db.delete(schema.walkthroughs)
+                .where(eq(schema.walkthroughs.id, walkthroughId))
+        }
+        
+        // Delete servers
+        for (const serverId of createdResources.servers) {
+            await db.delete(schema.mcpServers)
+                .where(eq(schema.mcpServers.id, serverId))
+        }
+        
+        // Delete sessions before users
+        for (const sessionId of createdResources.sessions) {
+            await db.delete(schema.session)
+                .where(eq(schema.session.id, sessionId))
+        }
+        
+        // Delete users
+        for (const userId of createdResources.users) {
+            await db.delete(schema.user)
+                .where(eq(schema.user.id, userId))
+        }
+        
+        // Delete organizations last
+        for (const orgId of createdResources.organizations) {
+            await db.delete(schema.organization)
+                .where(eq(schema.organization.id, orgId))
+        }
     })
     
     test('complete user flow for creating and editing walkthrough', async () => {
         // Test the actual flow a user would experience
         // Use real actions, verify real database state
+        // TRACK EVERY RESOURCE CREATED IN THE TEST
     })
 })
 ```
@@ -177,6 +240,34 @@ const mockDb = {
 
 // DON'T DO THIS
 spyOn(authModule, 'requireSession').mockResolvedValue(mockSession)
+```
+
+### Bad Example - Deleting Entire Tables
+```typescript
+// NEVER DO THIS - This is destructive and affects other tests
+beforeEach(async () => {
+    await db.delete(schema.mcpServerWalkthroughs)  // WRONG!
+    await db.delete(schema.walkthroughs)           // WRONG!
+    await db.delete(schema.mcpServers)             // WRONG!
+    await db.delete(schema.organization)           // WRONG!
+})
+
+// DO THIS INSTEAD - Track and clean up specific resources
+const createdResources = {
+    servers: new Set<string>()
+}
+
+test('...', async () => {
+    const [server] = await db.insert(schema.mcpServers).values({...}).returning()
+    createdResources.servers.add(server.id)  // Track it!
+})
+
+afterAll(async () => {
+    for (const serverId of createdResources.servers) {
+        await db.delete(schema.mcpServers)
+            .where(eq(schema.mcpServers.id, serverId))  // Delete only what we created
+    }
+})
 ```
 
 ### Bad Example - Testing Implementation Details
@@ -204,18 +295,50 @@ describe('Walkthrough Schema Validation', () => {
 
 ## Test Utilities
 
+### CRITICAL: Resource Tracking Pattern
+```typescript
+// ALWAYS use this pattern for resource tracking
+const createdResources = {
+    organizations: new Set<string>(),  // Use Sets to avoid duplicates
+    servers: new Set<string>(),
+    walkthroughs: new Set<string>(),
+    // ... etc
+}
+
+// When creating resources:
+const [server] = await createMcpServerAction({...})
+if (server) createdResources.servers.add(server.id)  // ALWAYS TRACK!
+
+// When creating multiple resources:
+const results = await Promise.all([...])
+results.forEach(([error, data]) => {
+    if (data) createdResources.walkthroughs.add(data.id)  // TRACK EACH ONE!
+})
+```
+
 ### Database Cleanup Helper
 ```typescript
-async function cleanupTestData(cleanup: Record<string, string[]>) {
+async function cleanupTestResources(resources: Record<string, Set<string>>) {
     // Clean up in reverse order to respect FK constraints
-    const tables = ['walkthroughSteps', 'walkthroughs', 'sessions', 'users', 'organizations']
+    const cleanupOrder = [
+        { table: 'mcpServerWalkthroughs', field: 'mcpServerId', resourceKey: 'servers' },
+        { table: 'walkthroughSteps', field: 'id', resourceKey: 'steps' },
+        { table: 'walkthroughs', field: 'id', resourceKey: 'walkthroughs' },
+        { table: 'mcpServers', field: 'id', resourceKey: 'servers' },
+        { table: 'session', field: 'id', resourceKey: 'sessions' },
+        { table: 'user', field: 'id', resourceKey: 'users' },
+        { table: 'organization', field: 'id', resourceKey: 'organizations' }
+    ]
     
-    for (const table of tables) {
-        const ids = cleanup[table] || []
-        for (const id of ids) {
-            await db.delete(schema[table])
-                .where(eq(schema[table].id, id))
-                .catch(() => {}) // Ignore if already deleted
+    for (const { table, field, resourceKey } of cleanupOrder) {
+        const resourceIds = resources[resourceKey] || new Set()
+        for (const id of resourceIds) {
+            try {
+                await db.delete(schema[table])
+                    .where(eq(schema[table][field], id))
+            } catch (err) {
+                // Resource might already be deleted by cascade
+            }
         }
     }
 }
@@ -318,11 +441,14 @@ bun test packages/dashboard/tests/03-interactive-walkthrough/walkthrough-crud.te
 
 1. **Test what the app actually uses** - If the app calls oRPC actions, test those
 2. **Use real database** - No mocking of database operations
-3. **Clean up after tests** - Track created resources and delete them
-4. **Test user flows** - Not technical implementation layers
-5. **One test file per feature** - Not per technical concern
-6. **Verify real state** - Check actual database records, not mocked returns
-7. **Test error cases** - But with real errors from real operations
+3. **TRACK EVERY RESOURCE** - Use Sets to track IDs of all created resources
+4. **CLEAN UP ONLY WHAT YOU CREATED** - Never delete entire tables
+5. **Clean up in correct order** - Respect foreign key constraints
+6. **Test user flows** - Not technical implementation layers
+7. **One test file per feature** - Not per technical concern
+8. **Verify real state** - Check actual database records, not mocked returns
+9. **Test error cases** - But with real errors from real operations
+10. **NEVER use beforeEach to delete entire tables** - This is destructive
 
 ## Example: Complete Feature Test
 
@@ -336,7 +462,22 @@ import {
 } from '@/lib/orpc/actions'
 
 describe('Walkthrough CRUD Operations', () => {
-    const cleanup = { walkthroughs: [] }
+    // Use Sets for tracking to avoid duplicates
+    const createdResources = {
+        organizations: new Set<string>(),
+        walkthroughs: new Set<string>()
+    }
+    
+    beforeAll(async () => {
+        // Create test org if needed
+        const [org] = await db.insert(schema.organization).values({
+            id: 'test-org-id',
+            name: 'Test Organization',
+            slug: 'test-org',
+            createdAt: new Date()
+        }).returning()
+        createdResources.organizations.add(org.id)
+    })
     
     test('should handle complete walkthrough lifecycle', async () => {
         // Create
@@ -347,8 +488,10 @@ describe('Walkthrough CRUD Operations', () => {
         })
         
         expect(createError).toBeNull()
-        expect(walkthrough.title).toBe('API Integration Guide')
-        cleanup.walkthroughs.push(walkthrough.id)
+        expect(walkthrough).toBeDefined()
+        if (walkthrough) {
+            expect(walkthrough.title).toBe('API Integration Guide')
+            createdResources.walkthroughs.add(walkthrough.id)  // Track it!
         
         // Update
         const [updateError, updated] = await updateWalkthroughAction({
@@ -385,14 +528,20 @@ describe('Walkthrough CRUD Operations', () => {
     })
     
     afterAll(async () => {
-        // Cleanup any remaining test data
-        for (const id of cleanup.walkthroughs) {
+        // Clean up specific resources in correct order
+        for (const walkthroughId of createdResources.walkthroughs) {
             await db.delete(schema.walkthroughs)
-                .where(eq(schema.walkthroughs.id, id))
+                .where(eq(schema.walkthroughs.id, walkthroughId))
+                .catch(() => {})
+        }
+        
+        for (const orgId of createdResources.organizations) {
+            await db.delete(schema.organization)
+                .where(eq(schema.organization.id, orgId))
                 .catch(() => {})
         }
     })
 })
 ```
 
-Remember: **Test the real thing, not a mock of the thing.**
+Remember: **Test the real thing, not a mock of the thing. Track every resource you create. Clean up only what you created.**
