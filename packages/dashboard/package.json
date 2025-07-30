@@ -33,6 +33,7 @@
         "@orpc/client": "^1.6.8",
         "@orpc/react": "^1.6.8",
         "@orpc/server": "^1.6.8",
+        "@radix-ui/react-alert-dialog": "^1.1.14",
         "@radix-ui/react-avatar": "^1.1.10",
         "@radix-ui/react-checkbox": "^1.3.2",
         "@radix-ui/react-collapsible": "^1.1.11",
