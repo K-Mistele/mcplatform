@@ -2,6 +2,7 @@ import { db, schema } from 'database'
 import { and, asc, eq } from 'drizzle-orm'
 import { notFound } from 'next/navigation'
 import { Suspense } from 'react'
+import { ErrorBoundary } from '@/components/error-boundary'
 import { WalkthroughEditor } from '@/components/walkthrough-editor'
 import { requireSession } from '@/lib/auth/auth'
 
@@ -59,22 +60,24 @@ export default async function WalkthroughEditorPage({
 
     return (
         <div className="h-screen flex flex-col">
-            <Suspense
-                fallback={
-                    <div className="h-full flex items-center justify-center">
-                        <div className="space-y-4 text-center">
-                            <div className="h-8 bg-gray-200 rounded animate-pulse w-64 mx-auto" />
-                            <div className="h-4 bg-gray-200 rounded animate-pulse w-48 mx-auto" />
+            <ErrorBoundary>
+                <Suspense
+                    fallback={
+                        <div className="h-full flex items-center justify-center">
+                            <div className="space-y-4 text-center">
+                                <div className="h-8 bg-gray-200 rounded animate-pulse w-64 mx-auto" />
+                                <div className="h-4 bg-gray-200 rounded animate-pulse w-48 mx-auto" />
+                            </div>
                         </div>
-                    </div>
-                }
-            >
-                <WalkthroughEditor
-                    walkthroughPromise={walkthroughPromise}
-                    stepsPromise={stepsPromise}
-                    selectedStepId={selectedStepId}
-                />
-            </Suspense>
+                    }
+                >
+                    <WalkthroughEditor
+                        walkthroughPromise={walkthroughPromise}
+                        stepsPromise={stepsPromise}
+                        selectedStepId={selectedStepId}
+                    />
+                </Suspense>
+            </ErrorBoundary>
         </div>
     )
 }

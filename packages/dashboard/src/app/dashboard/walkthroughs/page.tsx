@@ -1,6 +1,7 @@
 import { db, schema } from 'database'
 import { and, desc, eq, sql } from 'drizzle-orm'
 import { Suspense } from 'react'
+import { ErrorBoundary } from '@/components/error-boundary'
 import { WalkthroughsClient } from '@/components/walkthroughs-client'
 import { requireSession } from '@/lib/auth/auth'
 
@@ -23,17 +24,19 @@ export default async function WalkthroughsPage() {
 
     return (
         <div className="container mx-auto px-4 py-8">
-            <Suspense
-                fallback={
-                    <div className="space-y-4">
-                        <div className="h-8 bg-gray-200 rounded animate-pulse" />
-                        <div className="h-4 bg-gray-200 rounded animate-pulse w-2/3" />
-                        <div className="h-64 bg-gray-200 rounded animate-pulse" />
-                    </div>
-                }
-            >
-                <WalkthroughsClient walkthroughsPromise={walkthroughsPromise} />
-            </Suspense>
+            <ErrorBoundary>
+                <Suspense
+                    fallback={
+                        <div className="space-y-4">
+                            <div className="h-8 bg-gray-200 rounded animate-pulse" />
+                            <div className="h-4 bg-gray-200 rounded animate-pulse w-2/3" />
+                            <div className="h-64 bg-gray-200 rounded animate-pulse" />
+                        </div>
+                    }
+                >
+                    <WalkthroughsClient walkthroughsPromise={walkthroughsPromise} />
+                </Suspense>
+            </ErrorBoundary>
         </div>
     )
 }
