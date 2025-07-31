@@ -9,7 +9,7 @@ import {
     DialogHeader,
     DialogTitle
 } from '@/components/ui/dialog'
-import { editSupportTicketComment } from '@/lib/orpc/actions'
+import { editSupportTicketComment } from '@/lib/orpc/actions/support-tickets'
 import { isDefinedError, onError, onSuccess } from '@orpc/client'
 import { useServerAction } from '@orpc/react/hooks'
 import { useState } from 'react'
@@ -23,12 +23,7 @@ interface EditCommentDialogProps {
     initialContent: string
 }
 
-export function EditCommentDialog({
-    open,
-    onOpenChange,
-    activityId,
-    initialContent
-}: EditCommentDialogProps) {
+export function EditCommentDialog({ open, onOpenChange, activityId, initialContent }: EditCommentDialogProps) {
     const [content, setContent] = useState(initialContent)
 
     const { execute: saveEdit, status } = useServerAction(editSupportTicketComment, {
@@ -77,9 +72,11 @@ export function EditCommentDialog({
             <DialogContent className="sm:max-w-[600px]">
                 <DialogHeader>
                     <DialogTitle>Edit Comment</DialogTitle>
-                    <DialogDescription>Make changes to your comment. You can use markdown formatting.</DialogDescription>
+                    <DialogDescription>
+                        Make changes to your comment. You can use markdown formatting.
+                    </DialogDescription>
                 </DialogHeader>
-                
+
                 <div className="space-y-4">
                     <RichTextEditor
                         value={content}

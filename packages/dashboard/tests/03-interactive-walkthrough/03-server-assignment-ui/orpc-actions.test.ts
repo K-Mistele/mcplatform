@@ -1,14 +1,14 @@
-import { afterAll, beforeAll, beforeEach, describe, expect, mock, test } from 'bun:test'
-import { nanoid } from 'common/nanoid'
-import { db, schema } from 'database'
-import { eq } from 'drizzle-orm'
 import {
     assignWalkthroughsToServerAction,
     getServerWalkthroughsAction,
     removeWalkthroughAssignmentAction,
     reorderServerWalkthroughsAction,
     updateWalkthroughAssignmentAction
-} from '../../../src/lib/orpc/actions'
+} from '@/lib/orpc/actions/walkthrough-assignment'
+import { afterAll, beforeAll, beforeEach, describe, expect, mock, test } from 'bun:test'
+import { nanoid } from 'common/nanoid'
+import { db, schema } from 'database'
+import { eq } from 'drizzle-orm'
 
 // Mock dependencies
 mock.module('../../../src/lib/auth/auth', () => ({
@@ -56,7 +56,7 @@ describe('Walkthrough Assignment oRPC Actions', () => {
             .returning()
         testOrganization = org
         createdResources.organizations.add(org.id)
-        
+
         // Update mock to use the actual org ID
         mock.module('../../../src/lib/auth/auth', () => ({
             requireSession: mock(() => ({
@@ -74,9 +74,7 @@ describe('Walkthrough Assignment oRPC Actions', () => {
         // Clean up created resources in reverse order
         // Delete assignments
         for (const serverId of createdResources.servers) {
-            await db
-                .delete(schema.mcpServerWalkthroughs)
-                .where(eq(schema.mcpServerWalkthroughs.mcpServerId, serverId))
+            await db.delete(schema.mcpServerWalkthroughs).where(eq(schema.mcpServerWalkthroughs.mcpServerId, serverId))
         }
 
         // Delete walkthroughs
@@ -108,7 +106,6 @@ describe('Walkthrough Assignment oRPC Actions', () => {
     })
 
     beforeEach(async () => {
-
         // Create test server with unique slug
         const [server] = await db
             .insert(schema.mcpServers)
@@ -154,8 +151,8 @@ describe('Walkthrough Assignment oRPC Actions', () => {
         testWalkthrough1 = walkthroughs[0]
         testWalkthrough2 = walkthroughs[1]
         testWalkthrough3 = walkthroughs[2]
-        
-        walkthroughs.forEach(w => createdResources.walkthroughs.add(w.id))
+
+        walkthroughs.forEach((w) => createdResources.walkthroughs.add(w.id))
     })
 
     describe('assignWalkthroughsToServerAction', () => {

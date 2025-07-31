@@ -3,7 +3,7 @@
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { addSupportTicketCommentWithStatus } from '@/lib/orpc/actions'
+import { addSupportTicketCommentWithStatus } from '@/lib/orpc/actions/support-tickets'
 import { onError, onSuccess } from '@orpc/client'
 import { useServerAction } from '@orpc/react/hooks'
 import { useState } from 'react'

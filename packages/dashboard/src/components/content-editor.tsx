@@ -9,11 +9,11 @@ import { Form, FormControl, FormDescription, FormField, FormItem, FormMessage } 
 import { Input } from '@/components/ui/input'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { Textarea } from '@/components/ui/textarea'
-import { updateWalkthroughStepAction } from '@/lib/orpc/actions'
+import useLocalStorage from '@/hooks/use-local-storage'
+import { updateWalkthroughStepAction } from '@/lib/orpc/actions/walkthroughs'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { isDefinedError, onError, onSuccess } from '@orpc/client'
 import { useServerAction } from '@orpc/react/hooks'
-import useLocalStorage from '@/hooks/use-local-storage'
 import type { Walkthrough, WalkthroughStep } from 'database'
 import { ChevronDownIcon, ChevronRightIcon, InfoIcon, SaveIcon } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
@@ -131,7 +131,7 @@ export function ContentEditor({ walkthrough, step, onSaveStatusChange }: Content
     // Separate draft detection from form reset to avoid race conditions
     useEffect(() => {
         if (!draftChecked) return
-        
+
         let hasDraftData = false
 
         if (draftData) {
@@ -239,7 +239,7 @@ export function ContentEditor({ walkthrough, step, onSaveStatusChange }: Content
         setDraftData(null)
         setHasDraft(false)
         setShowDraftAlert(false)
-        
+
         // Reset form to remote data
         const defaultValues = {
             title: step.title,

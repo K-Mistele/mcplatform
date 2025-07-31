@@ -1,10 +1,5 @@
 'use client'
 
-import { zodResolver } from '@hookform/resolvers/zod'
-import { useState } from 'react'
-import { useForm } from 'react-hook-form'
-import { z } from 'zod'
-
 import { Button } from '@/components/ui/button'
 import {
     Dialog,
@@ -19,11 +14,15 @@ import { Input } from '@/components/ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Switch } from '@/components/ui/switch'
 import { Textarea } from '@/components/ui/textarea'
-import { createWalkthroughAction } from '@/lib/orpc/actions'
+import { createWalkthroughAction } from '@/lib/orpc/actions/walkthroughs'
+import { zodResolver } from '@hookform/resolvers/zod'
 import { isDefinedError, onError, onSuccess } from '@orpc/client'
 import { useServerAction } from '@orpc/react/hooks'
 import { useRouter } from 'next/navigation'
+import { useState } from 'react'
+import { useForm } from 'react-hook-form'
 import { toast } from 'sonner'
+import { z } from 'zod'
 
 const createWalkthroughSchema = z.object({
     title: z.string().min(1, 'Title is required').max(100, 'Title must be 100 characters or less'),
@@ -108,7 +107,7 @@ export function CreateWalkthroughModal({ open, onOpenChange }: CreateWalkthrough
         execute(data)
     }
 
-    const selectedTypeConfig = walkthroughTypes.find(t => t.value === form.watch('type'))
+    const selectedTypeConfig = walkthroughTypes.find((t) => t.value === form.watch('type'))
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
@@ -187,9 +186,7 @@ export function CreateWalkthroughModal({ open, onOpenChange }: CreateWalkthrough
                                         </SelectContent>
                                     </Select>
                                     {selectedTypeConfig && (
-                                        <FormDescription>
-                                            {selectedTypeConfig.description}
-                                        </FormDescription>
+                                        <FormDescription>{selectedTypeConfig.description}</FormDescription>
                                     )}
                                     <FormMessage />
                                 </FormItem>
@@ -204,14 +201,12 @@ export function CreateWalkthroughModal({ open, onOpenChange }: CreateWalkthrough
                                     <div className="space-y-0.5">
                                         <FormLabel className="text-base">Publish Immediately</FormLabel>
                                         <FormDescription>
-                                            Make this walkthrough available to users right away. You can change this later.
+                                            Make this walkthrough available to users right away. You can change this
+                                            later.
                                         </FormDescription>
                                     </div>
                                     <FormControl>
-                                        <Switch
-                                            checked={field.value}
-                                            onCheckedChange={field.onChange}
-                                        />
+                                        <Switch checked={field.value} onCheckedChange={field.onChange} />
                                     </FormControl>
                                 </FormItem>
                             )}
@@ -226,10 +221,7 @@ export function CreateWalkthroughModal({ open, onOpenChange }: CreateWalkthrough
                             >
                                 Cancel
                             </Button>
-                            <Button
-                                type="submit"
-                                disabled={status === 'executing'}
-                            >
+                            <Button type="submit" disabled={status === 'executing'}>
                                 {status === 'executing' ? 'Creating...' : 'Create Walkthrough'}
                             </Button>
                         </DialogFooter>

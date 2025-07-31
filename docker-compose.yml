@@ -30,7 +30,7 @@ services:
            
     inngest: 
         image: inngest/inngest:latest
-        command: "inngest start"
+        command: "inngest start --no-ui"
         ports: 
             - 8288:8288
             - 8289:8289
@@ -39,6 +39,7 @@ services:
             INNGEST_SIGNING_KEY: ${INNGEST_SIGNING_KEY}
             INNGEST_POSTGRES_URI: postgres://postgres:postgres@postgres:5432/inngest
             INNGEST_REDIS_URI: redis://valkey:6379
+            INNGEST_DEV: 0
         depends_on:
             postgres:
                 condition: service_healthy
@@ -51,6 +52,23 @@ services:
             retries: 3
             start_period: 40s
  
+    vectorchord: 
+        image: ghcr.io/tensorchord/vchord-postgres:pg17-v0.4.3
+        ports: 
+            - 5433:5432
+        environment:
+            POSTGRES_USER: postgres
+            POSTGRES_PASSWORD: postgres
+            POSTGRES_DB: postgres
+        volumes:
+            - vectorchord_data:/var/lib/postgresql/data
+        healthcheck:
+            test: ["CMD-SHELL", "pg_isready -U postgres -d postgres"]
+            interval: 5s
+            timeout: 5s
+            retries: 5
+
 volumes:    
   pgvector_data:
-  valkey_data:
+  valkey_data:  
+  vectorchord_data:

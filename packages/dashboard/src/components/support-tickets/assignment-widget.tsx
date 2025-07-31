@@ -2,7 +2,7 @@
 
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { assignSupportTicket } from '@/lib/orpc/actions'
+import { assignSupportTicket } from '@/lib/orpc/actions/support-tickets'
 import { onError, onSuccess } from '@orpc/client'
 import { useServerAction } from '@orpc/react/hooks'
 import { use } from 'react'

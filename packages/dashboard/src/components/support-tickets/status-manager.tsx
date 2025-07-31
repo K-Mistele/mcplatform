@@ -12,7 +12,7 @@ import {
 } from '@/components/ui/dialog'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Textarea } from '@/components/ui/textarea'
-import { updateSupportTicketStatus } from '@/lib/orpc/actions'
+import { updateSupportTicketStatus } from '@/lib/orpc/actions/support-tickets'
 import { onError, onSuccess } from '@orpc/client'
 import { useServerAction } from '@orpc/react/hooks'
 import { useState } from 'react'

@@ -1,13 +1,8 @@
 'use client'
 
 import { Button } from '@/components/ui/button'
-import {
-    DropdownMenu,
-    DropdownMenuContent,
-    DropdownMenuItem,
-    DropdownMenuTrigger
-} from '@/components/ui/dropdown-menu'
-import { deleteSupportTicketComment } from '@/lib/orpc/actions'
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
+import { deleteSupportTicketComment } from '@/lib/orpc/actions/support-tickets'
 import { isDefinedError, onError, onSuccess } from '@orpc/client'
 import { useServerAction } from '@orpc/react/hooks'
 import { EditIcon, MoreHorizontalIcon, TrashIcon } from 'lucide-react'

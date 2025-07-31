@@ -1,5 +1,16 @@
 import { nanoid } from 'common/nanoid'
-import { type AnyPgColumn, bigint, date, index, integer, jsonb, pgEnum, pgTable, text, unique } from 'drizzle-orm/pg-core'
+import {
+    type AnyPgColumn,
+    bigint,
+    date,
+    index,
+    integer,
+    jsonb,
+    pgEnum,
+    pgTable,
+    text,
+    unique
+} from 'drizzle-orm/pg-core'
 import { z } from 'zod'
 import { organization, user } from './auth-schema'
 
@@ -279,3 +290,104 @@ export type Walkthrough = typeof walkthroughs.$inferSelect
 export type McpServerWalkthrough = typeof mcpServerWalkthroughs.$inferSelect
 export type WalkthroughStep = typeof walkthroughSteps.$inferSelect
 export type WalkthroughProgress = typeof walkthroughProgress.$inferSelect
+
+export const retrievalNamespace = pgTable(
+    'retrieval_namespace',
+    {
+        id: text('id')
+            .primaryKey()
+            .$defaultFn(() => `rn_${nanoid(8)}`),
+        organizationId: text('organization_id')
+            .references(() => organization.id, { onDelete: 'cascade' })
+            .notNull(),
+        name: text('name').notNull(),
+        description: text('description'),
+        createdAt: bigint('created_at', { mode: 'number' }).$defaultFn(() => Date.now()),
+        metadata: jsonb('metadata').$defaultFn(() => ({}))
+    },
+    (t) => [index('retrieval_namespace_name_idx').on(t.name)]
+)
+
+export const documents = pgTable(
+    'retrieval_documents',
+    {
+        filePath: text('file_path').primaryKey(),
+        fileName: text('file_name').notNull(),
+        contentType: text('content_type').notNull(),
+        metadata: jsonb('metadata').$defaultFn(() => ({})),
+        tags: jsonb('tags').$type<string[]>().default([]),
+        namespaceId: text('namespace_id')
+            .references(() => retrievalNamespace.id, { onDelete: 'cascade' })
+            .notNull(),
+        organizationId: text('organization_id')
+            .references(() => organization.id, { onDelete: 'cascade' })
+            .notNull(),
+        createdAt: bigint('created_at', { mode: 'number' }).$defaultFn(() => Date.now()),
+        updatedAt: bigint('updated_at', { mode: 'number' }).$defaultFn(() => Date.now())
+    },
+    (t) => [index('retrieval_documents_namespace_id_idx').on(t.namespaceId)]
+)
+/**
+ * TODO - note that we are NOT storing the embeddings since we will use turbopuffer to do that.
+ */
+
+export const chunks = pgTable(
+    'retrieval_chunks',
+    {
+        id: text('id')
+            .primaryKey()
+            .$defaultFn(() => `rc_${nanoid(16)}`),
+        documentId: text('document_id')
+            .references(() => documents.filePath, { onDelete: 'cascade' })
+            .notNull(),
+        namespaceId: text('namespace_id')
+            .references(() => retrievalNamespace.id, { onDelete: 'cascade' })
+            .notNull(),
+        organizationId: text('organization_id')
+            .references(() => organization.id, { onDelete: 'cascade' })
+            .notNull(),
+        originalContent: text('original_content').notNull(),
+        orderInDocument: integer('order_in_document').notNull(),
+        contextualizedContent: text('contextualized_content').notNull(),
+        metadata: jsonb('metadata').$defaultFn(() => ({})),
+        createdAt: bigint('created_at', { mode: 'number' }).$defaultFn(() => Date.now()),
+        updatedAt: bigint('updated_at', { mode: 'number' }).$defaultFn(() => Date.now())
+    },
+    (t) => [
+        index('retrieval_chunks_document_id_idx').on(t.documentId),
+        index('retrieval_chunks_namespace_id_idx').on(t.namespaceId),
+        //index('retrieval_chunks_embedding_index').using('hnsw', t.embedding.op('vector_cosine_ops')),
+        unique('retrieval_chunks_unique_document_order').on(t.documentId, t.orderInDocument)
+    ]
+)
+
+export const images = pgTable(
+    'retrieval_images',
+    {
+        id: text('id')
+            .primaryKey()
+            .$defaultFn(() => `ri_${nanoid(16)}`),
+        url: text('url'),
+        namespaceId: text('namespace_id')
+            .references(() => retrievalNamespace.id, { onDelete: 'cascade' })
+            .notNull(),
+        organizationId: text('organization_id')
+            .references(() => organization.id, { onDelete: 'cascade' })
+            .notNull(),
+        contextualContent: text('contextual_content').notNull(),
+        metadata: jsonb('metadata').$defaultFn(() => ({})),
+        //embedding: vector('embedding', { dimensions: 3072 }), // Gemini's dimensionality
+        createdAt: bigint('created_at', { mode: 'number' }).$defaultFn(() => Date.now()),
+        updatedAt: bigint('updated_at', { mode: 'number' }).$defaultFn(() => Date.now())
+    },
+    (t) => [
+        index('retrieval_images_namespace_id_idx').on(t.namespaceId),
+        //index('retrieval_images_embedding_index').using('hnsw', t.embedding.op('vector_cosine_ops')),
+        unique('retrieval_images_unique_url').on(t.url, t.namespaceId)
+    ]
+)
+
+export type Image = typeof images.$inferSelect
+export type Chunk = typeof chunks.$inferSelect
+export type Document = typeof documents.$inferSelect
+export type Namespace = typeof retrievalNamespace.$inferSelect

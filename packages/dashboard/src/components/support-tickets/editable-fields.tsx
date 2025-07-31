@@ -1,15 +1,14 @@
 'use client'
 
-import { useState, useEffect } from 'react'
-import { useServerAction } from '@orpc/react/hooks'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Textarea } from '@/components/ui/textarea'
-import { updateSupportTicketFields } from '@/lib/orpc/actions'
-import { EditIcon, CheckIcon, XIcon } from 'lucide-react'
-import { onSuccess, onError } from '@orpc/client'
+import { updateSupportTicketFields } from '@/lib/orpc/actions/support-tickets'
+import { onError, onSuccess } from '@orpc/client'
+import { useServerAction } from '@orpc/react/hooks'
+import { CheckIcon, EditIcon, XIcon } from 'lucide-react'
+import { useState } from 'react'
 import { toast } from 'sonner'
 
 interface EditableTitleProps {
@@ -69,20 +68,10 @@ export function EditableTitle({ ticketId, initialValue, onUpdate }: EditableTitl
                         }
                     }}
                 />
-                <Button 
-                    size="sm" 
-                    variant="outline" 
-                    onClick={handleSave}
-                    disabled={status === 'pending'}
-                >
+                <Button size="sm" variant="outline" onClick={handleSave} disabled={status === 'pending'}>
                     <CheckIcon className="h-4 w-4" />
                 </Button>
-                <Button 
-                    size="sm" 
-                    variant="outline" 
-                    onClick={handleCancel}
-                    disabled={status === 'pending'}
-                >
+                <Button size="sm" variant="outline" onClick={handleCancel} disabled={status === 'pending'}>
                     <XIcon className="h-4 w-4" />
                 </Button>
             </div>
@@ -155,19 +144,10 @@ export function EditableDescription({ ticketId, initialValue, onUpdate }: Editab
                     className="w-full"
                 />
                 <div className="flex justify-end gap-2">
-                    <Button 
-                        size="sm" 
-                        variant="outline" 
-                        onClick={handleCancel}
-                        disabled={status === 'pending'}
-                    >
+                    <Button size="sm" variant="outline" onClick={handleCancel} disabled={status === 'pending'}>
                         Cancel
                     </Button>
-                    <Button 
-                        size="sm" 
-                        onClick={handleSave}
-                        disabled={status === 'pending'}
-                    >
+                    <Button size="sm" onClick={handleSave} disabled={status === 'pending'}>
                         Save
                     </Button>
                 </div>
@@ -178,9 +158,7 @@ export function EditableDescription({ ticketId, initialValue, onUpdate }: Editab
     return (
         <div className="group space-y-2">
             <div className="prose prose-sm max-w-none">
-                <p className="text-sm leading-relaxed">
-                    {value || 'No summary provided'}
-                </p>
+                <p className="text-sm leading-relaxed">{value || 'No summary provided'}</p>
             </div>
             <Button
                 size="sm"
@@ -203,18 +181,16 @@ const priorityOptions = [
     { value: 'low', label: 'Low', color: 'bg-green-100 text-green-800 border-green-300' },
     { value: 'medium', label: 'Medium', color: 'bg-blue-100 text-blue-800 border-blue-300' },
     { value: 'high', label: 'High', color: 'bg-orange-100 text-orange-800 border-orange-300' },
-    { value: 'critical', label: 'Critical', color: 'bg-red-100 text-red-800 border-red-300' },
+    { value: 'critical', label: 'Critical', color: 'bg-red-100 text-red-800 border-red-300' }
 ]
 
 export function PriorityDisplay({ currentPriority }: PriorityDisplayProps) {
-    const currentPriorityOption = priorityOptions.find(p => p.value === currentPriority) || priorityOptions[1]
+    const currentPriorityOption = priorityOptions.find((p) => p.value === currentPriority) || priorityOptions[1]
 
     return (
         <div className="space-y-3">
             <div className="text-sm font-medium text-muted-foreground">Priority</div>
-            <Badge className={currentPriorityOption.color}>
-                {currentPriorityOption.label}
-            </Badge>
+            <Badge className={currentPriorityOption.color}>{currentPriorityOption.label}</Badge>
         </div>
     )
 }

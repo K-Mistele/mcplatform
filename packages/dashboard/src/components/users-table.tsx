@@ -1,31 +1,5 @@
 'use client'
 
-import { deleteMcpUsersAction } from '@/lib/orpc/actions'
-import { isDefinedError, onError, onSuccess } from '@orpc/client'
-import { useServerAction } from '@orpc/react/hooks'
-import {
-    IconChevronDown,
-    IconChevronLeft,
-    IconChevronRight,
-    IconChevronsLeft,
-    IconChevronsRight,
-    IconLayoutColumns,
-    IconTrash
-} from '@tabler/icons-react'
-import {
-    type ColumnDef,
-    type ColumnFiltersState,
-    type SortingState,
-    type VisibilityState,
-    flexRender,
-    getCoreRowModel,
-    getFilteredRowModel,
-    getPaginationRowModel,
-    getSortedRowModel,
-    useReactTable
-} from '@tanstack/react-table'
-import * as React from 'react'
-
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
@@ -40,8 +14,33 @@ import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { UserAvatar } from '@/components/user-avatar'
+import { deleteMcpUsersAction } from '@/lib/orpc/actions/mcp-servers'
+import { isDefinedError, onError, onSuccess } from '@orpc/client'
+import { useServerAction } from '@orpc/react/hooks'
+import {
+    IconChevronDown,
+    IconChevronLeft,
+    IconChevronRight,
+    IconChevronsLeft,
+    IconChevronsRight,
+    IconLayoutColumns,
+    IconTrash
+} from '@tabler/icons-react'
+import {
+    type ColumnDef,
+    type ColumnFiltersState,
+    flexRender,
+    getCoreRowModel,
+    getFilteredRowModel,
+    getPaginationRowModel,
+    getSortedRowModel,
+    type SortingState,
+    useReactTable,
+    type VisibilityState
+} from '@tanstack/react-table'
 import { ServerIcon } from 'lucide-react'
 import Link from 'next/link'
+import * as React from 'react'
 import { toast } from 'sonner'
 
 interface ConnectedServer {

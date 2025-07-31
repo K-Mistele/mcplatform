@@ -1,8 +1,5 @@
 'use client'
 
-import { AlertTriangleIcon, TrashIcon } from 'lucide-react'
-import { useState } from 'react'
-
 import { Button } from '@/components/ui/button'
 import {
     Dialog,
@@ -13,9 +10,11 @@ import {
     DialogTitle,
     DialogTrigger
 } from '@/components/ui/dialog'
-import { deleteMcpServerAction } from '@/lib/orpc/actions'
+import { deleteMcpServerAction } from '@/lib/orpc/actions/mcp-servers'
 import { isDefinedError, onError, onSuccess } from '@orpc/client'
 import { useServerAction } from '@orpc/react/hooks'
+import { AlertTriangleIcon, TrashIcon } from 'lucide-react'
+import { useState } from 'react'
 import { toast } from 'sonner'
 
 interface DeleteServerModalProps {

@@ -7,47 +7,54 @@ import {
     reorderWalkthroughStepsAction,
     updateWalkthroughAction,
     updateWalkthroughStepAction
-} from '@/lib/orpc/actions'
+} from '@/lib/orpc/actions/walkthroughs'
 import { afterAll, beforeAll, beforeEach, describe, expect, spyOn, test } from 'bun:test'
 import { db, schema } from 'database'
 import { eq } from 'drizzle-orm'
+import { nanoid } from 'nanoid'
 import * as nextCache from 'next/cache'
 
 describe('Walkthrough oRPC Actions - Comprehensive Tests', () => {
     // Track created resources for cleanup
     const createdWalkthroughs: string[] = []
     const createdWalkthroughSteps: string[] = []
+    const createdOrganizations: string[] = []
+
+    // Dynamic test organization ID
+    let testOrganizationId: string
+    let testOrganizationSlug: string
 
     // Mock session
-    let mockSession: any = {
-        user: {
-            id: 'user_123',
-            name: 'Test User',
-            email: 'test@example.com'
-        },
-        session: {
-            activeOrganizationId: 'org_123'
-        }
-    }
+    let mockSession: any
 
     // Track revalidated paths
     let mockRevalidatePaths: string[] = []
 
     beforeAll(async () => {
-        // Ensure test organization exists
-        const existingOrg = await db
-            .select()
-            .from(schema.organization)
-            .where(eq(schema.organization.id, 'org_123'))
-            .limit(1)
-
-        if (existingOrg.length === 0) {
-            await db.insert(schema.organization).values({
-                id: 'org_123',
-                name: 'Test Organization',
-                slug: 'test-org',
-                createdAt: new Date()
-            })
+        // Create test organization with dynamic ID
+        testOrganizationId = `org_${nanoid(8)}`
+        testOrganizationSlug = `test-org-${nanoid(4)}`
+        
+        const [org] = await db.insert(schema.organization).values({
+            id: testOrganizationId,
+            name: 'Test Organization',
+            slug: testOrganizationSlug,
+            createdAt: new Date()
+        }).returning()
+        
+        // Track for cleanup
+        createdOrganizations.push(org.id)
+        
+        // Initialize mock session with the created org ID
+        mockSession = {
+            user: {
+                id: 'user_123',
+                name: 'Test User',
+                email: 'test@example.com'
+            },
+            session: {
+                activeOrganizationId: testOrganizationId
+            }
         }
     })
 
@@ -71,13 +78,20 @@ describe('Walkthrough oRPC Actions - Comprehensive Tests', () => {
             }
         }
 
-        // Clean up test organization
-        await db.delete(schema.organization).where(eq(schema.organization.id, 'org_123'))
+        // Clean up test organizations
+        for (const orgId of createdOrganizations) {
+            try {
+                await db.delete(schema.organization).where(eq(schema.organization.id, orgId))
+            } catch (error) {
+                console.error(`Failed to delete organization ${orgId}:`, error)
+            }
+        }
     })
 
     beforeEach(() => {
         // Reset mocks
         mockRevalidatePaths = []
+        // Update mock session to use the dynamic organization ID
         mockSession = {
             user: {
                 id: 'user_123',
@@ -85,7 +99,7 @@ describe('Walkthrough oRPC Actions - Comprehensive Tests', () => {
                 email: 'test@example.com'
             },
             session: {
-                activeOrganizationId: 'org_123'
+                activeOrganizationId: testOrganizationId
             }
         }
         spyOn(authModule, 'requireSession').mockResolvedValue(mockSession)
@@ -115,7 +129,7 @@ describe('Walkthrough oRPC Actions - Comprehensive Tests', () => {
                 expect(result.description).toBe('A comprehensive guide for API integration')
                 expect(result.type).toBe('integration')
                 expect(result.status).toBe('draft')
-                expect(result.organizationId).toBe('org_123')
+                expect(result.organizationId).toBe(testOrganizationId)
 
                 // Verify database record
                 const [dbRecord] = await db
@@ -250,7 +264,7 @@ describe('Walkthrough oRPC Actions - Comprehensive Tests', () => {
                     description: 'Original description',
                     type: 'course',
                     status: 'draft',
-                    organizationId: 'org_123'
+                    organizationId: testOrganizationId
                 })
                 .returning()
             walkthroughId = walkthrough.id
@@ -334,12 +348,14 @@ describe('Walkthrough oRPC Actions - Comprehensive Tests', () => {
 
         test('should fail for walkthrough from different organization', async () => {
             // Create the different organization first
-            await db.insert(schema.organization).values({
-                id: 'org_different',
+            const differentOrgId = `org_${nanoid(8)}`
+            const [differentOrg] = await db.insert(schema.organization).values({
+                id: differentOrgId,
                 name: 'Different Organization',
-                slug: 'different-org',
+                slug: `different-org-${nanoid(4)}`,
                 createdAt: new Date()
-            })
+            }).returning()
+            createdOrganizations.push(differentOrg.id)
 
             // Create walkthrough in different org
             const [otherWalkthrough] = await db
@@ -348,7 +364,7 @@ describe('Walkthrough oRPC Actions - Comprehensive Tests', () => {
                     title: 'Other Org Walkthrough',
                     type: 'course',
                     status: 'draft',
-                    organizationId: 'org_different'
+                    organizationId: differentOrgId
                 })
                 .returning()
             createdWalkthroughs.push(otherWalkthrough.id)
@@ -362,8 +378,7 @@ describe('Walkthrough oRPC Actions - Comprehensive Tests', () => {
             expect(result).toBeUndefined()
             expect(error?.code).toBe('RESOURCE_NOT_FOUND')
 
-            // Clean up the other organization
-            await db.delete(schema.organization).where(eq(schema.organization.id, 'org_different'))
+            // No need to clean up here, will be cleaned in afterAll
         })
     })
 
@@ -376,7 +391,7 @@ describe('Walkthrough oRPC Actions - Comprehensive Tests', () => {
                     title: 'To Be Deleted',
                     type: 'course',
                     status: 'draft',
-                    organizationId: 'org_123'
+                    organizationId: testOrganizationId
                 })
                 .returning()
 
@@ -450,7 +465,7 @@ describe('Walkthrough oRPC Actions - Comprehensive Tests', () => {
                     title: 'Walkthrough for Steps',
                     type: 'course',
                     status: 'draft',
-                    organizationId: 'org_123'
+                    organizationId: testOrganizationId
                 })
                 .returning()
             walkthroughId = walkthrough.id
@@ -554,7 +569,7 @@ describe('Walkthrough oRPC Actions - Comprehensive Tests', () => {
                     title: 'Walkthrough with Step',
                     type: 'course',
                     status: 'draft',
-                    organizationId: 'org_123'
+                    organizationId: testOrganizationId
                 })
                 .returning()
             walkthroughId = walkthrough.id
@@ -660,7 +675,7 @@ describe('Walkthrough oRPC Actions - Comprehensive Tests', () => {
                     title: 'Walkthrough for Reordering',
                     type: 'course',
                     status: 'draft',
-                    organizationId: 'org_123'
+                    organizationId: testOrganizationId
                 })
                 .returning()
             walkthroughId = walkthrough.id
@@ -776,7 +791,7 @@ describe('Walkthrough oRPC Actions - Comprehensive Tests', () => {
                     title: 'Walkthrough for Step Deletion',
                     type: 'course',
                     status: 'draft',
-                    organizationId: 'org_123'
+                    organizationId: testOrganizationId
                 })
                 .returning()
             walkthroughId = walkthrough.id

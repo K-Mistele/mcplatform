@@ -62,10 +62,10 @@ export async function getAndTrackMcpServerUser({
     serverConfig: McpServerConfig
 }) {
     let serverSessionId: string | null = (await headers()).get('Mcp-Session-Id')
-    let email: string | undefined = undefined
+    let email: string | undefined 
     let emailUpdated = false
     let trackingIdUpdated = false
-    let mcpServerUserId: string | undefined = undefined
+    let mcpServerUserId: string | undefined 
     let trackingId: string | undefined | null = data.trackingId
 
     // First: if the server uses OAuth, try to get the email from the session

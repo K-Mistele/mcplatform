@@ -1,18 +1,17 @@
-import { afterAll, beforeAll, describe, expect, test, spyOn, mock } from 'bun:test'
-import { db, schema } from 'database'
-import { nanoid } from 'common/nanoid'
-import { and, eq } from 'drizzle-orm'
 import * as authModule from '@/lib/auth/auth'
+import { createMcpServerAction } from '@/lib/orpc/actions/mcp-servers'
 import {
     assignWalkthroughsToServerAction,
-    createMcpServerAction,
-    createWalkthroughAction,
-    createWalkthroughStepAction,
-    updateWalkthroughAssignmentAction,
+    getServerWalkthroughsAction,
     removeWalkthroughAssignmentAction,
     reorderServerWalkthroughsAction,
-    getServerWalkthroughsAction
-} from '@/lib/orpc/actions'
+    updateWalkthroughAssignmentAction
+} from '@/lib/orpc/actions/walkthrough-assignment'
+import { createWalkthroughAction, createWalkthroughStepAction } from '@/lib/orpc/actions/walkthroughs'
+import { afterAll, beforeAll, describe, expect, mock, spyOn, test } from 'bun:test'
+import { nanoid } from 'common/nanoid'
+import { db, schema } from 'database'
+import { eq } from 'drizzle-orm'
 
 // Mock revalidatePath
 mock.module('next/cache', () => ({
@@ -445,7 +444,7 @@ describe('Server Assignment UI - Complete Feature Test', () => {
                 walkthroughs[2].id, // was at 2, now at 1
                 walkthroughs[3].id, // was at 3, now at 2
                 walkthroughs[0].id, // was at 0, now at 3
-                walkthroughs[4].id  // was at 4, stays at 4
+                walkthroughs[4].id // was at 4, stays at 4
             ]
 
             const [reorderError] = await reorderServerWalkthroughsAction({
@@ -597,11 +596,11 @@ describe('Server Assignment UI - Complete Feature Test', () => {
             // and all three assignments could exist
             expect(assignments!.length).toBeGreaterThan(0)
             expect(assignments!.length).toBeLessThanOrEqual(3)
-            
+
             // Verify all assigned walkthroughs are from our test set
-            const assignedIds = assignments?.map(a => a.walkthrough.id) || []
-            const walkthroughIds = walkthroughs.map(w => w.id)
-            assignedIds.forEach(id => {
+            const assignedIds = assignments?.map((a) => a.walkthrough.id) || []
+            const walkthroughIds = walkthroughs.map((w) => w.id)
+            assignedIds.forEach((id) => {
                 expect(walkthroughIds).toContain(id)
             })
         })
@@ -664,7 +663,7 @@ describe('Server Assignment UI - Complete Feature Test', () => {
             const reorderStartTime = Date.now()
             const [reorderError] = await reorderServerWalkthroughsAction({
                 serverId: server!.id,
-                walkthroughIds: walkthroughs.map(w => w.id).reverse()
+                walkthroughIds: walkthroughs.map((w) => w.id).reverse()
             })
             expect(reorderError).toBeNull()
             const reorderTime = Date.now() - reorderStartTime

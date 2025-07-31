@@ -42,17 +42,21 @@ This is the actual document content.`
 
             const result = extractFrontMatter(document)
 
-            expect(result).toBeNull()
+            expect(result).toEqual({
+                title: 'Document Content'
+            })
         })
 
-        test('should return empty object when no front matter is present', () => {
+        test('should return title from H1 when no front matter is present', () => {
             const document = `# Document Without Front Matter
 
 This document has no YAML front matter.`
 
             const result = extractFrontMatter(document)
 
-            expect(result).toEqual({})
+            expect(result).toEqual({
+                title: 'Document Without Front Matter'
+            })
         })
 
         test('should handle front matter with only whitespace', () => {
@@ -61,11 +65,13 @@ This document has no YAML front matter.`
   
 ---
 
-Content after empty front matter`
+# Content after empty front matter`
 
             const result = extractFrontMatter(document)
 
-            expect(result).toBeNull()
+            expect(result).toEqual({
+                title: 'Content after empty front matter'
+            })
         })
 
         test('should handle front matter with various data types', () => {
@@ -249,6 +255,95 @@ Content`
             const result = extractFrontMatter(document)
 
             expect(result).toEqual({})
+        })
+
+        test('should extract title from first H1 when no title in frontmatter', () => {
+            const document = `---
+author: John Doe
+date: 2024-01-15
+---
+
+# My Document Title
+
+This is the content of the document.`
+
+            const result = extractFrontMatter(document)
+
+            expect(result).toEqual({
+                author: 'John Doe',
+                date: '2024-01-15',
+                title: 'My Document Title'
+            })
+        })
+
+        test('should extract title from first H1 when no frontmatter exists', () => {
+            const document = `# Document Without Front Matter
+
+This document has no YAML front matter.
+
+## Subsection
+
+More content here.`
+
+            const result = extractFrontMatter(document)
+
+            expect(result).toEqual({
+                title: 'Document Without Front Matter'
+            })
+        })
+
+        test('should prefer frontmatter title over H1 title', () => {
+            const document = `---
+title: Frontmatter Title
+author: Jane Doe
+---
+
+# Different H1 Title
+
+Content goes here.`
+
+            const result = extractFrontMatter(document)
+
+            expect(result).toEqual({
+                title: 'Frontmatter Title',
+                author: 'Jane Doe'
+            })
+        })
+
+        test('should handle H1 with extra whitespace', () => {
+            const document = `#    Title with Extra Spaces   
+
+Some content.`
+
+            const result = extractFrontMatter(document)
+
+            expect(result).toEqual({
+                title: 'Title with Extra Spaces'
+            })
+        })
+
+        test('should not extract title from H2 or other headers', () => {
+            const document = `## This is H2
+
+### This is H3
+
+Content without H1.`
+
+            const result = extractFrontMatter(document)
+
+            expect(result).toEqual({})
+        })
+
+        test('should handle H1 title with special characters', () => {
+            const document = `# Title with "quotes" and special chars: @#$%
+
+Content here.`
+
+            const result = extractFrontMatter(document)
+
+            expect(result).toEqual({
+                title: 'Title with "quotes" and special chars: @#$%'
+            })
         })
 
         test('should handle document with incomplete front matter delimiter', () => {

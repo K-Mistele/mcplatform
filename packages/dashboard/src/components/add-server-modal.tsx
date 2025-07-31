@@ -1,10 +1,5 @@
 'use client'
 
-import { zodResolver } from '@hookform/resolvers/zod'
-import { useCallback, useEffect, useRef, useState } from 'react'
-import { useForm } from 'react-hook-form'
-import type { z } from 'zod'
-
 import { Button } from '@/components/ui/button'
 import {
     Dialog,
@@ -18,14 +13,18 @@ import {
 import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form'
 import { Input } from '@/components/ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { createMcpServerAction, validateSubdomainAction } from '@/lib/orpc/actions'
+import { createMcpServerAction, validateSubdomainAction } from '@/lib/orpc/actions/mcp-servers'
 import { createMcpServerSchema } from '@/lib/schemas.isometric'
 import { cn } from '@/lib/utils'
+import { zodResolver } from '@hookform/resolvers/zod'
 import { isDefinedError, onError, onSuccess } from '@orpc/client'
 import { useServerAction } from '@orpc/react/hooks'
 import { IconPlus } from '@tabler/icons-react'
 import { useRouter } from 'next/navigation'
+import { useCallback, useEffect, useRef, useState } from 'react'
+import { useForm } from 'react-hook-form'
 import { toast } from 'sonner'
+import type { z } from 'zod'
 
 export type CreateMcpServerInput = z.infer<typeof createMcpServerSchema>
 

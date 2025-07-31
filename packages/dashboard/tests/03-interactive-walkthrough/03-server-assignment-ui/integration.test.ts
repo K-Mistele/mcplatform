@@ -1,18 +1,16 @@
-import { afterAll, beforeAll, beforeEach, describe, expect, mock, test } from 'bun:test'
-import { nanoid } from 'common/nanoid'
-import { db, schema } from 'database'
-import { and, eq } from 'drizzle-orm'
+import { createMcpServerAction, deleteMcpServerAction } from '@/lib/orpc/actions/mcp-servers'
 import {
     assignWalkthroughsToServerAction,
-    createMcpServerAction,
-    createWalkthroughAction,
-    deleteMcpServerAction,
-    deleteWalkthroughAction,
     getServerWalkthroughsAction,
     removeWalkthroughAssignmentAction,
     reorderServerWalkthroughsAction,
     updateWalkthroughAssignmentAction
-} from '../../../src/lib/orpc/actions'
+} from '@/lib/orpc/actions/walkthrough-assignment'
+import { createWalkthroughAction, deleteWalkthroughAction } from '@/lib/orpc/actions/walkthroughs'
+import { afterAll, beforeAll, beforeEach, describe, expect, mock, test } from 'bun:test'
+import { nanoid } from 'common/nanoid'
+import { db, schema } from 'database'
+import { and, eq } from 'drizzle-orm'
 
 // Mock dependencies
 mock.module('../../../src/lib/auth/auth', () => ({
@@ -61,7 +59,7 @@ describe('Walkthrough Assignment Integration Tests', () => {
             .returning()
         testOrganization = org
         createdResources.organizations.add(org.id)
-        
+
         // Update mock to use the actual org ID
         mock.module('../../../src/lib/auth/auth', () => ({
             requireSession: mock(() => ({

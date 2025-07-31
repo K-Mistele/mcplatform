@@ -1,36 +1,35 @@
 'use client'
 
-import { useState } from 'react'
-import * as React from 'react'
-import { PlusIcon, GripVerticalIcon, MoreVerticalIcon, TrashIcon } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import {
-    DropdownMenu,
-    DropdownMenuContent,
-    DropdownMenuItem,
-    DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu'
-import { createWalkthroughStepAction, deleteWalkthroughStepAction, reorderWalkthroughStepsAction } from '@/lib/orpc/actions'
-import { isDefinedError, onError, onSuccess } from '@orpc/client'
-import { useServerAction } from '@orpc/react/hooks'
-import { toast } from 'sonner'
-import type { Walkthrough, WalkthroughStep } from 'database'
+    createWalkthroughStepAction,
+    deleteWalkthroughStepAction,
+    reorderWalkthroughStepsAction
+} from '@/lib/orpc/actions/walkthroughs'
 import {
+    closestCenter,
     DndContext,
     type DragEndEvent,
     KeyboardSensor,
     MouseSensor,
     TouchSensor,
     type UniqueIdentifier,
-    closestCenter,
     useSensor,
     useSensors
 } from '@dnd-kit/core'
 import { restrictToVerticalAxis } from '@dnd-kit/modifiers'
-import { SortableContext, arrayMove, useSortable, verticalListSortingStrategy } from '@dnd-kit/sortable'
+import { arrayMove, SortableContext, useSortable, verticalListSortingStrategy } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
+import { isDefinedError, onError, onSuccess } from '@orpc/client'
+import { useServerAction } from '@orpc/react/hooks'
+import type { Walkthrough, WalkthroughStep } from 'database'
+import { GripVerticalIcon, MoreVerticalIcon, PlusIcon, TrashIcon } from 'lucide-react'
+import * as React from 'react'
+import { useState } from 'react'
+import { toast } from 'sonner'
 
 interface StepsNavigatorProps {
     walkthrough: Walkthrough
@@ -81,9 +80,7 @@ function SortableStepItem({
         <div
             ref={setNodeRef}
             className={`group relative rounded-lg border p-3 cursor-pointer transition-colors hover:bg-muted/50 ${
-                isSelected 
-                    ? 'bg-primary/5 border-primary ring-1 ring-primary/20' 
-                    : 'border-border'
+                isSelected ? 'bg-primary/5 border-primary ring-1 ring-primary/20' : 'border-border'
             } ${isDragging ? 'opacity-50 z-10' : ''}`}
             onClick={() => onStepSelect(step.id)}
             style={{
@@ -124,20 +121,15 @@ function SortableStepItem({
 
             <div className="flex items-start gap-3">
                 <div className="flex-shrink-0">
-                    <Badge 
-                        variant={isSelected ? 'default' : 'secondary'}
-                        className="text-xs font-mono"
-                    >
+                    <Badge variant={isSelected ? 'default' : 'secondary'} className="text-xs font-mono">
                         {step.displayOrder}
                     </Badge>
                 </div>
                 <div className="flex-1 min-w-0">
-                    <h4 className={`font-medium truncate ${
-                        isSelected ? 'text-primary' : 'text-foreground'
-                    }`}>
+                    <h4 className={`font-medium truncate ${isSelected ? 'text-primary' : 'text-foreground'}`}>
                         {step.title}
                     </h4>
-                    
+
                     {/* Completion indicators */}
                     <div className="flex items-center gap-1 mt-2">
                         {indicators.map((indicator, index) => (
@@ -145,14 +137,15 @@ function SortableStepItem({
                                 key={index}
                                 className={`text-sm transition-opacity ${
                                     indicator.filled ? 'opacity-100' : 'opacity-30'
-                                } ${
-                                    indicator.required && !indicator.filled ? 'opacity-60' : ''
-                                }`}
+                                } ${indicator.required && !indicator.filled ? 'opacity-60' : ''}`}
                                 title={
-                                    index === 0 ? 'Introduction for Agent' :
-                                    index === 1 ? 'Context for Agent' :
-                                    index === 2 ? 'Content for User (Required)' :
-                                    'Operations for Agent'
+                                    index === 0
+                                        ? 'Introduction for Agent'
+                                        : index === 1
+                                          ? 'Context for Agent'
+                                          : index === 2
+                                            ? 'Content for User (Required)'
+                                            : 'Operations for Agent'
                                 }
                             >
                                 {indicator.icon}
@@ -165,31 +158,19 @@ function SortableStepItem({
     )
 }
 
-export function StepsNavigator({
-    walkthrough,
-    steps,
-    currentStepId,
-    onStepSelect
-}: StepsNavigatorProps) {
+export function StepsNavigator({ walkthrough, steps, currentStepId, onStepSelect }: StepsNavigatorProps) {
     const [isCreatingStep, setIsCreatingStep] = useState(false)
     const [localSteps, setLocalSteps] = useState(steps)
-    
+
     // Update local steps when props change
     React.useEffect(() => {
         setLocalSteps(steps)
     }, [steps])
 
     // Set up drag sensors
-    const sensors = useSensors(
-        useSensor(MouseSensor, {}),
-        useSensor(TouchSensor, {}),
-        useSensor(KeyboardSensor, {})
-    )
+    const sensors = useSensors(useSensor(MouseSensor, {}), useSensor(TouchSensor, {}), useSensor(KeyboardSensor, {}))
 
-    const stepIds = React.useMemo<UniqueIdentifier[]>(
-        () => localSteps.map(step => step.id),
-        [localSteps]
-    )
+    const stepIds = React.useMemo<UniqueIdentifier[]>(() => localSteps.map((step) => step.id), [localSteps])
 
     const { execute: createStep } = useServerAction(createWalkthroughStepAction, {
         interceptors: [
@@ -252,17 +233,15 @@ export function StepsNavigator({
 
     const handleDeleteStep = (step: WalkthroughStep, event: React.MouseEvent) => {
         event.stopPropagation() // Prevent step selection when clicking delete
-        
-        const isConfirmed = confirm(
-            `Are you sure you want to delete "${step.title}"?\n\nThis action cannot be undone.`
-        )
-        
+
+        const isConfirmed = confirm(`Are you sure you want to delete "${step.title}"?\n\nThis action cannot be undone.`)
+
         if (isConfirmed) {
             deleteStep({ stepId: step.id })
-            
+
             // If we're deleting the currently selected step, select the first available step or null
             if (step.id === currentStepId) {
-                const remainingSteps = localSteps.filter(s => s.id !== step.id)
+                const remainingSteps = localSteps.filter((s) => s.id !== step.id)
                 if (remainingSteps.length > 0) {
                     onStepSelect(remainingSteps[0].id)
                 }
@@ -272,17 +251,17 @@ export function StepsNavigator({
 
     const handleDragEnd = (event: DragEndEvent) => {
         const { active, over } = event
-        
+
         if (active && over && active.id !== over.id) {
             const oldIndex = stepIds.indexOf(active.id)
             const newIndex = stepIds.indexOf(over.id)
-            
+
             // Update local state optimistically
             const newSteps = arrayMove(localSteps, oldIndex, newIndex)
             setLocalSteps(newSteps)
-            
+
             // Send the reorder request to the server
-            const newStepIds = newSteps.map(step => step.id)
+            const newStepIds = newSteps.map((step) => step.id)
             reorderSteps({
                 walkthroughId: walkthrough.id,
                 stepIds: newStepIds
@@ -297,26 +276,26 @@ export function StepsNavigator({
         // Introduction for Agent
         indicators.push({
             icon: '💬',
-            filled: !!(contentFields?.introductionForAgent?.trim())
+            filled: !!contentFields?.introductionForAgent?.trim()
         })
 
         // Context for Agent
         indicators.push({
             icon: '📝',
-            filled: !!(contentFields?.contextForAgent?.trim())
+            filled: !!contentFields?.contextForAgent?.trim()
         })
 
         // Content for User (required)
         indicators.push({
             icon: '🔧',
-            filled: !!(contentFields?.contentForUser?.trim()),
+            filled: !!contentFields?.contentForUser?.trim(),
             required: true
         })
 
         // Operations for Agent
         indicators.push({
             icon: '⚡',
-            filled: !!(contentFields?.operationsForAgent?.trim())
+            filled: !!contentFields?.operationsForAgent?.trim()
         })
 
         return indicators
@@ -332,12 +311,7 @@ export function StepsNavigator({
                         {localSteps.length}
                     </Badge>
                 </div>
-                <Button
-                    onClick={handleCreateStep}
-                    disabled={isCreatingStep}
-                    className="w-full"
-                    size="sm"
-                >
+                <Button onClick={handleCreateStep} disabled={isCreatingStep} className="w-full" size="sm">
                     <PlusIcon className="h-4 w-4 mr-2" />
                     {isCreatingStep ? 'Creating...' : 'Add Step'}
                 </Button>

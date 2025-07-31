@@ -1,17 +1,17 @@
 'use client'
 
-import { use, useEffect, useState } from 'react'
-import { useRouter, useSearchParams } from 'next/navigation'
-import Link from 'next/link'
-import { ArrowLeftIcon } from 'lucide-react'
-import { Badge } from '@/components/ui/badge'
-import { Button } from '@/components/ui/button'
-import { Separator } from '@/components/ui/separator'
-import { StepsNavigator } from '@/components/steps-navigator'
 import { ContentEditor } from '@/components/content-editor'
 import { PreviewPanel } from '@/components/preview-panel'
-import { ResizablePanelGroup, ResizablePanel, ResizableHandle } from '@/components/ui/resizable'
+import { StepsNavigator } from '@/components/steps-navigator'
+import { Badge } from '@/components/ui/badge'
+import { Button } from '@/components/ui/button'
+import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from '@/components/ui/resizable'
+import { Separator } from '@/components/ui/separator'
 import type { Walkthrough, WalkthroughStep } from 'database'
+import { ArrowLeftIcon } from 'lucide-react'
+import Link from 'next/link'
+import { useRouter, useSearchParams } from 'next/navigation'
+import { use, useState } from 'react'
 
 const walkthroughTypeConfig = {
     course: { icon: '📚', label: 'Course' },
@@ -27,11 +27,7 @@ interface WalkthroughEditorProps {
     selectedStepId: string | null
 }
 
-export function WalkthroughEditor({
-    walkthroughPromise,
-    stepsPromise,
-    selectedStepId
-}: WalkthroughEditorProps) {
+export function WalkthroughEditor({ walkthroughPromise, stepsPromise, selectedStepId }: WalkthroughEditorProps) {
     const walkthrough = use(walkthroughPromise)
     const steps = use(stepsPromise)
     const router = useRouter()
@@ -39,11 +35,9 @@ export function WalkthroughEditor({
     const [saveStatus, setSaveStatus] = useState<'saved' | 'saving' | 'error' | 'unsaved'>('saved')
 
     // Determine current step - use selectedStepId from URL or first step
-    const currentStep = selectedStepId 
-        ? steps.find(step => step.id === selectedStepId) 
-        : steps[0]
+    const currentStep = selectedStepId ? steps.find((step) => step.id === selectedStepId) : steps[0]
 
-    const typeConfig = walkthroughTypeConfig[walkthrough.type] || {
+    const typeConfig = walkthroughTypeConfig[walkthrough.type!] || {
         icon: '📄',
         label: 'Unknown'
     }
@@ -79,24 +73,32 @@ export function WalkthroughEditor({
                                     <Badge variant="secondary">{typeConfig.label}</Badge>
                                 </div>
                                 {walkthrough.description && (
-                                    <p className="text-sm text-muted-foreground mt-1">
-                                        {walkthrough.description}
-                                    </p>
+                                    <p className="text-sm text-muted-foreground mt-1">{walkthrough.description}</p>
                                 )}
                             </div>
                         </div>
                     </div>
                     <div className="flex items-center gap-3">
                         <div className="flex items-center gap-2 text-sm">
-                            <div className={`w-2 h-2 rounded-full ${
-                                saveStatus === 'saved' ? 'bg-green-500' : 
-                                saveStatus === 'saving' ? 'bg-blue-500' : 
-                                saveStatus === 'unsaved' ? 'bg-yellow-500' : 'bg-red-500'
-                            }`} />
+                            <div
+                                className={`w-2 h-2 rounded-full ${
+                                    saveStatus === 'saved'
+                                        ? 'bg-green-500'
+                                        : saveStatus === 'saving'
+                                          ? 'bg-blue-500'
+                                          : saveStatus === 'unsaved'
+                                            ? 'bg-yellow-500'
+                                            : 'bg-red-500'
+                                }`}
+                            />
                             <span className="text-muted-foreground">
-                                {saveStatus === 'saved' ? 'Saved' : 
-                                 saveStatus === 'saving' ? 'Saving...' : 
-                                 saveStatus === 'unsaved' ? 'Unsaved changes' : 'Error saving'}
+                                {saveStatus === 'saved'
+                                    ? 'Saved'
+                                    : saveStatus === 'saving'
+                                      ? 'Saving...'
+                                      : saveStatus === 'unsaved'
+                                        ? 'Unsaved changes'
+                                        : 'Error saving'}
                             </span>
                         </div>
                     </div>
@@ -144,10 +146,7 @@ export function WalkthroughEditor({
 
                     {/* Preview Panel */}
                     <ResizablePanel defaultSize={25} minSize={20} className="bg-background">
-                        <PreviewPanel
-                            walkthrough={walkthrough}
-                            step={currentStep}
-                        />
+                        <PreviewPanel walkthrough={walkthrough} step={currentStep} />
                     </ResizablePanel>
                 </ResizablePanelGroup>
             </div>

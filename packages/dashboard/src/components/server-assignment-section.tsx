@@ -1,17 +1,18 @@
 'use client'
 
-import { isDefinedError } from '@orpc/client'
-import { onError, onSuccess } from '@orpc/client'
+import { Badge } from '@/components/ui/badge'
+import { Button } from '@/components/ui/button'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { MultiSelect } from '@/components/ui/multi-select'
+import {
+    assignWalkthroughsToServerAction,
+    updateWalkthroughAssignmentAction
+} from '@/lib/orpc/actions/walkthrough-assignment'
+import { isDefinedError, onError, onSuccess } from '@orpc/client'
 import { useServerAction } from '@orpc/react/hooks'
 import { ServerIcon, ToggleLeft, ToggleRight } from 'lucide-react'
 import { use, useEffect, useState } from 'react'
 import { toast } from 'sonner'
-
-import { assignWalkthroughsToServerAction, updateWalkthroughAssignmentAction } from '@/lib/orpc/actions'
-import { MultiSelect } from '@/components/ui/multi-select'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Button } from '@/components/ui/button'
-import { Badge } from '@/components/ui/badge'
 
 interface ServerOption {
     id: string
@@ -29,14 +30,16 @@ interface ServerAssignmentSectionProps {
     assignedServersPromise: Promise<AssignedServer[]>
 }
 
-export function ServerAssignmentSection({ walkthroughId, availableServersPromise, assignedServersPromise }: ServerAssignmentSectionProps) {
+export function ServerAssignmentSection({
+    walkthroughId,
+    availableServersPromise,
+    assignedServersPromise
+}: ServerAssignmentSectionProps) {
     const availableServers = use(availableServersPromise)
     const initialAssignedServers = use(assignedServersPromise)
-    
+
     const [assignedServers, setAssignedServers] = useState<AssignedServer[]>(initialAssignedServers)
-    const [selectedServerIds, setSelectedServerIds] = useState<string[]>(
-        initialAssignedServers.map(s => s.id)
-    )
+    const [selectedServerIds, setSelectedServerIds] = useState<string[]>(initialAssignedServers.map((s) => s.id))
 
     const { execute: assignWalkthrough } = useServerAction(assignWalkthroughsToServerAction, {
         interceptors: [
@@ -70,21 +73,23 @@ export function ServerAssignmentSection({ walkthroughId, availableServersPromise
 
     useEffect(() => {
         // Update assignments when selection changes
-        const updatePromises = selectedServerIds.map(serverId => {
-            const serverExists = assignedServers.some(s => s.id === serverId)
-            if (!serverExists) {
-                // Assign this walkthrough to the newly selected server
-                return assignWalkthrough({
-                    serverId,
-                    walkthroughIds: [{ walkthroughId, displayOrder: 0 }]
-                })
-            }
-            return null
-        }).filter(Boolean)
+        const updatePromises = selectedServerIds
+            .map((serverId) => {
+                const serverExists = assignedServers.some((s) => s.id === serverId)
+                if (!serverExists) {
+                    // Assign this walkthrough to the newly selected server
+                    return assignWalkthrough({
+                        serverId,
+                        walkthroughIds: [{ walkthroughId, displayOrder: 0 }]
+                    })
+                }
+                return null
+            })
+            .filter(Boolean)
 
         // Remove assignments for deselected servers
-        const removedServers = assignedServers.filter(s => !selectedServerIds.includes(s.id))
-        const removePromises = removedServers.map(server => 
+        const removedServers = assignedServers.filter((s) => !selectedServerIds.includes(s.id))
+        const removePromises = removedServers.map((server) =>
             assignWalkthrough({
                 serverId: server.id,
                 walkthroughIds: []
@@ -92,18 +97,20 @@ export function ServerAssignmentSection({ walkthroughId, availableServersPromise
         )
 
         // Update local state
-        const newAssignedServers = selectedServerIds.map(id => {
-            const existing = assignedServers.find(s => s.id === id)
-            if (existing) return existing
-            
-            const available = availableServers.find(s => s.id === id)
-            if (!available) return null
-            
-            return {
-                ...available,
-                isEnabled: 'true' as const
-            }
-        }).filter((s): s is AssignedServer => s !== null)
+        const newAssignedServers = selectedServerIds
+            .map((id) => {
+                const existing = assignedServers.find((s) => s.id === id)
+                if (existing) return existing
+
+                const available = availableServers.find((s) => s.id === id)
+                if (!available) return null
+
+                return {
+                    ...available,
+                    isEnabled: 'true' as const
+                }
+            })
+            .filter((s): s is AssignedServer => s !== null)
 
         setAssignedServers(newAssignedServers)
 
@@ -112,14 +119,12 @@ export function ServerAssignmentSection({ walkthroughId, availableServersPromise
     }, [selectedServerIds])
 
     const handleToggle = async (serverId: string) => {
-        const server = assignedServers.find(s => s.id === serverId)
+        const server = assignedServers.find((s) => s.id === serverId)
         if (!server) return
 
         const newIsEnabled = server.isEnabled === 'true' ? 'false' : 'true'
-        
-        setAssignedServers(prev =>
-            prev.map(s => s.id === serverId ? { ...s, isEnabled: newIsEnabled } : s)
-        )
+
+        setAssignedServers((prev) => prev.map((s) => (s.id === serverId ? { ...s, isEnabled: newIsEnabled } : s)))
 
         await updateAssignment({
             serverId,
@@ -128,7 +133,7 @@ export function ServerAssignmentSection({ walkthroughId, availableServersPromise
         })
     }
 
-    const multiSelectOptions = availableServers.map(s => ({
+    const multiSelectOptions = availableServers.map((s) => ({
         label: s.name,
         value: s.id,
         icon: ServerIcon
@@ -141,15 +146,11 @@ export function ServerAssignmentSection({ walkthroughId, availableServersPromise
                     <ServerIcon className="h-5 w-5" />
                     Server Assignments
                 </CardTitle>
-                <CardDescription>
-                    Choose which servers should offer this walkthrough
-                </CardDescription>
+                <CardDescription>Choose which servers should offer this walkthrough</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
                 <div>
-                    <label className="text-sm font-medium mb-2 block">
-                        Select Servers
-                    </label>
+                    <label className="text-sm font-medium mb-2 block">Select Servers</label>
                     <MultiSelect
                         options={multiSelectOptions}
                         onValueChange={setSelectedServerIds}
@@ -161,9 +162,7 @@ export function ServerAssignmentSection({ walkthroughId, availableServersPromise
 
                 {assignedServers.length > 0 && (
                     <div className="space-y-2">
-                        <p className="text-sm text-muted-foreground">
-                            Toggle to enable/disable on specific servers
-                        </p>
+                        <p className="text-sm text-muted-foreground">Toggle to enable/disable on specific servers</p>
                         <div className="space-y-2">
                             {assignedServers.map((server) => (
                                 <div

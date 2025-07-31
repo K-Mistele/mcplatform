@@ -12,6 +12,7 @@
         "db:auth:migrate": "bunx @better-auth/cli migrate"
     },
     "dependencies": {
+        "@turbopuffer/turbopuffer": "^0.10.14",
         "@upstash/redis": "^1.35.1",
         "common": "workspace:*",
         "ioredis": "^5.6.1"
