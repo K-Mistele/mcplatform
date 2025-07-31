@@ -1,15 +1,15 @@
+import { CardSkeleton } from '@/components/card-skeleton'
 import { CursorInstallLink } from '@/components/cursor-install-link'
 import { EditServerConfiguration } from '@/components/edit-server-configuration'
 import { McpServerUsersCard } from '@/components/mcp-server-users-card'
 import { ServerUrlDisplay } from '@/components/server-url-display'
-import { WalkthroughAssignmentCard } from '@/components/walkthrough-assignment-card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { CardSkeleton } from '@/components/card-skeleton'
+import { WalkthroughAssignmentCard } from '@/components/walkthrough-assignment-card'
 import { requireSession } from '@/lib/auth/auth'
 import { db, schema } from 'database'
-import { and, eq } from 'drizzle-orm'
+import { eq } from 'drizzle-orm'
 import { ArrowLeftIcon, CalendarIcon, ServerIcon } from 'lucide-react'
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
@@ -52,16 +52,16 @@ export default async function McpServerDetailsPage(props: McpServerDetailsPagePr
         .from(schema.walkthroughs)
         .leftJoin(schema.walkthroughSteps, eq(schema.walkthroughs.id, schema.walkthroughSteps.walkthroughId))
         .where(eq(schema.walkthroughs.organizationId, session.session.activeOrganizationId))
-        .then(results => {
+        .then((results) => {
             // Group by walkthrough and count steps
             const walkthroughMap = new Map<string, { id: string; title: string; type: string; stepCount: number }>()
-            
-            results.forEach(row => {
+
+            results.forEach((row) => {
                 if (!walkthroughMap.has(row.id)) {
                     walkthroughMap.set(row.id, {
                         id: row.id,
                         title: row.title,
-                        type: row.type,
+                        type: row.type || 'course',
                         stepCount: 0
                     })
                 }
@@ -70,7 +70,7 @@ export default async function McpServerDetailsPage(props: McpServerDetailsPagePr
                     walkthrough.stepCount++
                 }
             })
-            
+
             return Array.from(walkthroughMap.values())
         })
 
@@ -87,33 +87,27 @@ export default async function McpServerDetailsPage(props: McpServerDetailsPagePr
         .innerJoin(schema.walkthroughs, eq(schema.mcpServerWalkthroughs.walkthroughId, schema.walkthroughs.id))
         .where(eq(schema.mcpServerWalkthroughs.mcpServerId, params.serverId))
         .orderBy(schema.mcpServerWalkthroughs.displayOrder)
-        .then(async walkthroughs => {
+        .then(async (walkthroughs) => {
             // Count steps for each assigned walkthrough
             const walkthroughsWithStepCount = await Promise.all(
-                walkthroughs.map(async w => {
-                    const [stepCountResult] = await db
-                        .select({ count: schema.walkthroughSteps.id })
-                        .from(schema.walkthroughSteps)
-                        .where(eq(schema.walkthroughSteps.walkthroughId, w.id))
-                    
+                walkthroughs.map(async (w) => {
                     const stepCount = await db
                         .select({ count: schema.walkthroughSteps.id })
                         .from(schema.walkthroughSteps)
                         .where(eq(schema.walkthroughSteps.walkthroughId, w.id))
-                        .then(results => results.length)
-                    
+                        .then((results) => results.length)
+
                     return {
                         ...w,
                         stepCount
                     }
                 })
             )
-            
+
             return walkthroughsWithStepCount
         })
 
     const slug = server.slug as string
-    console.log('slug', slug)
     const currentLoc = new URL(process.env.NEXT_PUBLIC_BETTER_AUTH_URL as string)
     const proto = currentLoc.protocol
     const host = currentLoc.host

@@ -24,10 +24,5 @@
     "noUnusedLocals": false,
     "noUnusedParameters": false,
     "noPropertyAccessFromIndexSignature": false,
-    "paths": {
-      "@/*": [
-        "./packages/dashboard/src/*"
-      ]
-    }
   }
 }

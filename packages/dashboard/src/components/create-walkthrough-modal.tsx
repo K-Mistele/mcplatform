@@ -1,20 +1,5 @@
 'use client'
 
-import { Button } from '@/components/ui/button'
-import {
-    Dialog,
-    DialogContent,
-    DialogDescription,
-    DialogFooter,
-    DialogHeader,
-    DialogTitle
-} from '@/components/ui/dialog'
-import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form'
-import { Input } from '@/components/ui/input'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { Switch } from '@/components/ui/switch'
-import { Textarea } from '@/components/ui/textarea'
-import { createWalkthroughAction } from '@/lib/orpc/actions/walkthroughs'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { isDefinedError, onError, onSuccess } from '@orpc/client'
 import { useServerAction } from '@orpc/react/hooks'
@@ -23,12 +8,20 @@ import { useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { toast } from 'sonner'
 import { z } from 'zod'
+import { createWalkthroughAction } from '../lib/orpc/actions/walkthroughs'
+import { Button } from './ui/button'
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from './ui/dialog'
+import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from './ui/form'
+import { Input } from './ui/input'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select'
+import { Switch } from './ui/switch'
+import { Textarea } from './ui/textarea'
 
 const createWalkthroughSchema = z.object({
     title: z.string().min(1, 'Title is required').max(100, 'Title must be 100 characters or less'),
     description: z.string().max(500, 'Description must be 500 characters or less').optional(),
     type: z.enum(['course', 'installer', 'troubleshooting', 'integration', 'quickstart']),
-    isPublished: z.boolean().default(false)
+    isPublished: z.boolean()
 })
 
 type CreateWalkthroughInput = z.infer<typeof createWalkthroughSchema>
@@ -217,12 +210,12 @@ export function CreateWalkthroughModal({ open, onOpenChange }: CreateWalkthrough
                                 type="button"
                                 variant="outline"
                                 onClick={() => onOpenChange(false)}
-                                disabled={status === 'executing'}
+                                disabled={status === 'pending'}
                             >
                                 Cancel
                             </Button>
-                            <Button type="submit" disabled={status === 'executing'}>
-                                {status === 'executing' ? 'Creating...' : 'Create Walkthrough'}
+                            <Button type="submit" disabled={status === 'pending'}>
+                                {status === 'pending' ? 'Creating...' : 'Create Walkthrough'}
                             </Button>
                         </DialogFooter>
                     </form>

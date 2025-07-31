@@ -1,17 +1,17 @@
 'use client'
 
-import { ContentEditor } from '@/components/content-editor'
-import { PreviewPanel } from '@/components/preview-panel'
-import { StepsNavigator } from '@/components/steps-navigator'
-import { Badge } from '@/components/ui/badge'
-import { Button } from '@/components/ui/button'
-import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from '@/components/ui/resizable'
-import { Separator } from '@/components/ui/separator'
 import type { Walkthrough, WalkthroughStep } from 'database'
 import { ArrowLeftIcon } from 'lucide-react'
 import Link from 'next/link'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { use, useState } from 'react'
+import { ContentEditor } from './content-editor'
+import { PreviewPanel } from './preview-panel'
+import { StepsNavigator } from './steps-navigator'
+import { Badge } from './ui/badge'
+import { Button } from './ui/button'
+import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from './ui/resizable'
+import { Separator } from './ui/separator'
 
 const walkthroughTypeConfig = {
     course: { icon: '📚', label: 'Course' },
@@ -146,7 +146,7 @@ export function WalkthroughEditor({ walkthroughPromise, stepsPromise, selectedSt
 
                     {/* Preview Panel */}
                     <ResizablePanel defaultSize={25} minSize={20} className="bg-background">
-                        <PreviewPanel walkthrough={walkthrough} step={currentStep} />
+                        <PreviewPanel walkthrough={walkthrough} step={currentStep!} />
                     </ResizablePanel>
                 </ResizablePanelGroup>
             </div>

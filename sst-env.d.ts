@@ -9,22 +9,9 @@ declare module "sst" {
       "name": string
       "type": "sst.aws.Bucket"
     }
-    "McpPlatformBucket-kyle": {
-      "name": string
-      "type": "sst.aws.Bucket"
-    }
     "McpPlatformInngestService": {
       "service": string
       "type": "sst.aws.Service"
-      "url": string
-    }
-    "McpPlatformInngestService-kyle": {
-      "service": string
-      "type": "sst.aws.Service"
-      "url": string
-    }
-    "McpPlatformNextjs-kyle": {
-      "type": "sst.aws.Nextjs"
       "url": string
     }
     "McpPlatformNextjsApp": {
@@ -47,9 +34,6 @@ declare module "sst" {
       "username": string
     }
     "McpPlatformVpc": {
-      "type": "sst.aws.Vpc"
-    }
-    "McpPlatformVpc-kyle": {
       "type": "sst.aws.Vpc"
     }
   }

@@ -1,61 +1,44 @@
+import { ErrorBoundary } from '@/components/error-boundary'
+import { WalkthroughEditor } from '@/components/walkthrough-editor'
+import { requireSession } from '@/lib/auth/auth'
 import { db, schema } from 'database'
 import { and, asc, eq } from 'drizzle-orm'
 import { notFound } from 'next/navigation'
 import { Suspense } from 'react'
-import { ErrorBoundary } from '@/components/error-boundary'
-import { WalkthroughEditor } from '@/components/walkthrough-editor'
-import { requireSession } from '@/lib/auth/auth'
 
-async function getWalkthroughData(walkthroughId: string, organizationId: string) {
-    const walkthrough = await db
+interface WalkthroughEditorPageProps {
+    params: Promise<{ walkthroughId: string }>
+    searchParams: Promise<{ step?: string }>
+}
+
+export default async function WalkthroughEditorPage({ params, searchParams }: WalkthroughEditorPageProps) {
+    const session = await requireSession()
+
+    // Await params and searchParams before accessing properties (Next.js 15)
+    const { walkthroughId } = await params
+    const { step } = await searchParams
+
+    const [walkthrough] = await db
         .select()
         .from(schema.walkthroughs)
         .where(
             and(
                 eq(schema.walkthroughs.id, walkthroughId),
-                eq(schema.walkthroughs.organizationId, organizationId)
+                eq(schema.walkthroughs.organizationId, session.session.activeOrganizationId)
             )
         )
         .limit(1)
 
-    if (!walkthrough[0]) {
-        return null
-    }
-
-    return walkthrough[0]
-}
-
-async function getWalkthroughSteps(walkthroughId: string) {
-    return db
-        .select()
-        .from(schema.walkthroughSteps)
-        .where(eq(schema.walkthroughSteps.walkthroughId, walkthroughId))
-        .orderBy(asc(schema.walkthroughSteps.displayOrder))
-}
-
-interface WalkthroughEditorPageProps {
-    params: { walkthroughId: string }
-    searchParams: { step?: string }
-}
-
-export default async function WalkthroughEditorPage({
-    params,
-    searchParams
-}: WalkthroughEditorPageProps) {
-    const session = await requireSession()
-    
-    // Await params and searchParams before accessing properties (Next.js 15)
-    const { walkthroughId } = await params
-    const { step } = await searchParams
-    
-    const walkthrough = await getWalkthroughData(walkthroughId, session.session.activeOrganizationId)
-    
     if (!walkthrough) {
         notFound()
     }
 
     const walkthroughPromise = Promise.resolve(walkthrough)
-    const stepsPromise = getWalkthroughSteps(walkthroughId)
+    const stepsPromise = db
+        .select()
+        .from(schema.walkthroughSteps)
+        .where(eq(schema.walkthroughSteps.walkthroughId, walkthroughId))
+        .orderBy(asc(schema.walkthroughSteps.displayOrder))
     const selectedStepId = step || null
 
     return (

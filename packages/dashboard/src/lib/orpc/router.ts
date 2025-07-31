@@ -1,4 +1,5 @@
 import { requireSession } from '@/lib/auth/auth'
+import { renderWalkthroughStep } from '@/lib/template-engine'
 import { os } from '@orpc/server'
 import { db, schema } from 'database'
 import { and, desc, eq, gte, or } from 'drizzle-orm'
@@ -481,6 +482,26 @@ export const getSupportTicketWithMcpUser = base
         return ticketWithMcpUser
     })
 
+export const renderWalkthroughStepRPC = base
+    .input(
+        z.object({
+            walkthrough: z.object({
+                title: z.string(),
+                description: z.string().nullable(),
+                type: z.string().nullable()
+            }),
+            step: z.object({
+                id: z.string(),
+                title: z.string(),
+                displayOrder: z.number(),
+                contentFields: z.any()
+            })
+        })
+    )
+    .handler(async ({ input }) => {
+        return renderWalkthroughStep(input.walkthrough as any, input.step as any)
+    })
+
 export const router = {
     example: {
         execute: executeExample
@@ -498,5 +519,8 @@ export const router = {
     },
     organization: {
         getMembers: getOrganizationMembers
+    },
+    walkthrough: {
+        renderStep: renderWalkthroughStepRPC
     }
 }

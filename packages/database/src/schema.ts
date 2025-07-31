@@ -186,7 +186,7 @@ export const walkthroughs = pgTable(
             .notNull(),
         title: text('title').notNull(),
         description: text('description'),
-        type: walkthroughType('type').default('course'),
+        type: walkthroughType('type').default('course').notNull(),
         status: walkthroughStatus('status').default('draft'),
         createdAt: bigint('created_at', { mode: 'number' }).$defaultFn(() => Date.now()),
         updatedAt: bigint('updated_at', { mode: 'number' }).$defaultFn(() => Date.now()),
@@ -323,7 +323,8 @@ export const documents = pgTable(
             .references(() => organization.id, { onDelete: 'cascade' })
             .notNull(),
         createdAt: bigint('created_at', { mode: 'number' }).$defaultFn(() => Date.now()),
-        updatedAt: bigint('updated_at', { mode: 'number' }).$defaultFn(() => Date.now())
+        updatedAt: bigint('updated_at', { mode: 'number' }).$defaultFn(() => Date.now()),
+        contentHash: text('content_hash').notNull()
     },
     (t) => [index('retrieval_documents_namespace_id_idx').on(t.namespaceId)]
 )

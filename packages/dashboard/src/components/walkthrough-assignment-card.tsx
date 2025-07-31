@@ -1,26 +1,6 @@
 'use client'
 
 import {
-    AlertDialog,
-    AlertDialogAction,
-    AlertDialogCancel,
-    AlertDialogContent,
-    AlertDialogDescription,
-    AlertDialogFooter,
-    AlertDialogHeader,
-    AlertDialogTitle
-} from '@/components/ui/alert-dialog'
-import { Badge } from '@/components/ui/badge'
-import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { MultiSelect } from '@/components/ui/multi-select'
-import {
-    assignWalkthroughsToServerAction,
-    removeWalkthroughAssignmentAction,
-    reorderServerWalkthroughsAction,
-    updateWalkthroughAssignmentAction
-} from '@/lib/orpc/actions/walkthrough-assignment'
-import {
     closestCenter,
     DndContext,
     type DragEndEvent,
@@ -42,6 +22,26 @@ import { useServerAction } from '@orpc/react/hooks'
 import { GripVertical, MapIcon, ToggleLeft, ToggleRight, Trash2, UsersIcon } from 'lucide-react'
 import { use, useEffect, useState } from 'react'
 import { toast } from 'sonner'
+import {
+    assignWalkthroughsToServerAction,
+    removeWalkthroughAssignmentAction,
+    reorderServerWalkthroughsAction,
+    updateWalkthroughAssignmentAction
+} from '../lib/orpc/actions/walkthrough-assignment'
+import {
+    AlertDialog,
+    AlertDialogAction,
+    AlertDialogCancel,
+    AlertDialogContent,
+    AlertDialogDescription,
+    AlertDialogFooter,
+    AlertDialogHeader,
+    AlertDialogTitle
+} from './ui/alert-dialog'
+import { Badge } from './ui/badge'
+import { Button } from './ui/button'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/card'
+import { MultiSelect } from './ui/multi-select'
 
 interface WalkthroughOption {
     id: string
@@ -257,7 +257,7 @@ export function WalkthroughAssignmentCard({
         await updateAssignment({
             serverId,
             walkthroughId,
-            isEnabled: newIsEnabled
+            isEnabled: newIsEnabled === 'true'
         })
     }
 

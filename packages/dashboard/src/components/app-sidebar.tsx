@@ -1,6 +1,5 @@
 'use client'
 
-import { authClient } from '@/lib/auth/auth.client'
 import {
     IconDashboard,
     IconDatabase,
@@ -15,10 +14,10 @@ import {
 } from '@tabler/icons-react'
 import { BookOpenIcon } from 'lucide-react'
 import type * as React from 'react'
-
-import { NavMain } from '@/components/nav-main'
-import { NavSecondary } from '@/components/nav-secondary'
-import { NavUser } from '@/components/nav-user'
+import { authClient } from '../lib/auth/auth.client'
+import { NavMain } from './nav-main'
+import { NavSecondary } from './nav-secondary'
+import { NavUser } from './nav-user'
 import {
     Sidebar,
     SidebarContent,
@@ -27,7 +26,7 @@ import {
     SidebarMenu,
     SidebarMenuButton,
     SidebarMenuItem
-} from '@/components/ui/sidebar'
+} from './ui/sidebar'
 
 export const data = {
     navMain: [
@@ -61,70 +60,8 @@ export const data = {
             icon: IconHelpCircle,
             description: 'View and manage support tickets submitted through your MCP servers'
         }
-        // {
-        //     title: 'Analytics',
-        //     url: '#',
-        //     icon: IconChartBar
-        // },
-        // {
-        //     title: 'Projects',
-        //     url: '#',
-        //     icon: IconFolder
-        // },
-        // {
-        //     title: 'Team',
-        //     url: '#',
-        //     icon: IconUsers
-        // }
     ],
-    // navClouds: [
-    //     {
-    //         title: 'Capture',
-    //         icon: IconCamera,
-    //         isActive: true,
-    //         url: '#',
-    //         items: [
-    //             {
-    //                 title: 'Active Proposals',
-    //                 url: '#'
-    //             },
-    //             {
-    //                 title: 'Archived',
-    //                 url: '#'
-    //             }
-    //         ]
-    //     },
-    //     {
-    //         title: 'Proposal',
-    //         icon: IconFileDescription,
-    //         url: '#',
-    //         items: [
-    //             {
-    //                 title: 'Active Proposals',
-    //                 url: '#'
-    //             },
-    //             {
-    //                 title: 'Archived',
-    //                 url: '#'
-    //             }
-    //         ]
-    //     },
-    //     {
-    //         title: 'Prompts',
-    //         icon: IconFileAi,
-    //         url: '#',
-    //         items: [
-    //             {
-    //                 title: 'Active Proposals',
-    //                 url: '#'
-    //             },
-    //             {
-    //                 title: 'Archived',
-    //                 url: '#'
-    //             }
-    //         ]
-    //     }
-    // ],
+
     navSecondary: [
         {
             title: 'Settings',

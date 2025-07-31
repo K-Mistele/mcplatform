@@ -1,21 +1,38 @@
 import type { Walkthrough, WalkthroughStep } from 'database'
-import nunjucks from 'nunjucks'
 
-// Configure Nunjucks without autoescape since we're templating markdown, not HTML
-const env = new nunjucks.Environment(null, {
-    autoescape: false,
-    throwOnUndefined: false
-})
+// nunjucks.configure({
+//     autoescape: false,
+//     throwOnUndefined: false
+// })
 
-const WALKTHROUGH_TEMPLATE = `
-# Walkthrough: {{ walkthroughTitle }}
+const walkthroughTemplate = ({
+    displayOrder,
+    stepTitle,
+    walkthroughTitle,
+    introductionForAgent,
+    contextForAgent,
+    contentForUser,
+    operationsForAgent
+}: {
+    displayOrder: number
+    stepTitle: string
+    walkthroughTitle: string
+    introductionForAgent: string
+    contextForAgent: string
+    contentForUser: string
+    operationsForAgent: string
+}) =>
+    `
+# Walkthrough: ${walkthroughTitle}
 
-## Step {{ displayOrder }}: {{ stepTitle }}
-*This is step {{ displayOrder }} in the "{{ walkthroughTitle }}" walkthrough. 
+## Step ${displayOrder}: ${stepTitle}
+*This is step ${displayOrder} in the "${walkthroughTitle}" walkthrough. 
 Use the step navigation tools to guide the user through the process.*
 
 
-{% if introductionForAgent and introductionForAgent.trim() %}
+${
+    introductionForAgent.trim()
+        ? `
 The below information between <step_information_and_objectives> and </step_information_and_objectives> contains information about the step including learning objectives and definitions of done.
 When the step's objectives have been met, you should ask the user if they are ready to move on to the next step.
 If so, you should use the step navigation tools to move to the next step.
@@ -23,18 +40,26 @@ If so, you should use the step navigation tools to move to the next step.
 <step_information_and_objectives>
 {{ introductionForAgent }}
 </step_information_and_objectives>
-{% endif %}
+`
+        : ''
+}
 
-{% if contextForAgent and contextForAgent.trim() %}
+${
+    contextForAgent.trim()
+        ? `
 The following information between <background_information_context> and </background_information_context> contains background information about the step.
 This information is for the agent (you) to reference when you are performing the step or helping the user through it. 
 
 <background_information_context>
 {{ contextForAgent }}
 </background_information_context>
-{% endif %}
+`
+        : ''
+}
 
-{% if operationsForAgent and operationsForAgent.trim() %}
+${
+    operationsForAgent.trim()
+        ? `
 The following information between <operations_to_perform> and </operations_to_perform> contains the operations to perform for the step.
 These are the actions the agent (you) should take to help the user through the step.
 When the user has completed the step, you should ask them to confirm the step is complete.
@@ -43,17 +68,23 @@ If so, you should use the step navigation tools to move to the next step.
 <operations_to_perform>
 {{ operationsForAgent }}
 </operations_to_perform>
-{% endif %}
+`
+        : ''
+}
 
-{% if contentForUser and contentForUser.trim() %}
+${
+    contentForUser.trim()
+        ? `
 The following information between <step_content> and </step_content> contains the content for the user to read.
 This is the information that the user will see when they are performing the step.
 You should repeat this information to the user VERBATIM as it is written before taking other actions such as the operations, asking questions, etc.
 
 <step_content>
-{{ contentForUser }}
+${contentForUser}
 </step_content>
-{% endif %}
+`
+        : ''
+}
 
 ---
 
@@ -76,5 +107,5 @@ export function renderWalkthroughStep(walkthrough: Walkthrough, step: Walkthroug
         operationsForAgent: contentFields?.operationsForAgent || ''
     }
 
-    return env.renderString(WALKTHROUGH_TEMPLATE, templateData)
+    return walkthroughTemplate(templateData)
 }

@@ -78,7 +78,7 @@ export default $config({
 
         const nextjsApp = new sst.aws.Nextjs(`McpPlatformNextjsApp`, {
             vpc,
-            link: [postgres, bucket],
+            link: [postgres, bucket, redis],
             path: 'packages/dashboard',
             environment: {
                 INNGEST_EVENT_KEY,
@@ -94,7 +94,6 @@ export default $config({
                 GOOGLE_API_KEY,
                 TURBOPUFFER_API_KEY
             },
-            dev: false,
             domain: appDomain
         })
     }

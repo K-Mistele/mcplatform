@@ -1,13 +1,14 @@
 'use client'
 
-import { MarkdownRenderer } from '@/components/support-tickets/markdown-renderer'
-import { Badge } from '@/components/ui/badge'
-import { Button } from '@/components/ui/button'
-import { ScrollArea } from '@/components/ui/scroll-area'
-import useLocalStorage from '@/hooks/use-local-storage'
-import { renderWalkthroughStep } from '@/lib/template-engine'
+import { client } from '@/lib/orpc/orpc.client'
 import type { Walkthrough, WalkthroughStep } from 'database'
 import { EyeIcon } from 'lucide-react'
+import { useEffect, useState } from 'react'
+import useLocalStorage from '../hooks/use-local-storage'
+import { MarkdownRenderer } from './support-tickets/markdown-renderer'
+import { Badge } from './ui/badge'
+import { Button } from './ui/button'
+import { ScrollArea } from './ui/scroll-area'
 
 interface PreviewPanelProps {
     walkthrough: Walkthrough
@@ -18,6 +19,43 @@ type PreviewMode = 'raw' | 'rendered'
 
 export function PreviewPanel({ walkthrough, step }: PreviewPanelProps) {
     const [previewMode, setPreviewMode] = useLocalStorage<PreviewMode>('walkthrough-preview-mode', 'raw')
+    const [renderedTemplate, setRenderedTemplate] = useState<string>('')
+    const [isLoading, setIsLoading] = useState(false)
+
+    useEffect(() => {
+        if (!step) {
+            setRenderedTemplate('')
+            return
+        }
+
+        const fetchRenderedTemplate = async () => {
+            setIsLoading(true)
+            try {
+                const result = await client.walkthrough.renderStep({
+                    walkthrough: {
+                        title: walkthrough.title,
+                        description: walkthrough.description,
+                        type: walkthrough.type
+                    },
+                    step: {
+                        id: step.id,
+                        title: step.title,
+                        displayOrder: step.displayOrder,
+                        contentFields: step.contentFields
+                    }
+                })
+                
+                setRenderedTemplate(result)
+            } catch (error) {
+                console.error('Error rendering template:', error)
+                setRenderedTemplate('Error rendering template')
+            } finally {
+                setIsLoading(false)
+            }
+        }
+
+        fetchRenderedTemplate()
+    }, [step?.id, step?.title, step?.displayOrder, step?.contentFields, walkthrough.title, walkthrough.description, walkthrough.type])
 
     if (!step) {
         return (
@@ -30,8 +68,6 @@ export function PreviewPanel({ walkthrough, step }: PreviewPanelProps) {
             </div>
         )
     }
-
-    const renderedTemplate = renderWalkthroughStep(walkthrough, step)
 
     return (
         <div className="h-full flex flex-col">
@@ -66,7 +102,11 @@ export function PreviewPanel({ walkthrough, step }: PreviewPanelProps) {
             {/* Content */}
             <ScrollArea className="flex-1">
                 <div className="p-4">
-                    {previewMode === 'raw' ? (
+                    {isLoading ? (
+                        <div className="flex items-center justify-center h-full">
+                            <p className="text-muted-foreground">Loading preview...</p>
+                        </div>
+                    ) : previewMode === 'raw' ? (
                         <div className="space-y-4">
                             <div className="bg-muted border rounded-lg p-4">
                                 <div className="flex items-center gap-2 mb-3">
