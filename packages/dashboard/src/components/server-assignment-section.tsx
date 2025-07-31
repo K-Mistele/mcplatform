@@ -1,18 +1,18 @@
 'use client'
 
-import { Badge } from '@/components/ui/badge'
-import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { MultiSelect } from '@/components/ui/multi-select'
-import {
-    assignWalkthroughsToServerAction,
-    updateWalkthroughAssignmentAction
-} from '@/lib/orpc/actions/walkthrough-assignment'
 import { isDefinedError, onError, onSuccess } from '@orpc/client'
 import { useServerAction } from '@orpc/react/hooks'
 import { ServerIcon, ToggleLeft, ToggleRight } from 'lucide-react'
 import { use, useEffect, useState } from 'react'
 import { toast } from 'sonner'
+import {
+    assignWalkthroughsToServerAction,
+    updateWalkthroughAssignmentAction
+} from '../lib/orpc/actions/walkthrough-assignment'
+import { Badge } from './ui/badge'
+import { Button } from './ui/button'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/card'
+import { MultiSelect } from './ui/multi-select'
 
 interface ServerOption {
     id: string
@@ -129,7 +129,7 @@ export function ServerAssignmentSection({
         await updateAssignment({
             serverId,
             walkthroughId,
-            isEnabled: newIsEnabled
+            isEnabled: newIsEnabled === 'true'
         })
     }
 
