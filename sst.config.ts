@@ -54,6 +54,11 @@ export default $config({
         const appDomain = $app.stage === 'production' ? 'naptha.gg' : `${$app.stage}.naptha.gg`
         const appUrl = `https://${appDomain}/api/inngest`
 
+        const urlEncodedPostgresPassword = $resolve([postgres.password]).apply(([postgresPw]) =>
+            encodeURIComponent(postgresPw!)
+        )
+        const urlEncodedRedisPassword = $resolve([redis.password]).apply(([redisPw]) => encodeURIComponent(redisPw!))
+
         const inngestCommand = ['inngest', 'start', '-u', appUrl]
         //if ($app.stage !== 'production') inngestCommand.push('--no-ui')
         const inngest = new sst.aws.Service(`McpPlatformInngestService`, {
@@ -63,8 +68,8 @@ export default $config({
             environment: {
                 INNGEST_EVENT_KEY,
                 INNGEST_SIGNING_KEY,
-                INNGEST_POSTGRES_URI: $interpolate`postgres://${postgres.username}:${postgres.password}@${postgres.host}:${postgres.port}/${postgres.database}`,
-                INNGEST_REDIS_URI: $interpolate`redis://${redis.username}:${redis.password}@${redis.host}:${redis.port}/1`
+                INNGEST_POSTGRES_URI: $interpolate`postgres://${postgres.username}:${urlEncodedPostgresPassword}@${postgres.host}:${postgres.port}/${postgres.database}`,
+                INNGEST_REDIS_URI: $interpolate`redis://${redis.username}:${urlEncodedRedisPassword}@${redis.host}:${redis.port}/1`
             },
             link: [redis, postgres],
             loadBalancer: {
@@ -73,7 +78,26 @@ export default $config({
             serviceRegistry: {
                 port: 8288
             },
+            // force it to deploy with SST dev since we need to test!
+            dev: false
+        })
+
+        const migrator = new sst.aws.Function('McpPlatformDatabaseMigrator', {
+            link: [postgres],
+            vpc,
+            handler: 'packages/database/migrator.handler',
+            copyFiles: [
+                {
+                    from: 'packages/database/migrations',
+                    to: 'migrations'
+                }
+            ],
             dev: false // force it to deploy with SST dev since we need to test!
+        })
+
+        new aws.lambda.Invocation('DatabaseMigratorInvocation', {
+            input: Date.now().toString(),
+            functionName: migrator.name
         })
 
         const nextjsApp = new sst.aws.Nextjs(`McpPlatformNextjsApp`, {
@@ -84,7 +108,7 @@ export default $config({
                 INNGEST_EVENT_KEY,
                 INNGEST_SIGNING_KEY,
                 INNGEST_BASE_URL: inngest.url,
-                DATABASE_URL: $interpolate`postgres://${postgres.username}:${postgres.password}@${postgres.host}:${postgres.port}/${postgres.database}`,
+                DATABASE_URL: $interpolate`postgres://${postgres.username}:${urlEncodedPostgresPassword}@${postgres.host}:${postgres.port}/${postgres.database}`,
                 GITHUB_CLIENT_ID,
                 GITHUB_CLIENT_SECRET,
                 GOOGLE_CLIENT_ID,
@@ -95,6 +119,13 @@ export default $config({
                 TURBOPUFFER_API_KEY
             },
             domain: appDomain
+        })
+
+        new sst.x.DevCommand('Studio', {
+            link: [postgres],
+            dev: {
+                command: 'cd packages/database && bunx drizzle-kit studio'
+            }
         })
     }
 })

@@ -1,4 +1,4 @@
-import { PutObjectCommand, S3Client } from '@aws-sdk/client-s3'
+import { GetObjectCommand, PutObjectCommand, S3Client } from '@aws-sdk/client-s3'
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner'
 import { db, schema } from 'database'
 import { and, eq } from 'drizzle-orm'
@@ -38,17 +38,17 @@ export async function storeDocument(
     document: Buffer,
     {
         organizationId,
-        namespaceSlug,
+        namespaceId,
         documentRelativePath
     }: {
         organizationId: string
-        namespaceSlug: string
+        namespaceId: string
         documentRelativePath: string
     }
 ) {
     const command = new PutObjectCommand({
         Bucket: Resource.McpPlatformBucket.name,
-        Key: `${organizationId}/${namespaceSlug}/${documentRelativePath}`,
+        Key: `${organizationId}/${namespaceId}/${documentRelativePath}`,
         Body: document
     })
     await s3Client.send(command)
@@ -99,4 +99,28 @@ export async function shouldReingestDocument({
     // Check to see if the content hash matches the existing document
     if (contentHash === document.contentHash) return { shouldReingest: false, reason: 'CONTENT_HASH_MATCH' }
     return { shouldReingest: true, contentHash, reason: 'CONTENT_HASH_MISMATCH' }
+}
+
+/**
+ * Gets a document from S3.
+ * @param param0
+ * @returns
+ */
+export async function getDocumentFromS3({
+    organizationId,
+    namespaceId,
+    documentRelativePath
+}: {
+    organizationId: string
+    namespaceId: string
+    documentRelativePath: string
+}) {
+    const command = new GetObjectCommand({
+        Bucket: Resource.McpPlatformBucket.name,
+        Key: `${organizationId}/${namespaceId}/${documentRelativePath}`
+    })
+
+    const response = await s3Client.send(command)
+    if (!response.Body) throw new Error('Failed to get document from S3')
+    return response.Body
 }

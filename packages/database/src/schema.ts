@@ -340,7 +340,7 @@ export const chunks = pgTable(
         id: text('id')
             .primaryKey()
             .$defaultFn(() => `rc_${nanoid(16)}`),
-        documentId: text('document_id')
+        documentPath: text('document_path')
             .references(() => documents.filePath, { onDelete: 'cascade' })
             .notNull(),
         namespaceId: text('namespace_id')
@@ -357,10 +357,10 @@ export const chunks = pgTable(
         updatedAt: bigint('updated_at', { mode: 'number' }).$defaultFn(() => Date.now())
     },
     (t) => [
-        index('retrieval_chunks_document_id_idx').on(t.documentId),
+        index('retrieval_chunks_document_id_idx').on(t.documentPath),
         index('retrieval_chunks_namespace_id_idx').on(t.namespaceId),
         //index('retrieval_chunks_embedding_index').using('hnsw', t.embedding.op('vector_cosine_ops')),
-        unique('retrieval_chunks_unique_document_order').on(t.documentId, t.orderInDocument)
+        unique('retrieval_chunks_unique_document_order').on(t.documentPath, t.orderInDocument, t.namespaceId)
     ]
 )
 
@@ -396,9 +396,7 @@ export type Document = typeof documents.$inferSelect
 export type Namespace = typeof retrievalNamespace.$inferSelect
 
 export const ingestionJob = pgTable('retrieval_ingestion_job', {
-    id: text('id')
-        .primaryKey()
-        .$defaultFn(() => `ri_${nanoid(12)}`),
+    id: text('id').primaryKey(),
     organizationId: text('organization_id')
         .references(() => organization.id, { onDelete: 'cascade' })
         .notNull(),
