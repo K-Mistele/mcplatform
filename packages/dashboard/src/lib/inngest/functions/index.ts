@@ -1,4 +1,4 @@
-import { inngest } from './client'
+import { inngest } from '../client'
 
 // Example function: Hello World
 export const helloWorld = inngest.createFunction(

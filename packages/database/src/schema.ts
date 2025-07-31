@@ -44,6 +44,7 @@ const activityTypeValues = ['comment', 'status_change', 'assignment', 'field_upd
 const priorityValues = ['low', 'medium', 'high', 'critical'] as const
 const walkthroughStatusValues = ['draft', 'published', 'archived'] as const
 const walkthroughTypeValues = ['course', 'installer', 'troubleshooting', 'integration', 'quickstart'] as const
+const ingestionJobStatusValues = ['pending', 'in_progress', 'completed', 'failed'] as const
 
 export const supportRequestStatus = pgEnum('support_request_status', supportRequestStatusValues)
 export const supportRequestMethod = pgEnum('support_request_method', supportRequestMethodValues)
@@ -52,6 +53,7 @@ export const supportTicketActivityType = pgEnum('support_ticket_activity_type', 
 export const supportTicketPriority = pgEnum('support_ticket_priority', priorityValues)
 export const walkthroughStatus = pgEnum('walkthrough_status', walkthroughStatusValues)
 export const walkthroughType = pgEnum('walkthrough_type', walkthroughTypeValues)
+export const ingestionJobStatus = pgEnum('ingestion_job_status', ingestionJobStatusValues)
 
 export const supportRequests = pgTable('support_requests', {
     id: text('id')
@@ -392,3 +394,20 @@ export type Image = typeof images.$inferSelect
 export type Chunk = typeof chunks.$inferSelect
 export type Document = typeof documents.$inferSelect
 export type Namespace = typeof retrievalNamespace.$inferSelect
+
+export const ingestionJob = pgTable('retrieval_ingestion_job', {
+    id: text('id')
+        .primaryKey()
+        .$defaultFn(() => `ri_${nanoid(12)}`),
+    organizationId: text('organization_id')
+        .references(() => organization.id, { onDelete: 'cascade' })
+        .notNull(),
+    namespaceId: text('namespace_id')
+        .references(() => retrievalNamespace.id, { onDelete: 'cascade' })
+        .notNull(),
+    status: ingestionJobStatus('status').default('pending'),
+    createdAt: bigint('created_at', { mode: 'number' }).$defaultFn(() => Date.now()),
+    updatedAt: bigint('updated_at', { mode: 'number' }).$defaultFn(() => Date.now()),
+    totalDocuments: integer('total_documents').notNull().default(0),
+    documentsProcessed: integer('documents_processed').notNull().default(0)
+})
