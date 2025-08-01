@@ -5,15 +5,15 @@ import z from 'zod'
 import { getDocumentFromS3 } from '../documents'
 import { chunkDocument } from '../preprocessing'
 
-export const batchIngestDocumentsEventSchema = z.object({
+export const ingestDocumentEventSchema = z.object({
     organizationId: z.string(),
     namespaceId: z.string(),
     documentPath: z.string(),
     batchId: z.string().uuid().describe('The ID of the batch to ingest the document to')
 })
-export type BatchIngestDocumentsEvent = z.infer<typeof batchIngestDocumentsEventSchema>
+export type IngestDocumentEvent = z.infer<typeof ingestDocumentEventSchema>
 
-export const batchIngestDocuments = (inngest: Inngest) =>
+export const ingestDocument = (inngest: Inngest) =>
     inngest.createFunction(
         {
             id: 'ingest-document',
@@ -24,7 +24,7 @@ export const batchIngestDocuments = (inngest: Inngest) =>
         },
         async ({ event, step, logger }) => {
             // validate the input; prevent retries if the input is invalid
-            const { success, data, error } = batchIngestDocumentsEventSchema.safeParse(event.data)
+            const { success, data, error } = ingestDocumentEventSchema.safeParse(event.data)
             if (!data || error || !success) {
                 const prettyError = z.prettifyError(error)
                 logger.error(`invalid event data:\n\n${prettyError}`)
@@ -54,6 +54,17 @@ export const batchIngestDocuments = (inngest: Inngest) =>
                 // TODO implement this
                 logger.warn('likely image, skipping')
                 return
+            }
+
+            // NOTE we need to make sure it's markdown otherwise we cannot process at present
+            const isLikelyMarkdown =
+                data.documentPath.endsWith('.md') ||
+                data.documentPath.endsWith('.markdown') ||
+                data.documentPath.endsWith('.txt') ||
+                data.documentPath.endsWith('.mdx')
+            if (!isLikelyMarkdown) {
+                logger.error('unable to process non-markdown documents')
+                throw new NonRetriableError('unable to process non-markdown documents')
             }
 
             // STEP -- increment the total documents count for the batch

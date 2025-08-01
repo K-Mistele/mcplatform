@@ -9,13 +9,18 @@ declare module "sst" {
       "name": string
       "type": "sst.aws.Bucket"
     }
+    "McpPlatformDatabaseMigrator": {
+      "name": string
+      "type": "sst.aws.Function"
+    }
     "McpPlatformInngestService": {
       "service": string
       "type": "sst.aws.Service"
       "url": string
     }
     "McpPlatformNextjsApp": {
-      "type": "sst.aws.Nextjs"
+      "service": string
+      "type": "sst.aws.Service"
       "url": string
     }
     "McpPlatformPostgres": {
@@ -34,6 +39,7 @@ declare module "sst" {
       "username": string
     }
     "McpPlatformVpc": {
+      "bastion": string
       "type": "sst.aws.Vpc"
     }
   }

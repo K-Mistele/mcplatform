@@ -11,6 +11,7 @@
         "zod": "4"
     },
     "devDependencies": {
+        "@inngest/test": "^0.1.7",
         "@types/bun": "latest"
     },
     "peerDependencies": {

@@ -8,7 +8,9 @@
     ],
     "scripts": {
         "lint": "bunx @biomejs/biome lint --write",
-        "dev": "sst dev"
+        "dev": "sst dev",
+        "studio": "cd packages/database && bun run db:studio",
+        "next:dev": "cd packages/dashboard && bun run dev"
     },
     "devDependencies": {
         "@biomejs/biome": "^2.1.3",

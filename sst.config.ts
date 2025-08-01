@@ -30,7 +30,12 @@ export default $config({
         }
     },
     async run() {
-        const vpc = new sst.aws.Vpc(`McpPlatformVpc`)
+        const vpc = new sst.aws.Vpc(`McpPlatformVpc`, {
+            nat: {
+                type: 'managed'
+            },
+            bastion: true
+        })
 
         const cluster = new sst.aws.Cluster(`McpPlatformCluster`, { vpc })
 
@@ -44,7 +49,8 @@ export default $config({
 
         const postgres = new sst.aws.Postgres(`McpPlatformPostgres`, {
             vpc,
-            database: 'postgres'
+            database: 'postgres',
+            proxy: false
         })
 
         const bucket = new sst.aws.Bucket(`McpPlatformBucket`, {
@@ -59,8 +65,17 @@ export default $config({
         )
         const urlEncodedRedisPassword = $resolve([redis.password]).apply(([redisPw]) => encodeURIComponent(redisPw!))
 
-        const inngestCommand = ['inngest', 'start', '-u', appUrl]
-        //if ($app.stage !== 'production') inngestCommand.push('--no-ui')
+        const inngestCommand = [
+            'inngest',
+            'start',
+            '-u',
+            appUrl,
+            '--signing-key',
+            INNGEST_SIGNING_KEY,
+            '--event-key',
+            INNGEST_EVENT_KEY
+        ]
+        if ($app.stage !== 'production') inngestCommand.push('--no-ui')
         const inngest = new sst.aws.Service(`McpPlatformInngestService`, {
             cluster,
             image: 'inngest/inngest:latest',
@@ -69,7 +84,8 @@ export default $config({
                 INNGEST_EVENT_KEY,
                 INNGEST_SIGNING_KEY,
                 INNGEST_POSTGRES_URI: $interpolate`postgres://${postgres.username}:${urlEncodedPostgresPassword}@${postgres.host}:${postgres.port}/${postgres.database}`,
-                INNGEST_REDIS_URI: $interpolate`redis://${redis.username}:${urlEncodedRedisPassword}@${redis.host}:${redis.port}/1`
+                INNGEST_REDIS_URI: $interpolate`redis://${redis.username}:${urlEncodedRedisPassword}@${redis.host}:${redis.port}/1`,
+                INNGEST_DEV: '0'
             },
             link: [redis, postgres],
             loadBalancer: {
@@ -92,18 +108,19 @@ export default $config({
                     to: 'migrations'
                 }
             ],
+            environment: {
+                DATABASE_URL: $interpolate`postgres://${postgres.username}:${urlEncodedPostgresPassword}@${postgres.host}:${postgres.port}/${postgres.database}`
+            },
             dev: false // force it to deploy with SST dev since we need to test!
         })
 
-        new aws.lambda.Invocation('DatabaseMigratorInvocation', {
-            input: Date.now().toString(),
-            functionName: migrator.name
-        })
-
-        const nextjsApp = new sst.aws.Nextjs(`McpPlatformNextjsApp`, {
-            vpc,
-            link: [postgres, bucket, redis],
-            path: 'packages/dashboard',
+        const nextjsApp = new sst.aws.Service(`McpPlatformNextjsApp`, {
+            cluster,
+            link: [postgres, bucket],
+            image: {
+                context: './packages/dashboard',
+                dockerfile: 'Dockerfile.dev'
+            },
             environment: {
                 INNGEST_EVENT_KEY,
                 INNGEST_SIGNING_KEY,
@@ -118,13 +135,30 @@ export default $config({
                 GOOGLE_API_KEY,
                 TURBOPUFFER_API_KEY
             },
-            domain: appDomain
+            loadBalancer: {
+                ports: [{ listen: '3000/tcp' }]
+            },
+            serviceRegistry: {
+                port: 3000
+            },
+            dev: {
+                command: 'bun run dev'
+            }
+        })
+
+        $resolve([nextjsApp.url]).apply(([nextjsUrl]) => {
+            console.log(`Next.js app URL: ${nextjsUrl}`)
+        })
+
+        new aws.lambda.Invocation('DatabaseMigratorInvocation', {
+            input: Date.now().toString(),
+            functionName: migrator.name
         })
 
         new sst.x.DevCommand('Studio', {
             link: [postgres],
             dev: {
-                command: 'cd packages/database && bunx drizzle-kit studio'
+                command: 'bun run studio'
             }
         })
     }
