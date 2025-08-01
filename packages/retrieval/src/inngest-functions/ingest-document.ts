@@ -20,7 +20,7 @@ export const ingestDocument = (inngest: Inngest) =>
             name: 'Ingest Document to Namespace'
         },
         {
-            event: 'retrieval/batch-ingest-documents'
+            event: 'retrieval/ingest-document'
         },
         async ({ event, step, logger }) => {
             // validate the input; prevent retries if the input is invalid
@@ -69,13 +69,19 @@ export const ingestDocument = (inngest: Inngest) =>
 
             // STEP -- increment the total documents count for the batch
             await step.run('increment-batch-total-documents', async () => {
-                const [result] = await db.transaction(
+                const result = await db.transaction(
                     async (tx) => {
-                        return await tx
+                        await tx
                             .update(schema.ingestionJob)
                             .set({ totalDocuments: sql`${schema.ingestionJob.totalDocuments} + 1` })
                             .where(eq(schema.ingestionJob.id, data.batchId))
                             .returning()
+
+                        const result = await tx
+                            .select()
+                            .from(schema.ingestionJob)
+                            .where(eq(schema.ingestionJob.id, data.batchId))
+                        return result?.[0]
                     },
                     {
                         // IMPORTANT: prevent deadlocks by using a read committed isolation level
@@ -83,6 +89,7 @@ export const ingestDocument = (inngest: Inngest) =>
                         accessMode: 'read write'
                     }
                 )
+                console.log(result)
                 if (!result) {
                     logger.error(`failed to increment total documents count for batch ${data.batchId}`)
                     throw new Error('Failed to increment total documents count for batch')
@@ -153,13 +160,18 @@ export const ingestDocument = (inngest: Inngest) =>
 
             // STEP -- update the processed documents count in the database
             await step.run('increment-batch-processed-documents', async () => {
-                const [result] = await db.transaction(
+                const result = await db.transaction(
                     async (tx) => {
-                        return await tx
+                        await tx
                             .update(schema.ingestionJob)
                             .set({ documentsProcessed: sql`${schema.ingestionJob.documentsProcessed} + 1` })
                             .where(eq(schema.ingestionJob.id, data.batchId))
-                            .returning()
+
+                        const result = await tx
+                            .select()
+                            .from(schema.ingestionJob)
+                            .where(eq(schema.ingestionJob.id, data.batchId))
+                        return result?.[0]
                     },
                     {
                         // IMPORTANT: prevent deadlocks by using a read committed isolation level
@@ -168,8 +180,8 @@ export const ingestDocument = (inngest: Inngest) =>
                     }
                 )
                 if (!result) {
-                    logger.error(`failed to increment total documents count for batch ${data.batchId}`)
-                    throw new Error('Failed to increment total documents count for batch')
+                    logger.error(`Failed to increment processed documents count for batch ${data.batchId}`)
+                    throw new Error('Failed to increment processed documents count for batch')
                 }
                 logger.info(
                     `incremented processed documents count for batch ${data.batchId} to ${result?.documentsProcessed} (${result?.documentsProcessed}/${result?.totalDocuments})`

@@ -4,16 +4,21 @@ import { db, schema } from 'database'
 import { eq } from 'drizzle-orm'
 import { Inngest } from 'inngest'
 import { randomUUID } from 'node:crypto'
-
-import { ingestDocument } from '../../src/inngest-functions'
+import fs from 'node:fs/promises'
+import path from 'node:path'
+import { ingestDocument, uploadDocument } from '../../src/inngest-functions'
 
 const inngestClient = new Inngest({
     id: 'test-inngest',
     baseUrl: 'http://localhost:8288'
 })
 
-const t = new InngestTestEngine({
+const testIngestFunction = new InngestTestEngine({
     function: ingestDocument(inngestClient)
+})
+
+const testUploadFunction = new InngestTestEngine({
+    function: uploadDocument(inngestClient)
 })
 
 describe('Inngest Functions', async () => {
@@ -25,7 +30,7 @@ describe('Inngest Functions', async () => {
     describe('ingest-document', async () => {
         describe('input validation', () => {
             test('should fail without parameters', async () => {
-                const result = await t.execute({
+                const result = await testIngestFunction.execute({
                     events: [{ data: {}, name: 'ingest-document' }]
                 })
                 expect(result.error).toBeDefined()
@@ -33,7 +38,7 @@ describe('Inngest Functions', async () => {
             })
 
             test('should fail with invalid parameters', async () => {
-                const result = await t.execute({
+                const result = await testIngestFunction.execute({
                     events: [
                         {
                             data: {
@@ -52,36 +57,69 @@ describe('Inngest Functions', async () => {
         })
 
         describe('file types', async () => {
-            let organizationId: string
+            const organizationId: string = `org_test_abcdefghijklmnopqrstuvwxyz`
             const namespaceId = 'test-namespace'
             const batchId = randomUUID()
+            const documentContents = (await fs.readFile(path.join(__dirname, 'test_file.md'))).toString('base64')
 
+            // Create a mock organization
+            // insert files
             beforeAll(async () => {
-                const [results] = await db
+                await db
                     .insert(schema.organization)
                     .values({
-                        name: 'test-org-inngest',
-                        id: 'test-org-inngest',
-                        slug: 'test-org-inngest',
+                        id: organizationId,
+                        name: 'Test Organization',
                         createdAt: new Date()
                     })
-                    .returning({ id: schema.organization.id })
-                organizationId = results!.id
-            })
-
-            afterAll(async () => {
-                await db.delete(schema.organization).where(eq(schema.organization.id, organizationId))
-            })
-            test('should fail for unsupported file type (pdf)', async () => {
-                const result = await t.execute({
+                    .onConflictDoNothing()
+                await db.insert(schema.retrievalNamespace).values({
+                    id: namespaceId,
+                    name: 'Test Namespace',
+                    organizationId,
+                    createdAt: Date.now()
+                })
+                await db.insert(schema.ingestionJob).values({
+                    id: batchId,
+                    organizationId,
+                    namespaceId,
+                    createdAt: Date.now()
+                })
+                const uploadResult = await testUploadFunction.execute({
                     events: [
                         {
                             name: 'retrieval/upload-document',
                             data: {
-                                organizationId: 'test-org',
-                                namespaceId: 'test-namespace',
+                                organizationId,
+                                namespaceId,
+                                documentPath: 'test_file.md',
+                                documentBufferBase64: documentContents
+                            }
+                        }
+                    ]
+                })
+
+                expect(uploadResult.error).not.toBeDefined()
+                expect(uploadResult).toHaveProperty('result')
+            })
+
+            afterAll(async () => {
+                await Promise.all([
+                    db.delete(schema.organization).where(eq(schema.organization.id, organizationId)),
+                    db.delete(schema.retrievalNamespace).where(eq(schema.retrievalNamespace.id, namespaceId)),
+                    db.delete(schema.ingestionJob).where(eq(schema.ingestionJob.id, batchId))
+                ])
+            })
+            test('should fail for unsupported file type (pdf)', async () => {
+                const result = await testIngestFunction.execute({
+                    events: [
+                        {
+                            name: 'retrieval/ingest-document',
+                            data: {
+                                organizationId,
+                                namespaceId,
                                 documentPath: 'test-file.pdf',
-                                batchId: randomUUID()
+                                batchId
                             }
                         }
                     ]
@@ -91,15 +129,15 @@ describe('Inngest Functions', async () => {
             })
 
             test('should fail if the document is image (not supported)', async () => {
-                const result = await t.execute({
+                const result = await testIngestFunction.execute({
                     events: [
                         {
-                            name: 'retrieval/upload-document',
+                            name: 'retrieval/ingest-document',
                             data: {
-                                organizationId: 'test-org',
-                                namespaceId: 'test-namespace',
+                                organizationId,
+                                namespaceId,
                                 documentPath: 'test-file.png',
-                                batchId: randomUUID()
+                                batchId
                             }
                         }
                     ]
@@ -110,15 +148,15 @@ describe('Inngest Functions', async () => {
             })
 
             test('should fail for unsupported file type (pdf)', async () => {
-                const result = await t.execute({
+                const result = await testIngestFunction.execute({
                     events: [
                         {
-                            name: 'retrieval/upload-document',
+                            name: 'retrieval/ingest-document',
                             data: {
-                                organizationId: 'test-org',
-                                namespaceId: 'test-namespace',
+                                organizationId,
+                                namespaceId,
                                 documentPath: 'test-file.pdf',
-                                batchId: randomUUID()
+                                batchId
                             }
                         }
                     ]
@@ -129,15 +167,30 @@ describe('Inngest Functions', async () => {
             })
 
             test('should succeed for .md file', async () => {
-                const result = await t.execute({
+                const uploadResult = await testUploadFunction.execute({
                     events: [
                         {
                             name: 'retrieval/upload-document',
                             data: {
-                                organizationId: 'test-org',
-                                namespaceId: 'test-namespace',
+                                organizationId,
+                                namespaceId,
                                 documentPath: 'test-file.md',
-                                batchId: randomUUID()
+                                documentBufferBase64: documentContents
+                            }
+                        }
+                    ]
+                })
+                expect(uploadResult.error).not.toBeDefined()
+                expect(uploadResult).toHaveProperty('result')
+                const result = await testIngestFunction.execute({
+                    events: [
+                        {
+                            name: 'retrieval/ingest-document',
+                            data: {
+                                organizationId,
+                                namespaceId,
+                                documentPath: 'test-file.md',
+                                batchId
                             }
                         }
                     ]
@@ -148,15 +201,30 @@ describe('Inngest Functions', async () => {
             })
 
             test('should succeed for .md file with front matter', async () => {
-                const result = await t.execute({
+                const uploadResult = await testUploadFunction.execute({
                     events: [
                         {
                             name: 'retrieval/upload-document',
                             data: {
-                                organizationId: 'test-org',
-                                namespaceId: 'test-namespace',
+                                organizationId,
+                                namespaceId,
                                 documentPath: 'test-file.md',
-                                batchId: randomUUID()
+                                documentBufferBase64: documentContents
+                            }
+                        }
+                    ]
+                })
+                expect(uploadResult.error).not.toBeDefined()
+                expect(uploadResult).toHaveProperty('result')
+                const result = await testIngestFunction.execute({
+                    events: [
+                        {
+                            name: 'retrieval/upload-document',
+                            data: {
+                                organizationId,
+                                namespaceId,
+                                documentPath: 'test-file.md',
+                                batchId
                             }
                         }
                     ]
@@ -167,15 +235,31 @@ describe('Inngest Functions', async () => {
             })
 
             test('should succeed for .mdx file with front matter and title', async () => {
-                const result = await t.execute({
+                const uploadResult = await testUploadFunction.execute({
                     events: [
                         {
                             name: 'retrieval/upload-document',
                             data: {
-                                organizationId: 'test-org',
-                                namespaceId: 'test-namespace',
+                                organizationId,
+                                namespaceId,
                                 documentPath: 'test-file.mdx',
-                                batchId: randomUUID()
+                                documentBufferBase64: documentContents
+                            }
+                        }
+                    ]
+                })
+                expect(uploadResult.error).not.toBeDefined()
+                expect(uploadResult).toHaveProperty('result')
+
+                const result = await testIngestFunction.execute({
+                    events: [
+                        {
+                            name: 'retrieval/upload-document',
+                            data: {
+                                organizationId,
+                                namespaceId,
+                                documentPath: 'test-file.mdx',
+                                batchId
                             }
                         }
                     ]
