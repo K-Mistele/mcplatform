@@ -5,13 +5,15 @@ import { uploadDocument } from '../../src/inngest-functions/upload-document'
 
 const inngestClient = new Inngest({
     id: 'test-inngest',
-    baseUrl: 'http://localhost:8288'
+    baseUrl: process.env.INNGEST_BASE_URL!
 })
 
 describe('Inngest Functions', async () => {
     beforeAll(async () => {
         // Wait for inngest connection
+        console.log('Waiting for inngest connection...')
         await inngestClient.ready
+        console.log('Inngest connection established')
     })
 
     describe('upload-document', async () => {

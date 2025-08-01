@@ -2,9 +2,14 @@
     "name": "retrieval",
     "module": "index.ts",
     "type": "module",
+    "scripts": {
+        "tests": "bun sst shell -- bun test"
+    },
     "dependencies": {
+        "@ai-sdk/google": "^2.0.0",
         "@aws-sdk/client-s3": "^3.857.0",
         "@aws-sdk/s3-request-presigner": "^3.857.0",
+        "ai": "5",
         "database": "workspace:*",
         "inngest": "^3.40.1",
         "sst": "^3.17.10",

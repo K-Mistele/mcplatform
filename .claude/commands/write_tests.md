@@ -11,7 +11,7 @@ When this command is invoked:
    - If files are referenced, read them FULLY first to understand existing context
    - If no parameters provided, respond with the default prompt below
 
-2. **If no parameters provided**, respond with:
+2. IMPORTANT: **If no parameters provided**, respond with:
 ```
 I'm ready to help you define and write tests. Please provide a feature, implementation plan, file path(s) or directory, and I will analyze it thoroughly by exploring the codebase and proceed to write tests for it.
 
@@ -363,10 +363,10 @@ async function createTestContext() {
 
 ```bash
 # Run all tests
-bun test --timeout 15000
+bun sst shell -- bun test --timeout 15000
 
 # Run specific test file
-bun test packages/dashboard/tests/03-interactive-walkthrough/walkthrough-crud.test.ts
+bun sst shell -- bun test packages/dashboard/tests/03-interactive-walkthrough/walkthrough-crud.test.ts
 ```
 
 ### Helpful references for bun:test

@@ -10,10 +10,10 @@
             }
         },
         "postgres": {
-            "command": "uvx",
-            "args": ["postgres-mcp", "--access-mode=unrestricted"],
+            "command": "bun",
+            "args": ["sst", "shell", "--", "uvx", "postgres-mcp", "--access-mode=unrestricted"],
             "env": {
-                "DATABASE_URI": "postgresql://postgres:postgres@127.0.0.1:5432/postgres"
+                "DATABASE_URI": "postgresql://postgres:RVqFzk8tTtBUdZya7ikMc1OdGyONHLEx@mcplatform-kyle-mcpplatformpostgresinstance-vasdobzv.cml6wsgg6hf7.us-east-1.rds.amazonaws.com:5432/postgres"
             }
         }
     }

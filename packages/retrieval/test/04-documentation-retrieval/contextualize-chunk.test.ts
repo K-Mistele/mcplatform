@@ -9,7 +9,7 @@ import { getDocumentFromCache, redisClient, setDocumentInCache } from '../../src
 
 const inngestClient = new Inngest({
     id: 'test-inngest',
-    baseUrl: 'http://localhost:8288'
+    baseUrl: process.env.INNGEST_BASE_URL!
 })
 
 // Track created resources for cleanup

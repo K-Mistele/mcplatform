@@ -75,7 +75,7 @@ export default $config({
             '--event-key',
             INNGEST_EVENT_KEY
         ]
-        if ($app.stage !== 'production') inngestCommand.push('--no-ui')
+        if ($app.stage === 'production') inngestCommand.push('--no-ui')
         const inngest = new sst.aws.Service(`McpPlatformInngestService`, {
             cluster,
             image: 'inngest/inngest:latest',

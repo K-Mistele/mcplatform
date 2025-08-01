@@ -360,7 +360,12 @@ export const chunks = pgTable(
         index('retrieval_chunks_document_id_idx').on(t.documentPath),
         index('retrieval_chunks_namespace_id_idx').on(t.namespaceId),
         //index('retrieval_chunks_embedding_index').using('hnsw', t.embedding.op('vector_cosine_ops')),
-        unique('retrieval_chunks_unique_document_order').on(t.documentPath, t.orderInDocument, t.namespaceId)
+        unique('retrieval_chunks_unique_document_order').on(
+            t.documentPath,
+            t.orderInDocument,
+            t.namespaceId,
+            t.organizationId
+        )
     ]
 )
 
@@ -407,5 +412,6 @@ export const ingestionJob = pgTable('retrieval_ingestion_job', {
     createdAt: bigint('created_at', { mode: 'number' }).$defaultFn(() => Date.now()),
     updatedAt: bigint('updated_at', { mode: 'number' }).$defaultFn(() => Date.now()),
     totalDocuments: integer('total_documents').notNull().default(0),
-    documentsProcessed: integer('documents_processed').notNull().default(0)
+    documentsProcessed: integer('documents_processed').notNull().default(0),
+    documentsFailed: integer('documents_failed').notNull().default(0)
 })

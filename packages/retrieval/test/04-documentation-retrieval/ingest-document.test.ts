@@ -10,7 +10,7 @@ import { ingestDocument, uploadDocument } from '../../src/inngest-functions'
 
 const inngestClient = new Inngest({
     id: 'test-inngest',
-    baseUrl: 'http://localhost:8288'
+    baseUrl: process.env.INNGEST_BASE_URL!
 })
 
 const testIngestFunction = new InngestTestEngine({
@@ -24,7 +24,9 @@ const testUploadFunction = new InngestTestEngine({
 describe('Inngest Functions', async () => {
     beforeAll(async () => {
         // Wait for inngest connection
+        console.log('Waiting for inngest connection...')
         await inngestClient.ready
+        console.log('Inngest connection established')
     })
 
     describe('ingest-document', async () => {
@@ -73,18 +75,24 @@ describe('Inngest Functions', async () => {
                         createdAt: new Date()
                     })
                     .onConflictDoNothing()
-                await db.insert(schema.retrievalNamespace).values({
-                    id: namespaceId,
-                    name: 'Test Namespace',
-                    organizationId,
-                    createdAt: Date.now()
-                }).onConflictDoNothing()
-                await db.insert(schema.ingestionJob).values({
-                    id: batchId,
-                    organizationId,
-                    namespaceId,
-                    createdAt: Date.now()
-                }).onConflictDoNothing()
+                await db
+                    .insert(schema.retrievalNamespace)
+                    .values({
+                        id: namespaceId,
+                        name: 'Test Namespace',
+                        organizationId,
+                        createdAt: Date.now()
+                    })
+                    .onConflictDoNothing()
+                await db
+                    .insert(schema.ingestionJob)
+                    .values({
+                        id: batchId,
+                        organizationId,
+                        namespaceId,
+                        createdAt: Date.now()
+                    })
+                    .onConflictDoNothing()
                 const uploadResult = await testUploadFunction.execute({
                     events: [
                         {
@@ -146,7 +154,6 @@ describe('Inngest Functions', async () => {
                 expect(result.error).toBeDefined()
                 expect(result).not.toHaveProperty('result')
             })
-
 
             test('should succeed for .md file', async () => {
                 const uploadResult = await testUploadFunction.execute({

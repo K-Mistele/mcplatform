@@ -4,6 +4,8 @@ import { type Inngest, NonRetriableError } from 'inngest'
 import z from 'zod'
 import { getDocumentFromS3 } from '../documents'
 import { chunkDocument } from '../preprocessing'
+import { removeDocumentFromCache } from '../redis'
+import type { ContextualizeChunkResult } from './contextualize-chunk'
 
 export const ingestDocumentEventSchema = z.object({
     organizationId: z.string(),
@@ -152,7 +154,14 @@ export const ingestDocument = (inngest: Inngest) =>
             logger.info(`${chunksToProcess.length} chunks to update out of ${chunks.length}`)
 
             if (chunksToProcess.length) {
-                // TODO contextualize chunks
+                if (chunks.length > 400) {
+                    logger.warn(`${chunks.length} chunks is too many to process at once; skipping`)
+                }
+                const chunkPromises: Promise<ContextualizeChunkResult>[] = []
+                for (const chunk of chunksToProcess) {
+                    chunkPromises.push(new Promise<ContextualizeChunkResult>((resolve, reject) => {}))
+                }
+
                 // TODO embed chunks & insert
                 // TODO wait for completion
                 // TODO remove old chunks from DB and Turbopuffer
@@ -187,5 +196,17 @@ export const ingestDocument = (inngest: Inngest) =>
                     `incremented processed documents count for batch ${data.batchId} to ${result?.documentsProcessed} (${result?.documentsProcessed}/${result?.totalDocuments})`
                 )
             })
+
+            const deleteOld = step.run('delete-old-chunks-from-db', async () => {
+                if (shouldEraseExistingChunksBeforeSave) {
+                    // TODO
+                }
+            })
+
+            const clearCache = step.run('clear-document-from-cache', async () =>
+                removeDocumentFromCache(data.organizationId, data.namespaceId, data.documentPath)
+            )
+
+            await Promise.all([deleteOld, clearCache])
         }
     )
