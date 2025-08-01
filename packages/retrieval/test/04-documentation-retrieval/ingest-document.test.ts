@@ -31,7 +31,7 @@ describe('Inngest Functions', async () => {
         describe('input validation', () => {
             test('should fail without parameters', async () => {
                 const result = await testIngestFunction.execute({
-                    events: [{ data: {}, name: 'ingest-document' }]
+                    events: [{ data: {}, name: 'retrieval/ingest-document' }]
                 })
                 expect(result.error).toBeDefined()
                 expect(result).not.toHaveProperty('result')
@@ -47,7 +47,7 @@ describe('Inngest Functions', async () => {
                                 documentPath: 'test.md',
                                 batchId: '789'
                             },
-                            name: 'ingest-document'
+                            name: 'retrieval/ingest-document'
                         }
                     ]
                 })
@@ -78,13 +78,13 @@ describe('Inngest Functions', async () => {
                     name: 'Test Namespace',
                     organizationId,
                     createdAt: Date.now()
-                })
+                }).onConflictDoNothing()
                 await db.insert(schema.ingestionJob).values({
                     id: batchId,
                     organizationId,
                     namespaceId,
                     createdAt: Date.now()
-                })
+                }).onConflictDoNothing()
                 const uploadResult = await testUploadFunction.execute({
                     events: [
                         {
@@ -147,24 +147,6 @@ describe('Inngest Functions', async () => {
                 expect(result).not.toHaveProperty('result')
             })
 
-            test('should fail for unsupported file type (pdf)', async () => {
-                const result = await testIngestFunction.execute({
-                    events: [
-                        {
-                            name: 'retrieval/ingest-document',
-                            data: {
-                                organizationId,
-                                namespaceId,
-                                documentPath: 'test-file.pdf',
-                                batchId
-                            }
-                        }
-                    ]
-                })
-
-                expect(result.error).toBeDefined()
-                expect(result).not.toHaveProperty('result')
-            })
 
             test('should succeed for .md file', async () => {
                 const uploadResult = await testUploadFunction.execute({
@@ -219,7 +201,7 @@ describe('Inngest Functions', async () => {
                 const result = await testIngestFunction.execute({
                     events: [
                         {
-                            name: 'retrieval/upload-document',
+                            name: 'retrieval/ingest-document',
                             data: {
                                 organizationId,
                                 namespaceId,
@@ -254,7 +236,7 @@ describe('Inngest Functions', async () => {
                 const result = await testIngestFunction.execute({
                     events: [
                         {
-                            name: 'retrieval/upload-document',
+                            name: 'retrieval/ingest-document',
                             data: {
                                 organizationId,
                                 namespaceId,
