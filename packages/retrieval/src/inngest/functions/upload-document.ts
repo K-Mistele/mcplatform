@@ -87,7 +87,11 @@ export const uploadDocument = (inngest: Inngest) =>
                         contentHash: ingestionDecision.contentHash
                     })
                     .onConflictDoUpdate({
-                        target: [schema.documents.title, schema.documents.organizationId, schema.documents.namespaceId],
+                        target: [
+                            schema.documents.filePath,
+                            schema.documents.organizationId,
+                            schema.documents.namespaceId
+                        ],
                         set: {
                             updatedAt: Date.now(),
                             title: metadata?.title || data.documentPath.split('/').pop() || 'unknown',

@@ -1,5 +1,6 @@
 import { InngestTestEngine } from '@inngest/test'
 import { beforeAll, describe, expect, test } from 'bun:test'
+import { db, schema } from 'database'
 import { Inngest } from 'inngest'
 import { randomUUID } from 'node:crypto'
 import fs from 'node:fs/promises'
@@ -11,6 +12,28 @@ const inngestClient = new Inngest({
     id: 'test-inngest',
     baseUrl: process.env.INNGEST_BASE_URL!
 })
+
+// Helper function to create test organization and namespace
+async function createTestOrgAndNamespace(organizationId: string, namespaceId: string) {
+    await db
+        .insert(schema.organization)
+        .values({
+            id: organizationId,
+            name: `Test Organization ${organizationId}`,
+            createdAt: new Date()
+        })
+        .onConflictDoNothing()
+    
+    await db
+        .insert(schema.retrievalNamespace)
+        .values({
+            id: namespaceId,
+            name: `Test Namespace ${namespaceId}`,
+            organizationId,
+            createdAt: Date.now()
+        })
+        .onConflictDoNothing()
+}
 
 describe('Comprehensive Upload Document Tests', async () => {
     let testUploadFunction: InngestTestEngine
@@ -117,6 +140,10 @@ describe('Comprehensive Upload Document Tests', async () => {
     describe('file type support', () => {
         const organizationId = `org_test_${randomUUID().substring(0, 8)}`
         const namespaceId = `ns_test_${randomUUID().substring(0, 8)}`
+
+        beforeAll(async () => {
+            await createTestOrgAndNamespace(organizationId, namespaceId)
+        })
 
         test('should upload markdown files (.md)', async () => {
             const documentPath = 'test-markdown.md'
@@ -319,6 +346,10 @@ This is an MDX file with JSX.`
         const organizationId = `org_test_${randomUUID().substring(0, 8)}`
         const namespaceId = `ns_test_${randomUUID().substring(0, 8)}`
 
+        beforeAll(async () => {
+            await createTestOrgAndNamespace(organizationId, namespaceId)
+        })
+
         test('should handle empty files', async () => {
             const documentPath = 'empty-file.md'
             const content = ''
@@ -378,6 +409,10 @@ This is an MDX file with JSX.`
     describe('path handling', () => {
         const organizationId = `org_test_${randomUUID().substring(0, 8)}`
         const namespaceId = `ns_test_${randomUUID().substring(0, 8)}`
+
+        beforeAll(async () => {
+            await createTestOrgAndNamespace(organizationId, namespaceId)
+        })
 
         test('should handle nested paths', async () => {
             const documentPath = 'docs/api/reference/index.md'
@@ -459,6 +494,10 @@ This is an MDX file with JSX.`
     describe('overwrite behavior', () => {
         const organizationId = `org_test_${randomUUID().substring(0, 8)}`
         const namespaceId = `ns_test_${randomUUID().substring(0, 8)}`
+
+        beforeAll(async () => {
+            await createTestOrgAndNamespace(organizationId, namespaceId)
+        })
 
         test('should overwrite existing files', async () => {
             const documentPath = 'overwrite-test.md'

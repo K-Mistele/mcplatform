@@ -158,7 +158,7 @@ export const ingestDocument = (inngest: Inngest) =>
             const chunksToProcess: Array<{ chunk: string; index: number }> = []
             chunks.forEach((chunk, index) => {
                 const existingChunk = existingChunks[index]
-                if (existingChunk && chunk.trim() !== existingChunk.originalContent.trim()) {
+                if (!existingChunk || (existingChunk && chunk.trim() !== existingChunk.originalContent.trim())) {
                     chunksToProcess.push({ chunk, index })
                 }
             })
