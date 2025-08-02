@@ -4,7 +4,12 @@ import { db, schema } from 'database'
 import { and, eq } from 'drizzle-orm'
 import { Inngest } from 'inngest'
 import { randomUUID } from 'node:crypto'
-import { type ContextualizeChunkResult, contextualizeChunk, uploadDocument } from '../../src/inngest-functions'
+import {
+    type ContextualizeChunkResult,
+    contextualizeChunk,
+    ingestDocument,
+    uploadDocument
+} from '../../src/inngest-functions'
 import { getDocumentFromCache, redisClient, setDocumentInCache } from '../../src/redis'
 
 const inngestClient = new Inngest({
@@ -22,12 +27,15 @@ const createdResources = {
 describe('Inngest Functions', async () => {
     beforeAll(async () => {
         // Wait for inngest connection
+        console.log('Waiting for inngest connection...')
         await inngestClient.ready
+        console.log('Inngest connection established')
     })
 
     afterAll(async () => {
+        console.log('Cleaning up chunks...')
         // Clean up chunks first (they reference organizations and namespaces)
-        for (const chunk of createdResources.chunks) {
+        for (const chunk of createdResources.chunks.values()) {
             await db
                 .delete(schema.chunks)
                 .where(
@@ -38,27 +46,27 @@ describe('Inngest Functions', async () => {
                         eq(schema.chunks.orderInDocument, chunk.orderInDocument)
                     )
                 )
-                .catch(() => {})
         }
+
+        console.log('Cleaning up namespaces...')
 
         // Clean up namespaces
         for (const namespaceId of createdResources.namespaces) {
-            await db
-                .delete(schema.retrievalNamespace)
-                .where(eq(schema.retrievalNamespace.id, namespaceId))
-                .catch(() => {})
+            await db.delete(schema.retrievalNamespace).where(eq(schema.retrievalNamespace.id, namespaceId))
         }
+
+        console.log('Cleaning up organizations...')
 
         // Clean up organizations
         for (const orgId of createdResources.organizations) {
-            await db
-                .delete(schema.organization)
-                .where(eq(schema.organization.id, orgId))
-                .catch(() => {})
+            await db.delete(schema.organization).where(eq(schema.organization.id, orgId))
         }
+
+        console.log('Cleaning up Redis cache...')
 
         // Clean up Redis cache
         const keys = await redisClient.keys('document:*')
+        console.log('cleaning up redis keys', keys)
         if (keys.length > 0) {
             await redisClient.del(...keys)
         }
@@ -73,7 +81,13 @@ describe('Inngest Functions', async () => {
             function: uploadDocument(inngestClient)
         })
 
+        const testIngestDocumentFunction = new InngestTestEngine({
+            function: ingestDocument(inngestClient)
+        })
+
         describe('input validation', () => {
+            beforeAll(async () => console.log('input validation...'))
+
             test('should fail without parameters', async () => {
                 const result = await testContextualizeFunction.execute({
                     events: [{ data: {}, name: 'retrieval/contextualize-chunk' }]
@@ -121,6 +135,8 @@ describe('Inngest Functions', async () => {
         })
 
         describe('document caching and retrieval', async () => {
+            beforeAll(async () => console.log('document caching and retrieval...'))
+
             const organizationId = `org_test_${randomUUID().substring(0, 8)}`
             const namespaceId = `ns_ctx_${randomUUID().substring(0, 8)}`
             const documentPath = 'test-document.md'
@@ -368,6 +384,7 @@ This section contains information about feature B.`
             const documentContent = `# Storage Test Document
 
 This document tests chunk storage and updates.`
+            beforeAll(async () => console.log('chunk storage and updates...'))
 
             beforeAll(async () => {
                 // Create test organization
