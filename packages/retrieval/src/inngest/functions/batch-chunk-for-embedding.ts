@@ -80,7 +80,7 @@ export const batchChunkForEmbedding = (inngest: Inngest) =>
             const embeddingResult = await step.invoke('embed-chunks', {
                 function: embedChunks(inngest),
                 data: {
-                    ...keys
+                    chunks: keys
                 } satisfies EmbedChunksEvent
             })
 

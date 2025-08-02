@@ -4,7 +4,9 @@ import z from 'zod'
 import { EMBED_CHUNK_API_THROTTLE_LIMIT, EMBED_CHUNK_API_THROTTLE_PERIOD } from '../../config'
 import { geminiEmbedding } from '../../inference'
 
-export const embedChunksEventSchema = z.record(z.string(), z.string())
+export const embedChunksEventSchema = z.object({
+    chunks: z.record(z.string(), z.string())
+})
 export type EmbedChunksEvent = z.infer<typeof embedChunksEventSchema>
 export type EmbedChunksResult = Record<string, Array<number>>
 
@@ -40,8 +42,8 @@ export const embedChunks = (inngest: Inngest) =>
             }
 
             // this makes sure that the order of the embeddings is the same as the order of the keys
-            const keys = Object.keys(data).sort()
-            const contextualizedChunkContents = keys.map((key) => data[key])
+            const keys = Object.keys(data.chunks).sort()
+            const contextualizedChunkContents = keys.map((key) => data.chunks[key])
 
             // STEP -- embed the chunks
             const embeddingsResult = await step.run('embed-chunks', async () => {

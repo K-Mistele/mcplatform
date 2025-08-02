@@ -3,9 +3,7 @@ import { Resource } from 'sst'
 
 const inngestUrl = Resource.Inngest.url
 const inngestHttpUrl = `${inngestUrl}:8288`
-const inngestWebsocketUrl = `${inngestUrl}:8289`.replace('https://', 'wss://').replace('http://', 'ws://')
 
-console.log('inngestUrl', inngestUrl)
 // Create the Inngest client with configuration from environment variables
 export const inngest = new Inngest({
     id: 'retrieval',

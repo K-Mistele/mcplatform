@@ -6,8 +6,8 @@ import { Inngest } from 'inngest'
 import { randomUUID } from 'node:crypto'
 import fs from 'node:fs/promises'
 import path from 'node:path'
-import { getDocumentFromCache, setDocumentInCache } from '../../src/documents'
-import { type ContextualizeChunkResult, contextualizeChunk, uploadDocument } from '../../src/inngest'
+import { getDocumentFromCache, setDocumentInCache, storeDocumentInS3 } from '../../src/documents'
+import { type ContextualizeChunkResult, contextualizeChunk } from '../../src/inngest'
 import { redisClient } from '../../src/redis'
 
 const inngestClient = new Inngest({
@@ -86,9 +86,6 @@ describe('Inngest Functions', async () => {
             function: contextualizeChunk(inngestClient)
         })
 
-        const testUploadFunction = new InngestTestEngine({
-            function: uploadDocument(inngestClient)
-        })
 
         // Load the test file content
         let testFileContent: string
@@ -192,25 +189,16 @@ describe('Inngest Functions', async () => {
                 createdResources.documents.add({ filePath: documentPath })
 
                 // Upload document to S3
-                const uploadResult = await testUploadFunction.execute({
-                    events: [
-                        {
-                            name: 'retrieval/upload-document',
-                            data: {
-                                organizationId,
-                                namespaceId,
-                                documentPath,
-                                documentBufferBase64: Buffer.from(testFileContent).toString('base64')
-                            }
-                        }
-                    ]
+                await storeDocumentInS3(Buffer.from(testFileContent), {
+                    organizationId,
+                    namespaceId,
+                    documentRelativePath: documentPath
                 })
-                expect(uploadResult.error).not.toBeDefined()
             })
 
             test('should get document from cache when available', async () => {
                 // Set document in cache
-                await setDocumentInCache(organizationId, namespaceId, documentPath, testFileContent, 'text')
+                await setDocumentInCache(organizationId, namespaceId, documentPath, Buffer.from(testFileContent), 'text')
 
                 const { result } = await testContextualizeFunction.execute({
                     events: [
@@ -276,18 +264,10 @@ describe('Inngest Functions', async () => {
                 createdResources.documents.add({ filePath: uniqueDocPath })
 
                 // Upload document first
-                await testUploadFunction.execute({
-                    events: [
-                        {
-                            name: 'retrieval/upload-document',
-                            data: {
-                                organizationId,
-                                namespaceId,
-                                documentPath: uniqueDocPath,
-                                documentBufferBase64: Buffer.from(testFileContent).toString('base64')
-                            }
-                        }
-                    ]
+                await storeDocumentInS3(Buffer.from(testFileContent), {
+                    organizationId,
+                    namespaceId,
+                    documentRelativePath: uniqueDocPath
                 })
 
                 // Ensure it's not in cache
@@ -440,22 +420,13 @@ describe('Inngest Functions', async () => {
                 createdResources.documents.add({ filePath: documentPath })
 
                 // Upload document and set in cache
-                const uploadResult = await testUploadFunction.execute({
-                    events: [
-                        {
-                            name: 'retrieval/upload-document',
-                            data: {
-                                organizationId,
-                                namespaceId,
-                                documentPath,
-                                documentBufferBase64: Buffer.from(testFileContent).toString('base64')
-                            }
-                        }
-                    ]
+                await storeDocumentInS3(Buffer.from(testFileContent), {
+                    organizationId,
+                    namespaceId,
+                    documentRelativePath: documentPath
                 })
-                expect(uploadResult.error).not.toBeDefined()
 
-                await setDocumentInCache(organizationId, namespaceId, documentPath, testFileContent, 'text')
+                await setDocumentInCache(organizationId, namespaceId, documentPath, Buffer.from(testFileContent), 'text')
             })
 
             test('should create new chunk in database', async () => {
@@ -629,18 +600,10 @@ This is custom content for testing frontmatter extraction.`
                 createdResources.documents.add({ filePath: 'doc-with-frontmatter.md' })
 
                 // Upload document to S3
-                await testUploadFunction.execute({
-                    events: [
-                        {
-                            name: 'retrieval/upload-document',
-                            data: {
-                                organizationId,
-                                namespaceId,
-                                documentPath: 'doc-with-frontmatter.md',
-                                documentBufferBase64: Buffer.from(docWithFrontmatter).toString('base64')
-                            }
-                        }
-                    ]
+                await storeDocumentInS3(Buffer.from(docWithFrontmatter), {
+                    organizationId,
+                    namespaceId,
+                    documentRelativePath: 'doc-with-frontmatter.md'
                 })
 
                 await setDocumentInCache(

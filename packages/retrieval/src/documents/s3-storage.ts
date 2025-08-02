@@ -1,6 +1,5 @@
 import { GetObjectCommand, PutObjectCommand, S3Client } from '@aws-sdk/client-s3'
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner'
-import { createHash } from 'crypto'
 import { db, schema } from 'database'
 import { and, eq } from 'drizzle-orm'
 import { Resource } from 'sst/resource'
@@ -72,12 +71,12 @@ export async function shouldReingestDocument({
     organizationId,
     namespaceId,
     documentRelativePath,
-    content
+    contentHash
 }: {
     organizationId: string
     namespaceId: string
     documentRelativePath: string
-    content: Buffer
+    contentHash: string
 }): Promise<ReingestDocumentResult> {
     const [document] = await db
         .select()
@@ -86,11 +85,9 @@ export async function shouldReingestDocument({
             and(
                 eq(schema.documents.organizationId, organizationId),
                 eq(schema.documents.namespaceId, namespaceId),
-                eq(schema.documents.title, documentRelativePath)
+                eq(schema.documents.filePath, documentRelativePath)
             )
         )
-
-    const contentHash = createHash('sha1').update(content).digest('hex')
 
     if (!document) return { shouldReingest: true, contentHash: '', reason: 'DOCUMENT_NOT_FOUND' }
 

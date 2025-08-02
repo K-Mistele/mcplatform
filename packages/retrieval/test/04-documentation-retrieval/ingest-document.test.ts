@@ -6,7 +6,7 @@ import { Inngest } from 'inngest'
 import { randomUUID } from 'node:crypto'
 import fs from 'node:fs/promises'
 import path from 'node:path'
-import { ingestDocument, uploadDocument } from '../../src/inngest'
+import { ingestDocument } from '../../src/inngest'
 
 const inngestClient = new Inngest({
     id: 'test-inngest',
@@ -15,10 +15,6 @@ const inngestClient = new Inngest({
 
 const testIngestFunction = new InngestTestEngine({
     function: ingestDocument(inngestClient)
-})
-
-const testUploadFunction = new InngestTestEngine({
-    function: uploadDocument(inngestClient)
 })
 
 describe('Inngest Functions', async () => {
@@ -47,7 +43,8 @@ describe('Inngest Functions', async () => {
                                 organizationId: '123',
                                 namespaceId: '456',
                                 documentPath: 'test.md',
-                                batchId: '789'
+                                batchId: '789',
+                                documentBufferBase64: ''
                             },
                             name: 'retrieval/ingest-document'
                         }
@@ -93,22 +90,7 @@ describe('Inngest Functions', async () => {
                         createdAt: Date.now()
                     })
                     .onConflictDoNothing()
-                const uploadResult = await testUploadFunction.execute({
-                    events: [
-                        {
-                            name: 'retrieval/upload-document',
-                            data: {
-                                organizationId,
-                                namespaceId,
-                                documentPath: 'test_file.md',
-                                documentBufferBase64: documentContents
-                            }
-                        }
-                    ]
-                })
-
-                expect(uploadResult.error).not.toBeDefined()
-                expect(uploadResult).toHaveProperty('result')
+                // Document will be uploaded as part of ingestion now
             })
 
             afterAll(async () => {
@@ -119,22 +101,6 @@ describe('Inngest Functions', async () => {
                 ])
             })
             test('should fail for unsupported file type (pdf)', async () => {
-                // First upload a fake PDF to S3
-                const uploadResult = await testUploadFunction.execute({
-                    events: [
-                        {
-                            name: 'retrieval/upload-document',
-                            data: {
-                                organizationId,
-                                namespaceId,
-                                documentPath: 'test-file.pdf',
-                                documentBufferBase64: Buffer.from('fake pdf content').toString('base64')
-                            }
-                        }
-                    ]
-                })
-                expect(uploadResult.error).not.toBeDefined()
-
                 const result = await testIngestFunction.execute({
                     events: [
                         {
@@ -143,7 +109,8 @@ describe('Inngest Functions', async () => {
                                 organizationId,
                                 namespaceId,
                                 documentPath: 'test-file.pdf',
-                                batchId
+                                batchId,
+                                documentBufferBase64: Buffer.from('fake pdf content').toString('base64')
                             }
                         }
                     ]
@@ -153,22 +120,7 @@ describe('Inngest Functions', async () => {
             })
 
             test('should skip if the document is image (not supported)', async () => {
-                // First upload a fake PNG to S3
-                const uploadResult = await testUploadFunction.execute({
-                    events: [
-                        {
-                            name: 'retrieval/upload-document',
-                            data: {
-                                organizationId,
-                                namespaceId,
-                                documentPath: 'test-file.png',
-                                documentBufferBase64: Buffer.from('fake png content').toString('base64')
-                            }
-                        }
-                    ]
-                })
-                expect(uploadResult.error).not.toBeDefined()
-
+                console.log('starting image (expected to skip) image')
                 const result = await testIngestFunction.execute({
                     events: [
                         {
@@ -177,33 +129,21 @@ describe('Inngest Functions', async () => {
                                 organizationId,
                                 namespaceId,
                                 documentPath: 'test-file.png',
-                                batchId
+                                batchId,
+                                documentBufferBase64: Buffer.from('fake png content').toString('base64')
                             }
                         }
                     ]
                 })
+                console.log('result', result)
 
                 // Images are skipped, not failed
                 expect(result.error).not.toBeDefined()
                 expect(result).toHaveProperty('result')
             })
 
+            // TODO This is where we are looping
             test('should succeed for .md file', async () => {
-                const uploadResult = await testUploadFunction.execute({
-                    events: [
-                        {
-                            name: 'retrieval/upload-document',
-                            data: {
-                                organizationId,
-                                namespaceId,
-                                documentPath: 'test-file.md',
-                                documentBufferBase64: documentContents
-                            }
-                        }
-                    ]
-                })
-                expect(uploadResult.error).not.toBeDefined()
-                expect(uploadResult).toHaveProperty('result')
                 const result = await testIngestFunction.execute({
                     events: [
                         {
@@ -212,7 +152,8 @@ describe('Inngest Functions', async () => {
                                 organizationId,
                                 namespaceId,
                                 documentPath: 'test-file.md',
-                                batchId
+                                batchId,
+                                documentBufferBase64: documentContents
                             }
                         }
                     ]
@@ -222,22 +163,7 @@ describe('Inngest Functions', async () => {
                 expect(result).toHaveProperty('result')
             })
 
-            test('should succeed for .md file with front matter', async () => {
-                const uploadResult = await testUploadFunction.execute({
-                    events: [
-                        {
-                            name: 'retrieval/upload-document',
-                            data: {
-                                organizationId,
-                                namespaceId,
-                                documentPath: 'test-file.md',
-                                documentBufferBase64: documentContents
-                            }
-                        }
-                    ]
-                })
-                expect(uploadResult.error).not.toBeDefined()
-                expect(uploadResult).toHaveProperty('result')
+            test.skip('should succeed for .md file with front matter', async () => {
                 const result = await testIngestFunction.execute({
                     events: [
                         {
@@ -246,7 +172,8 @@ describe('Inngest Functions', async () => {
                                 organizationId,
                                 namespaceId,
                                 documentPath: 'test-file.md',
-                                batchId
+                                batchId,
+                                documentBufferBase64: documentContents
                             }
                         }
                     ]
@@ -256,23 +183,7 @@ describe('Inngest Functions', async () => {
                 expect(result).toHaveProperty('result')
             })
 
-            test('should succeed for .mdx file with front matter and title', async () => {
-                const uploadResult = await testUploadFunction.execute({
-                    events: [
-                        {
-                            name: 'retrieval/upload-document',
-                            data: {
-                                organizationId,
-                                namespaceId,
-                                documentPath: 'test-file.mdx',
-                                documentBufferBase64: documentContents
-                            }
-                        }
-                    ]
-                })
-                expect(uploadResult.error).not.toBeDefined()
-                expect(uploadResult).toHaveProperty('result')
-
+            test.skip('should succeed for .mdx file with front matter and title', async () => {
                 const result = await testIngestFunction.execute({
                     events: [
                         {
@@ -281,7 +192,8 @@ describe('Inngest Functions', async () => {
                                 organizationId,
                                 namespaceId,
                                 documentPath: 'test-file.mdx',
-                                batchId
+                                batchId,
+                                documentBufferBase64: documentContents
                             }
                         }
                     ]

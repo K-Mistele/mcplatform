@@ -6,7 +6,7 @@ import { Inngest } from 'inngest'
 import { randomUUID } from 'node:crypto'
 import fs from 'node:fs/promises'
 import path from 'node:path'
-import { contextualizeChunk, ingestDocument, uploadDocument } from '../../src/inngest'
+import { contextualizeChunk, ingestDocument } from '../../src/inngest'
 
 const inngestClient = new Inngest({
     id: 'test-inngest',
@@ -17,9 +17,6 @@ const testIngestFunction = new InngestTestEngine({
     function: ingestDocument(inngestClient)
 })
 
-const testUploadFunction = new InngestTestEngine({
-    function: uploadDocument(inngestClient)
-})
 
 const testContextualizeFunction = new InngestTestEngine({
     function: contextualizeChunk(inngestClient)
@@ -113,22 +110,6 @@ describe('Comprehensive Ingest Document Tests', async () => {
         test('should create chunks in database after ingestion', async () => {
             const documentPath = 'chunk-test.md'
 
-            // Upload document
-            const uploadResult = await testUploadFunction.execute({
-                events: [
-                    {
-                        name: 'retrieval/upload-document',
-                        data: {
-                            organizationId,
-                            namespaceId,
-                            documentPath,
-                            documentBufferBase64: Buffer.from(testFileContent).toString('base64')
-                        }
-                    }
-                ]
-            })
-            expect(uploadResult.error).not.toBeDefined()
-
             // Create document record
             await db
                 .insert(schema.documents)
@@ -142,7 +123,7 @@ describe('Comprehensive Ingest Document Tests', async () => {
                 })
                 .onConflictDoNothing()
 
-            // Ingest document
+            // Upload and ingest document
             const ingestResult = await testIngestFunction.execute({
                 events: [
                     {
@@ -151,7 +132,8 @@ describe('Comprehensive Ingest Document Tests', async () => {
                             organizationId,
                             namespaceId,
                             documentPath,
-                            batchId
+                            batchId,
+                            documentBufferBase64: Buffer.from(testFileContent).toString('base64')
                         }
                     }
                 ]
@@ -204,21 +186,6 @@ Content for section 1.
 
 Content for section 2.`
 
-            // Upload document
-            await testUploadFunction.execute({
-                events: [
-                    {
-                        name: 'retrieval/upload-document',
-                        data: {
-                            organizationId,
-                            namespaceId,
-                            documentPath,
-                            documentBufferBase64: Buffer.from(smallDocument).toString('base64')
-                        }
-                    }
-                ]
-            })
-
             // Create document record
             await db
                 .insert(schema.documents)
@@ -241,7 +208,8 @@ Content for section 2.`
                             organizationId,
                             namespaceId,
                             documentPath,
-                            batchId
+                            batchId,
+                            documentBufferBase64: Buffer.from(smallDocument).toString('base64')
                         }
                     }
                 ]
@@ -282,21 +250,6 @@ This is the updated content with more information.
 
 This section was added in the update.`
 
-            // Upload original document
-            await testUploadFunction.execute({
-                events: [
-                    {
-                        name: 'retrieval/upload-document',
-                        data: {
-                            organizationId,
-                            namespaceId,
-                            documentPath,
-                            documentBufferBase64: Buffer.from(originalContent).toString('base64')
-                        }
-                    }
-                ]
-            })
-
             // Create document record
             await db
                 .insert(schema.documents)
@@ -319,7 +272,8 @@ This section was added in the update.`
                             organizationId,
                             namespaceId,
                             documentPath,
-                            batchId
+                            batchId,
+                            documentBufferBase64: Buffer.from(originalContent).toString('base64')
                         }
                     }
                 ]
@@ -340,21 +294,6 @@ This section was added in the update.`
             const originalChunkCount = originalChunks.length
             console.log(`Original document had ${originalChunkCount} chunks`)
 
-            // Upload updated document
-            await testUploadFunction.execute({
-                events: [
-                    {
-                        name: 'retrieval/upload-document',
-                        data: {
-                            organizationId,
-                            namespaceId,
-                            documentPath,
-                            documentBufferBase64: Buffer.from(updatedContent).toString('base64')
-                        }
-                    }
-                ]
-            })
-
             // Re-ingest document
             await testIngestFunction.execute({
                 events: [
@@ -364,7 +303,8 @@ This section was added in the update.`
                             organizationId,
                             namespaceId,
                             documentPath,
-                            batchId
+                            batchId,
+                            documentBufferBase64: Buffer.from(updatedContent).toString('base64')
                         }
                     }
                 ]
@@ -416,23 +356,8 @@ This section was added in the update.`
             expect(initialBatch.totalDocuments).toBe(0)
             expect(initialBatch.documentsProcessed).toBe(0)
 
-            // Upload and ingest a document
+            // Create document record and ingest
             const documentPath = 'batch-test.md'
-            await testUploadFunction.execute({
-                events: [
-                    {
-                        name: 'retrieval/upload-document',
-                        data: {
-                            organizationId,
-                            namespaceId,
-                            documentPath,
-                            documentBufferBase64: Buffer.from(testFileContent).toString('base64')
-                        }
-                    }
-                ]
-            })
-
-            // Create document record
             await db
                 .insert(schema.documents)
                 .values({
@@ -454,7 +379,8 @@ This section was added in the update.`
                             organizationId,
                             namespaceId,
                             documentPath,
-                            batchId: testBatchId
+                            batchId: testBatchId,
+                            documentBufferBase64: Buffer.from(testFileContent).toString('base64')
                         }
                     }
                 ]
@@ -498,21 +424,6 @@ This section was added in the update.`
         test('should handle chunking failures gracefully', async () => {
             const documentPath = 'empty-doc.md'
             
-            // Upload an empty document
-            await testUploadFunction.execute({
-                events: [
-                    {
-                        name: 'retrieval/upload-document',
-                        data: {
-                            organizationId,
-                            namespaceId,
-                            documentPath,
-                            documentBufferBase64: Buffer.from('').toString('base64')
-                        }
-                    }
-                ]
-            })
-
             // Create document record
             await db
                 .insert(schema.documents)
@@ -535,7 +446,8 @@ This section was added in the update.`
                             organizationId,
                             namespaceId,
                             documentPath,
-                            batchId
+                            batchId,
+                            documentBufferBase64: Buffer.from('').toString('base64')
                         }
                     }
                 ]

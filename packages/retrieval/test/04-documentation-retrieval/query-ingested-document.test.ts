@@ -6,7 +6,7 @@ import { Inngest } from 'inngest'
 import { randomUUID } from 'node:crypto'
 import fs from 'node:fs/promises'
 import path from 'node:path'
-import { type IngestDocumentEvent, type UploadDocumentEvent, ingestDocument, uploadDocument } from '../../src/inngest'
+import { type IngestDocumentEvent, ingestDocument } from '../../src/inngest'
 import {
     bm25SearchTurboPuffer,
     hybridSearchTurboPuffer,
@@ -19,9 +19,6 @@ const inngestClient = new Inngest({
     baseUrl: process.env.INNGEST_BASE_URL!
 })
 
-const testUploadFunction = new InngestTestEngine({
-    function: uploadDocument(inngestClient)
-})
 
 const testIngestFunction = new InngestTestEngine({
     function: ingestDocument(inngestClient)
@@ -126,25 +123,7 @@ describe('Query Ingested Document', async () => {
     test('should upload, ingest, and query the test document', async () => {
         expect(await getDocumentsInNamespace()).toHaveLength(0)
         expect(await getChunksInNamespace()).toHaveLength(0)
-        // Step 1: Upload the document
-        const uploadResult = await testUploadFunction.execute({
-            events: [
-                {
-                    name: 'retrieval/upload-document',
-                    data: {
-                        organizationId,
-                        namespaceId,
-                        documentPath: testDocPath,
-                        documentBufferBase64: testFileContent.toString('base64')
-                    } satisfies UploadDocumentEvent
-                }
-            ]
-        })
-
-        expect(await getDocumentsInNamespace()).toHaveLength(1)
-        expect(uploadResult).not.toHaveProperty('error')
-
-        // Step 2: Ingest the document
+        // Upload and ingest the document in one step
         const ingestResult = await testIngestFunction.execute({
             events: [
                 {
@@ -153,7 +132,8 @@ describe('Query Ingested Document', async () => {
                         namespaceId,
                         documentPath: testDocPath,
                         organizationId,
-                        batchId
+                        batchId,
+                        documentBufferBase64: testFileContent.toString('base64')
                     } satisfies IngestDocumentEvent
                 }
             ]

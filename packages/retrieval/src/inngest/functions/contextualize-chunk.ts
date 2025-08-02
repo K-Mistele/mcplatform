@@ -66,8 +66,10 @@ export const contextualizeChunk = (inngest: Inngest) =>
                         'Unsupported document type (binary); images are not supported for contextualization yet'
                     )
                 }
-                return { documentText }
+                logger.info('document found in cache:', documentText)
+                return documentText
             })
+            documentText = document
 
             // Handle the case where the document isn't in the cache
             if (documentText === null) {
@@ -94,7 +96,7 @@ export const contextualizeChunk = (inngest: Inngest) =>
                         data.organizationId,
                         data.namespaceId,
                         data.documentPath,
-                        documentText!,
+                        Buffer.from(documentText!),
                         'text'
                     )
                 })
@@ -107,12 +109,10 @@ export const contextualizeChunk = (inngest: Inngest) =>
             const metadata = extractFrontMatter(documentText)
 
             // STEP -- contextualize the chunk
-            const result = await step.run(
-                'contextualize-chunk',
-                async () =>
-                    await generateText({
-                        model: geminiFlash,
-                        prompt: `
+            const contextualizedChunk = await step.run('contextualize-chunk', async () => {
+                const result = await generateText({
+                    model: geminiFlash,
+                    prompt: `
 Here is a document enclosed in <document></document> XML tags:
 <document>
 ${documentText}
@@ -126,8 +126,9 @@ ${data.chunkContent}
 Please give a short succinct context to situate this chunk within the overall document for the purposes of improving search retrieval of the chunk. 
 Answer only with the succinct context and nothing else.
 `
-                    })
-            )
+                })
+                return result.text
+            })
 
             // STEP -- update the ingestion chunk
             await step.run('update-chunk', async () => {
@@ -139,7 +140,7 @@ Answer only with the succinct context and nothing else.
                         documentPath: data.documentPath,
                         namespaceId: data.namespaceId,
                         originalContent: data.chunkContent,
-                        contextualizedContent: result.text,
+                        contextualizedContent: contextualizedChunk,
                         metadata,
                         orderInDocument: data.chunkIndex,
                         createdAt: Date.now(),
@@ -154,7 +155,7 @@ Answer only with the succinct context and nothing else.
                         ],
                         set: {
                             originalContent: data.chunkContent,
-                            contextualizedContent: result.text,
+                            contextualizedContent: contextualizedChunk,
                             updatedAt: Date.now()
                         }
                     })
@@ -165,7 +166,7 @@ Answer only with the succinct context and nothing else.
                 documentPath: data.documentPath,
                 chunkIndex: data.chunkIndex,
                 chunkContent: data.chunkContent,
-                chunkContextualizedContent: result.text,
+                chunkContextualizedContent: contextualizedChunk,
                 metadata
             } satisfies ContextualizeChunkResult
         }

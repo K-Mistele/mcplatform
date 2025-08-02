@@ -2,6 +2,7 @@ import { Redis } from 'ioredis'
 import { Resource } from 'sst'
 
 const { username, password, host, port } = Resource.Redis
+console.log('redisClient', { username, password, host, port })
 export const redisClient = new Redis({
     host,
     port,
