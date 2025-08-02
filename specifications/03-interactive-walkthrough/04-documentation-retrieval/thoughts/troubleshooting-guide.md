@@ -38,7 +38,7 @@ LIMIT 10;
 // Check S3 directly
 const key = `${organizationId}/${namespaceId}/${documentPath}`;
 const command = new HeadObjectCommand({
-    Bucket: Resource.McpPlatformBucket.name,
+    Bucket: Resource.McpPlatformBucket.name
     Key: key
 });
 ```

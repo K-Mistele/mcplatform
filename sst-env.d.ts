@@ -5,6 +5,10 @@
 
 declare module "sst" {
   export interface Resource {
+    "Bucket": {
+      "name": string
+      "type": "sst.aws.Bucket"
+    }
     "McpPlatformBucket": {
       "name": string
       "type": "sst.aws.Bucket"
@@ -39,6 +43,15 @@ declare module "sst" {
       "username": string
     }
     "McpPlatformVpc": {
+      "bastion": string
+      "type": "sst.aws.Vpc"
+    }
+    "NextjsApp": {
+      "service": string
+      "type": "sst.aws.Service"
+      "url": string
+    }
+    "Vpc": {
       "bastion": string
       "type": "sst.aws.Vpc"
     }

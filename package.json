@@ -11,7 +11,8 @@
         "dev": "sst dev",
         "studio": "cd packages/database && bun run db:studio",
         "next:dev": "cd packages/dashboard && bun run dev",
-        "tests": "bun sst shell -- bun test --timeout 15000"
+        "tests": "bun sst shell -- bun test --timeout 15000",
+        "ngrok": "bash scripts/ngrok.sh"
     },
     "devDependencies": {
         "@biomejs/biome": "^2.1.3",
@@ -24,6 +25,7 @@
         "typescript": "^5"
     },
     "dependencies": {
+        "@ngrok/ngrok": "^1.5.1",
         "sst": "3.17.10"
     }
 }

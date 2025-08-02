@@ -1,2 +1,5 @@
 export * from './src/documents'
+export * from './src/inference'
 export * from './src/inngest'
+export * from './src/redis'
+export * from './src/turbopuff'

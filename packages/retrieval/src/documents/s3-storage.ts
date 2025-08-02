@@ -31,7 +31,7 @@ export async function getDocumentUploadUrl({
     documentRelativePathWithExtension: string // e.g. "docs/src/my-document.pdf"
 }) {
     const command = new PutObjectCommand({
-        Bucket: Resource.McpPlatformBucket.name,
+        Bucket: Resource.Bucket.name,
         Key: `${organizationId}/${namespaceId}/${documentRelativePathWithExtension}`
     })
 
@@ -56,7 +56,7 @@ export async function storeDocument(
     }
 ) {
     const command = new PutObjectCommand({
-        Bucket: Resource.McpPlatformBucket.name,
+        Bucket: Resource.Bucket.name,
         Key: `${organizationId}/${namespaceId}/${documentRelativePath}`,
         Body: document
     })
