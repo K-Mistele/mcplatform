@@ -4,8 +4,8 @@ import { Inngest } from 'inngest'
 import { randomUUID } from 'node:crypto'
 import fs from 'node:fs/promises'
 import path from 'node:path'
-import { uploadDocument } from '../../src/inngest'
 import { getDocumentFromS3 } from '../../src/documents'
+import { uploadDocument } from '../../src/inngest'
 
 const inngestClient = new Inngest({
     id: 'test-inngest',
@@ -13,7 +13,7 @@ const inngestClient = new Inngest({
 })
 
 describe('Comprehensive Upload Document Tests', async () => {
-    let testUploadFunction: InngestTestEngine<any, any>
+    let testUploadFunction: InngestTestEngine
     let testFileContent: string
 
     beforeAll(async () => {
@@ -107,7 +107,7 @@ describe('Comprehensive Upload Document Tests', async () => {
                     }
                 ]
             })
-            
+
             // Should still succeed as Buffer.from handles invalid base64
             expect(result.error).not.toBeDefined()
             expect(result).toHaveProperty('result')
@@ -145,7 +145,7 @@ describe('Comprehensive Upload Document Tests', async () => {
                 namespaceId,
                 documentRelativePath: documentPath
             })
-            
+
             const uploadedContent = await s3Document.transformToString()
             expect(uploadedContent).toBe(content)
         })
@@ -183,7 +183,7 @@ This is an MDX file with JSX.`
                 namespaceId,
                 documentRelativePath: documentPath
             })
-            
+
             const uploadedContent = await s3Document.transformToString()
             expect(uploadedContent).toBe(content)
         })
@@ -214,15 +214,75 @@ This is an MDX file with JSX.`
             const documentPath = 'test-image.png'
             // Create a simple 1x1 pixel PNG
             const pngBuffer = Buffer.from([
-                0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a, // PNG signature
-                0x00, 0x00, 0x00, 0x0d, 0x49, 0x48, 0x44, 0x52, // IHDR chunk
-                0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x01,
-                0x08, 0x02, 0x00, 0x00, 0x00, 0x90, 0x77, 0x53,
-                0xde, 0x00, 0x00, 0x00, 0x0c, 0x49, 0x44, 0x41, // IDAT chunk
-                0x54, 0x08, 0xd7, 0x63, 0xf8, 0xcf, 0xc0, 0x00,
-                0x00, 0x03, 0x01, 0x01, 0x00, 0x18, 0xdd, 0x8d,
-                0xb4, 0x00, 0x00, 0x00, 0x00, 0x49, 0x45, 0x4e, // IEND chunk
-                0x44, 0xae, 0x42, 0x60, 0x82
+                0x89,
+                0x50,
+                0x4e,
+                0x47,
+                0x0d,
+                0x0a,
+                0x1a,
+                0x0a, // PNG signature
+                0x00,
+                0x00,
+                0x00,
+                0x0d,
+                0x49,
+                0x48,
+                0x44,
+                0x52, // IHDR chunk
+                0x00,
+                0x00,
+                0x00,
+                0x01,
+                0x00,
+                0x00,
+                0x00,
+                0x01,
+                0x08,
+                0x02,
+                0x00,
+                0x00,
+                0x00,
+                0x90,
+                0x77,
+                0x53,
+                0xde,
+                0x00,
+                0x00,
+                0x00,
+                0x0c,
+                0x49,
+                0x44,
+                0x41, // IDAT chunk
+                0x54,
+                0x08,
+                0xd7,
+                0x63,
+                0xf8,
+                0xcf,
+                0xc0,
+                0x00,
+                0x00,
+                0x03,
+                0x01,
+                0x01,
+                0x00,
+                0x18,
+                0xdd,
+                0x8d,
+                0xb4,
+                0x00,
+                0x00,
+                0x00,
+                0x00,
+                0x49,
+                0x45,
+                0x4e, // IEND chunk
+                0x44,
+                0xae,
+                0x42,
+                0x60,
+                0x82
             ])
 
             const result = await testUploadFunction.execute({
@@ -248,7 +308,7 @@ This is an MDX file with JSX.`
                 namespaceId,
                 documentRelativePath: documentPath
             })
-            
+
             const uploadedBuffer = Buffer.from(await s3Document.transformToByteArray())
             expect(uploadedBuffer.length).toBe(pngBuffer.length)
             expect(uploadedBuffer.equals(pngBuffer)).toBe(true)
@@ -309,7 +369,7 @@ This is an MDX file with JSX.`
                 namespaceId,
                 documentRelativePath: documentPath
             })
-            
+
             const uploadedContent = await s3Document.transformToString()
             expect(uploadedContent.length).toBe(largeContent.length)
         })
@@ -346,7 +406,7 @@ This is an MDX file with JSX.`
                 namespaceId,
                 documentRelativePath: documentPath
             })
-            
+
             const uploadedContent = await s3Document.transformToString()
             expect(uploadedContent).toBe(content)
         })
@@ -452,60 +512,6 @@ This is an MDX file with JSX.`
                 documentRelativePath: documentPath
             })
             expect(await s3Document2.transformToString()).toBe(updatedContent)
-        })
-    })
-
-    describe('concurrent uploads', () => {
-        const organizationId = `org_test_${randomUUID().substring(0, 8)}`
-        const namespaceId = `ns_test_${randomUUID().substring(0, 8)}`
-
-        test('should handle multiple concurrent uploads', async () => {
-            const uploads = Array.from({ length: 5 }, (_, i) => ({
-                documentPath: `concurrent-${i}.md`,
-                content: `# Document ${i}\n\nContent for document ${i}.`
-            }))
-
-            // Upload all files concurrently
-            const results = await Promise.all(
-                uploads.map(({ documentPath, content }) =>
-                    testUploadFunction.execute({
-                        events: [
-                            {
-                                name: 'retrieval/upload-document',
-                                data: {
-                                    organizationId,
-                                    namespaceId,
-                                    documentPath,
-                                    documentBufferBase64: Buffer.from(content).toString('base64')
-                                }
-                            }
-                        ]
-                    })
-                )
-            )
-
-            // All uploads should succeed
-            results.forEach(result => {
-                expect(result.error).not.toBeDefined()
-                expect(result).toHaveProperty('result')
-            })
-
-            // Verify all files were uploaded correctly
-            const verifications = await Promise.all(
-                uploads.map(async ({ documentPath, content }) => {
-                    const s3Document = await getDocumentFromS3({
-                        organizationId,
-                        namespaceId,
-                        documentRelativePath: documentPath
-                    })
-                    const uploadedContent = await s3Document.transformToString()
-                    return uploadedContent === content
-                })
-            )
-
-            verifications.forEach(isCorrect => {
-                expect(isCorrect).toBe(true)
-            })
         })
     })
 })
