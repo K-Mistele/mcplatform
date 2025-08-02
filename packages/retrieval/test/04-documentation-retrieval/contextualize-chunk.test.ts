@@ -610,7 +610,7 @@ This is custom content for testing frontmatter extraction.`
                     organizationId,
                     namespaceId,
                     'doc-with-frontmatter.md',
-                    docWithFrontmatter,
+                    Buffer.from(docWithFrontmatter),
                     'text'
                 )
 
