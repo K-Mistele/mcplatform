@@ -2,9 +2,7 @@ import { db, schema } from 'database'
 import { and, asc, eq, sql } from 'drizzle-orm'
 import { type Inngest, NonRetriableError } from 'inngest'
 import z from 'zod'
-import { getDocumentFromS3 } from '../documents'
-import { chunkDocument } from '../preprocessing'
-import { removeDocumentFromCache } from '../redis'
+import { chunkDocument, getDocumentFromS3, removeDocumentFromCache } from '../../documents'
 import type { ContextualizeChunkResult } from './contextualize-chunk'
 
 export const ingestDocumentEventSchema = z.object({

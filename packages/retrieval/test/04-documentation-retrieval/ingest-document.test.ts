@@ -6,7 +6,7 @@ import { Inngest } from 'inngest'
 import { randomUUID } from 'node:crypto'
 import fs from 'node:fs/promises'
 import path from 'node:path'
-import { ingestDocument, uploadDocument } from '../../src/inngest-functions'
+import { ingestDocument, uploadDocument } from '../../src/inngest'
 
 const inngestClient = new Inngest({
     id: 'test-inngest',
@@ -119,6 +119,22 @@ describe('Inngest Functions', async () => {
                 ])
             })
             test('should fail for unsupported file type (pdf)', async () => {
+                // First upload a fake PDF to S3
+                const uploadResult = await testUploadFunction.execute({
+                    events: [
+                        {
+                            name: 'retrieval/upload-document',
+                            data: {
+                                organizationId,
+                                namespaceId,
+                                documentPath: 'test-file.pdf',
+                                documentBufferBase64: Buffer.from('fake pdf content').toString('base64')
+                            }
+                        }
+                    ]
+                })
+                expect(uploadResult.error).not.toBeDefined()
+
                 const result = await testIngestFunction.execute({
                     events: [
                         {
@@ -136,7 +152,23 @@ describe('Inngest Functions', async () => {
                 expect(result).not.toHaveProperty('result')
             })
 
-            test('should fail if the document is image (not supported)', async () => {
+            test('should skip if the document is image (not supported)', async () => {
+                // First upload a fake PNG to S3
+                const uploadResult = await testUploadFunction.execute({
+                    events: [
+                        {
+                            name: 'retrieval/upload-document',
+                            data: {
+                                organizationId,
+                                namespaceId,
+                                documentPath: 'test-file.png',
+                                documentBufferBase64: Buffer.from('fake png content').toString('base64')
+                            }
+                        }
+                    ]
+                })
+                expect(uploadResult.error).not.toBeDefined()
+
                 const result = await testIngestFunction.execute({
                     events: [
                         {
@@ -151,8 +183,9 @@ describe('Inngest Functions', async () => {
                     ]
                 })
 
-                expect(result.error).toBeDefined()
-                expect(result).not.toHaveProperty('result')
+                // Images are skipped, not failed
+                expect(result.error).not.toBeDefined()
+                expect(result).toHaveProperty('result')
             })
 
             test('should succeed for .md file', async () => {

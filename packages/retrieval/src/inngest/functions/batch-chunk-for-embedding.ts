@@ -1,8 +1,8 @@
 import type { Inngest } from 'inngest'
 import { NonRetriableError } from 'inngest'
 import z from 'zod'
-import { EMBED_CHUNK_API_BATCH_GATHER_PERIOD, EMBED_CHUNK_API_BATCH_SIZE } from '../config'
-import { upsertIntoTurboPuffer } from '../turbopuffer'
+import { EMBED_CHUNK_API_BATCH_GATHER_PERIOD, EMBED_CHUNK_API_BATCH_SIZE } from '../../config'
+import { upsertIntoTurboPuffer } from '../../turbopuffer'
 import { type EmbedChunksEvent, embedChunks } from './embed-chunks'
 
 export const embedContextualizedChunkEventSchema = z.object({
@@ -22,7 +22,7 @@ export type EmbedContextualizedChunkResultEvent = {
     embedding: Array<number>
 }
 
-export const embedContextualizedChunk = (inngest: Inngest) =>
+export const batchChunkForEmbedding = (inngest: Inngest) =>
     inngest.createFunction(
         {
             id: 'embed-contextualized-chunk',

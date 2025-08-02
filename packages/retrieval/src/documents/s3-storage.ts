@@ -1,12 +1,21 @@
 import { GetObjectCommand, PutObjectCommand, S3Client } from '@aws-sdk/client-s3'
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner'
+import { createHash } from 'crypto'
 import { db, schema } from 'database'
 import { and, eq } from 'drizzle-orm'
-import { createHash } from 'node:crypto'
-import { Resource } from 'sst'
+import { Resource } from 'sst/resource'
 
-const s3Client = new S3Client({})
-
+export const s3Client = new S3Client({})
+export type ReingestDocumentResult =
+    | {
+          shouldReingest: false
+          reason: 'CONTENT_HASH_MATCH'
+      }
+    | {
+          shouldReingest: true
+          contentHash: string
+          reason: 'DOCUMENT_NOT_FOUND' | 'CONTENT_HASH_MISMATCH'
+      }
 /**
  * Returns a presigned URL for uploading a document to S3.
  * @param param0
@@ -53,17 +62,6 @@ export async function storeDocument(
     })
     await s3Client.send(command)
 }
-
-export type ReingestDocumentResult =
-    | {
-          shouldReingest: false
-          reason: 'CONTENT_HASH_MATCH'
-      }
-    | {
-          shouldReingest: true
-          contentHash: string
-          reason: 'DOCUMENT_NOT_FOUND' | 'CONTENT_HASH_MISMATCH'
-      }
 
 /**
  * Checks if a document should be re-ingested.

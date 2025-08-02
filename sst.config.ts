@@ -89,7 +89,7 @@ export default $config({
             },
             link: [redis, postgres],
             loadBalancer: {
-                ports: [{ listen: '8288/tcp' }]
+                ports: [{ listen: '8288/https' }, { listen: '8289/https' }]
             },
             serviceRegistry: {
                 port: 8288
@@ -116,7 +116,7 @@ export default $config({
 
         const nextjsApp = new sst.aws.Service(`McpPlatformNextjsApp`, {
             cluster,
-            link: [postgres, bucket],
+            link: [postgres, bucket, inngest],
             image: {
                 context: './packages/dashboard',
                 dockerfile: 'Dockerfile.dev'

@@ -1,8 +1,8 @@
 import { embedMany } from 'ai'
 import { type Inngest, NonRetriableError } from 'inngest'
 import z from 'zod'
-import { EMBED_CHUNK_API_THROTTLE_LIMIT, EMBED_CHUNK_API_THROTTLE_PERIOD } from '../config'
-import { geminiEmbedding } from '../inference'
+import { EMBED_CHUNK_API_THROTTLE_LIMIT, EMBED_CHUNK_API_THROTTLE_PERIOD } from '../../config'
+import { geminiEmbedding } from '../../inference'
 
 export const embedChunksEventSchema = z.record(z.string(), z.string())
 export type EmbedChunksEvent = z.infer<typeof embedChunksEventSchema>

@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'bun:test'
-import { chunkDocument, extractFrontMatter, extractImageUrls } from '../../src/preprocessing'
+import { chunkDocument, extractFrontMatter, extractImageUrls } from '../../src/documents/preprocessing'
 
 describe('Feature: Document Preprocessing', () => {
     describe('extractFrontMatter', () => {

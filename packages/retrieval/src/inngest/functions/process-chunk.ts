@@ -1,8 +1,8 @@
 import { type EventPayload, type Inngest, NonRetriableError } from 'inngest'
 import z from 'zod'
+import type { EmbedContextualizedChunkEvent, EmbedContextualizedChunkResultEvent } from './batch-chunk-for-embedding'
 import type { ContextualizeChunkEvent, ContextualizeChunkResult } from './contextualize-chunk'
 import { contextualizeChunk } from './contextualize-chunk'
-import type { EmbedContextualizedChunkEvent, EmbedContextualizedChunkResultEvent } from './embed-chunk-aggregator'
 
 export const processChunkEventSchema = z.object({
     organizationId: z.string(),

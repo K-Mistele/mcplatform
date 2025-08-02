@@ -1,6 +1,6 @@
 import { type Inngest, NonRetriableError } from 'inngest'
 import z from 'zod'
-import { storeDocument } from '../documents'
+import { storeDocument } from '../../documents'
 
 export const uploadDocumentEventSchema = z.object({
     organizationId: z.string(),

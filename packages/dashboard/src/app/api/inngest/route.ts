@@ -1,11 +1,13 @@
-import { inngest } from '@/lib/inngest/client'
-import * as functions from '@/lib/inngest/functions'
 import { serve } from 'inngest/next'
+import { functions, inngest } from 'retrieval'
+import { Resource } from 'sst'
 
+const inngestUrl = Resource.McpPlatformInngestService.url
+console.log('inngestUrl', inngestUrl)
 
 // Create the API handler for Inngest
 export const { GET, POST, PUT } = serve({
     client: inngest,
-    functions: Object.values(functions),
-    baseUrl: process.env.INNGEST_BASE_URL
+    functions: functions.map((f) => f(inngest)),
+    baseUrl: inngestUrl
 })

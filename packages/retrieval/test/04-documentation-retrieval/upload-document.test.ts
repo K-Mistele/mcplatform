@@ -1,7 +1,7 @@
 import { InngestTestEngine } from '@inngest/test'
 import { beforeAll, describe, expect, test } from 'bun:test'
 import { Inngest } from 'inngest'
-import { uploadDocument } from '../../src/inngest-functions/upload-document'
+import { uploadDocument } from '../../src/inngest'
 
 const inngestClient = new Inngest({
     id: 'test-inngest',

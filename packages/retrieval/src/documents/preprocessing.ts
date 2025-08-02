@@ -1,6 +1,6 @@
 import { type SplitOptions, Splitter } from 'llm-text-splitter'
 import yaml from 'yaml'
-import type { JSONValue } from '../../dashboard/src/lib/types'
+import type { JSONValue } from '../../../dashboard/src/lib/types'
 
 type SplitterType = SplitOptions['splitter']
 

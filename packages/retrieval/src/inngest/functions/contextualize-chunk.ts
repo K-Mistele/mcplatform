@@ -3,11 +3,9 @@ import { db, schema } from 'database'
 import type { Inngest } from 'inngest'
 import { NonRetriableError } from 'inngest'
 import z from 'zod'
-import { CHAT_COMPLETIONS_API_THROTTLE_LIMIT, CHAT_COMPLETIONS_API_THROTTLE_PERIOD } from '../config'
-import { getDocumentFromS3 } from '../documents'
-import { geminiFlash } from '../inference'
-import { extractFrontMatter } from '../preprocessing'
-import { getDocumentFromCache, setDocumentInCache } from '../redis'
+import { CHAT_COMPLETIONS_API_THROTTLE_LIMIT, CHAT_COMPLETIONS_API_THROTTLE_PERIOD } from '../../config'
+import { extractFrontMatter, getDocumentFromCache, getDocumentFromS3, setDocumentInCache } from '../../documents'
+import { geminiFlash } from '../../inference'
 
 export const contextualizeChunkEventSchema = z.object({
     organizationId: z.string(),
@@ -72,7 +70,7 @@ export const contextualizeChunk = (inngest: Inngest) =>
             })
 
             // Handle the case where the document isn't in the cache
-            if (document === null) {
+            if (documentText === null) {
                 logger.warn(`Document not found in cache; checking S3:`, data)
 
                 // STEP -- if we get a cache miss, get the document from S3
