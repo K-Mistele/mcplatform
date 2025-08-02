@@ -2,8 +2,8 @@ import { describe, expect, test } from 'bun:test'
 import { randomUUID } from 'node:crypto'
 import fs from 'node:fs/promises'
 import path from 'node:path'
-import { searchTurboPuffer, turboPuffer, upsertIntoTurboPuffer } from '../../src/turbopuffer'
-import { embed, embedMany } from 'ai'
+import { bm25SearchTurboPuffer, vectorSearchTurboPuffer, hybridSearchTurboPuffer, turboPuffer, upsertIntoTurboPuffer } from '../../src/turbopuffer'
+import { embedMany } from 'ai'
 import { geminiEmbedding } from '../../src/inference'
 import { chunkDocument } from '../../src/documents/preprocessing'
 
@@ -58,12 +58,10 @@ describe('Comprehensive Query Tests for Retrieval System', () => {
 
         // Test 1: Query for "context window" with top_k=5
         console.log('\n=== Test 1: Searching for "context window" ===')
-        const contextQuery = await searchTurboPuffer({
+        const contextQuery = await bm25SearchTurboPuffer({
             organizationId,
             namespaceId,
-            query: {
-                textQuery: 'context window'
-            },
+            query: 'context window',
             topK: 5
         })
 
@@ -82,12 +80,10 @@ describe('Comprehensive Query Tests for Retrieval System', () => {
 
         // Test 2: Query for "directed graphs DAGs" with top_k=5
         console.log('\n=== Test 2: Searching for "directed graphs DAGs" ===')
-        const graphQuery = await searchTurboPuffer({
+        const graphQuery = await bm25SearchTurboPuffer({
             organizationId,
             namespaceId,
-            query: {
-                textQuery: 'directed graphs DAGs'
-            },
+            query: 'directed graphs DAGs',
             topK: 5
         })
 
@@ -97,22 +93,10 @@ describe('Comprehensive Query Tests for Retrieval System', () => {
 
         // Test 3: Vector search for "12 factor principles" with top_k=5
         console.log('\n=== Test 3: Vector search for "12 factor principles" ===')
-        const principlesEmbedding = await embed({
-            model: geminiEmbedding,
-            value: '12 factor principles for building LLM agents',
-            providerOptions: {
-                google: {
-                    taskType: 'RETRIEVAL_QUERY'
-                }
-            }
-        })
-
-        const principlesQuery = await searchTurboPuffer({
+        const principlesQuery = await vectorSearchTurboPuffer({
             organizationId,
             namespaceId,
-            query: {
-                vectorQuery: principlesEmbedding.embedding
-            },
+            query: '12 factor principles for building LLM agents',
             topK: 5
         })
 
@@ -130,23 +114,10 @@ describe('Comprehensive Query Tests for Retrieval System', () => {
 
         // Test 4: Hybrid search (text + vector) with top_k=5
         console.log('\n=== Test 4: Hybrid search for "modular concepts" ===')
-        const modularEmbedding = await embed({
-            model: geminiEmbedding,
-            value: 'modular concepts for building agents',
-            providerOptions: {
-                google: {
-                    taskType: 'RETRIEVAL_QUERY'
-                }
-            }
-        })
-
-        const hybridQuery = await searchTurboPuffer({
+        const hybridQuery = await hybridSearchTurboPuffer({
             organizationId,
             namespaceId,
-            query: {
-                textQuery: 'modular concepts',
-                vectorQuery: modularEmbedding.embedding
-            },
+            query: 'modular concepts',
             topK: 5
         })
 
@@ -163,12 +134,10 @@ describe('Comprehensive Query Tests for Retrieval System', () => {
 
         // Test 5: Query for specific factors with top_k=5
         console.log('\n=== Test 5: Searching for specific factors ===')
-        const factorsQuery = await searchTurboPuffer({
+        const factorsQuery = await bm25SearchTurboPuffer({
             organizationId,
             namespaceId,
-            query: {
-                textQuery: 'Factor 3 Factor 8 Factor 10'
-            },
+            query: 'Factor 3 Factor 8 Factor 10',
             topK: 5
         })
 

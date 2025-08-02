@@ -1,1 +1,0 @@
-ALTER TABLE "walkthroughs" DROP COLUMN "estimated_duration_minutes";

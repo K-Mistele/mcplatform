@@ -1,5 +1,4 @@
 import { InngestTestEngine } from '@inngest/test'
-import { embed } from 'ai'
 import { afterAll, beforeAll, describe, expect, test } from 'bun:test'
 import { db, schema } from 'database'
 import { and, eq } from 'drizzle-orm'
@@ -7,9 +6,13 @@ import { Inngest } from 'inngest'
 import { randomUUID } from 'node:crypto'
 import fs from 'node:fs/promises'
 import path from 'node:path'
-import { geminiEmbedding } from '../../src/inference'
 import { type IngestDocumentEvent, type UploadDocumentEvent, ingestDocument, uploadDocument } from '../../src/inngest'
-import { searchTurboPuffer, turboPuffer } from '../../src/turbopuffer'
+import {
+    bm25SearchTurboPuffer,
+    hybridSearchTurboPuffer,
+    turboPuffer,
+    vectorSearchTurboPuffer
+} from '../../src/turbopuffer'
 
 const inngestClient = new Inngest({
     id: 'test-inngest-query',
@@ -163,40 +166,40 @@ describe('Query Ingested Document', async () => {
         // Step 3: Query the ingested document
 
         // Query 1: Search for "context window" content
-        const contextWindowQuery = await searchTurboPuffer({
+        const contextWindowQuery = await bm25SearchTurboPuffer({
             organizationId,
             namespaceId,
-            query: {
-                textQuery: 'context window'
-            },
+            query: 'context window',
             topK: 5
         })
 
         expect(contextWindowQuery).toBeDefined()
-        expect(contextWindowQuery.length).toBeGreaterThan(0)
+        const contextWindowResults = Array.isArray(contextWindowQuery)
+            ? contextWindowQuery
+            : contextWindowQuery.rows || []
+        expect(contextWindowResults.length).toBeGreaterThan(0)
 
         // Should find content about Factor 3: Own your context window
-        const contextWindowResult = contextWindowQuery.find(
+        const contextWindowResult = contextWindowResults.find(
             (result: any) =>
                 result.content?.includes('context window') || result.contextualized_content?.includes('context window')
         )
         expect(contextWindowResult).toBeDefined()
 
         // Query 2: Search for "directed graphs DAGs" content
-        const graphQuery = await searchTurboPuffer({
+        const graphQueryResult = await bm25SearchTurboPuffer({
             organizationId,
             namespaceId,
-            query: {
-                textQuery: 'directed graphs DAGs'
-            },
+            query: 'directed graphs DAGs',
             topK: 5
         })
 
-        expect(graphQuery).toBeDefined()
-        expect(graphQuery.length).toBeGreaterThan(0)
+        expect(graphQueryResult).toBeDefined()
+        const graphResults = Array.isArray(graphQueryResult) ? graphQueryResult : graphQueryResult.rows || []
+        expect(graphResults.length).toBeGreaterThan(0)
 
         // Should find content about directed graphs
-        const graphResult = graphQuery.find(
+        const graphResult = graphResults.find(
             (result: any) =>
                 result.content?.includes('Directed Graphs') ||
                 result.contextualized_content?.includes('Directed Graphs')
@@ -204,30 +207,19 @@ describe('Query Ingested Document', async () => {
         expect(graphResult).toBeDefined()
 
         // Query 3: Vector search for "12 factor principles"
-        const vectorQueryResult = await embed({
-            model: geminiEmbedding,
-            value: '12 factor principles for building agents',
-            providerOptions: {
-                google: {
-                    taskType: 'RETRIEVAL_QUERY'
-                }
-            }
-        })
-
-        const vectorSearchResults = await searchTurboPuffer({
+        const vectorSearchResults = await vectorSearchTurboPuffer({
             organizationId,
             namespaceId,
-            query: {
-                vectorQuery: vectorQueryResult.embedding
-            },
+            query: '12 factor principles for building agents',
             topK: 5
         })
 
         expect(vectorSearchResults).toBeDefined()
-        expect(vectorSearchResults.length).toBeGreaterThan(0)
+        const vectorResults = Array.isArray(vectorSearchResults) ? vectorSearchResults : vectorSearchResults.rows || []
+        expect(vectorResults.length).toBeGreaterThan(0)
 
         // Should find chunks related to 12-factor agents principles
-        const principlesResult = vectorSearchResults.find(
+        const principlesResult = vectorResults.find(
             (result: any) =>
                 result.content?.includes('12-factor') ||
                 result.content?.includes('principles') ||
@@ -237,23 +229,10 @@ describe('Query Ingested Document', async () => {
         expect(principlesResult).toBeDefined()
 
         // Query 4: Hybrid search (text + vector)
-        const hybridEmbeddingResult = await embed({
-            model: geminiEmbedding,
-            value: 'modular concepts agent building',
-            providerOptions: {
-                google: {
-                    taskType: 'RETRIEVAL_QUERY'
-                }
-            }
-        })
-
-        const hybridResults = await searchTurboPuffer({
+        const hybridResults = await hybridSearchTurboPuffer({
             organizationId,
             namespaceId,
-            query: {
-                textQuery: 'modular concepts',
-                vectorQuery: hybridEmbeddingResult.embedding
-            },
+            query: 'modular concepts',
             topK: 5
         })
 
@@ -269,12 +248,10 @@ describe('Query Ingested Document', async () => {
 
     test('should handle queries with no results gracefully', async () => {
         // Query for something that shouldn't exist in the document
-        const noResultsQuery = await searchTurboPuffer({
+        const noResultsQuery = await bm25SearchTurboPuffer({
             organizationId,
             namespaceId,
-            query: {
-                textQuery: 'quantum blockchain cryptocurrency NFT metaverse'
-            },
+            query: 'quantum blockchain cryptocurrency NFT metaverse',
             topK: 5
         })
 
@@ -290,12 +267,10 @@ describe('Query Ingested Document', async () => {
 
     test('should respect topK parameter in queries', async () => {
         // Query with topK=3
-        const topK3Results = await searchTurboPuffer({
+        const topK3Results = await bm25SearchTurboPuffer({
             organizationId,
             namespaceId,
-            query: {
-                textQuery: 'agents'
-            },
+            query: 'agents',
             topK: 3
         })
 
@@ -304,19 +279,17 @@ describe('Query Ingested Document', async () => {
         }
 
         // Query with topK=7
-        const topK7Results = await searchTurboPuffer({
+        const topK7Results = await bm25SearchTurboPuffer({
             organizationId,
             namespaceId,
-            query: {
-                textQuery: 'agents'
-            },
+            query: 'agents',
             topK: 7
         })
 
         if (Array.isArray(topK7Results)) {
             expect(topK7Results.length).toBeLessThanOrEqual(7)
             // Should have more results than topK=3
-            expect(topK7Results.length).toBeGreaterThanOrEqual(topK3Results.length)
+            expect(topK7Results.rows?.length).toBeGreaterThanOrEqual(topK3Results.rows?.length || 0)
         }
     })
 })

@@ -2,8 +2,8 @@ import { describe, expect, test } from 'bun:test'
 import { randomUUID } from 'node:crypto'
 import fs from 'node:fs/promises'
 import path from 'node:path'
-import { searchTurboPuffer, turboPuffer, upsertIntoTurboPuffer } from '../../src/turbopuffer'
-import { embed, embedMany } from 'ai'
+import { bm25SearchTurboPuffer, vectorSearchTurboPuffer, turboPuffer, upsertIntoTurboPuffer } from '../../src/turbopuffer'
+import { embedMany } from 'ai'
 import { geminiEmbedding } from '../../src/inference'
 import { chunkDocument } from '../../src/documents/preprocessing'
 
@@ -65,12 +65,10 @@ describe('Query TurboPuffer Simple', () => {
 
         // Step 4: Query the data with text search
         console.log('Querying for "factor" content...')
-        const factorQuery = await searchTurboPuffer({
+        const factorQuery = await bm25SearchTurboPuffer({
             organizationId,
             namespaceId,
-            query: {
-                textQuery: 'factor'
-            },
+            query: 'factor',
             topK: 5
         })
 
@@ -92,22 +90,10 @@ describe('Query TurboPuffer Simple', () => {
 
         // Step 5: Vector search
         console.log('Performing vector search...')
-        const vectorQueryEmbedding = await embed({
-            model: geminiEmbedding,
-            value: '12 factor agents principles',
-            providerOptions: {
-                google: {
-                    taskType: 'RETRIEVAL_QUERY'
-                }
-            }
-        })
-
-        const vectorResults = await searchTurboPuffer({
+        const vectorResults = await vectorSearchTurboPuffer({
             organizationId,
             namespaceId,
-            query: {
-                vectorQuery: vectorQueryEmbedding.embedding
-            },
+            query: '12 factor agents principles',
             topK: 3
         })
 
@@ -158,10 +144,10 @@ describe('Query TurboPuffer Simple', () => {
         await new Promise((resolve) => setTimeout(resolve, 2000))
 
         // Test topK=1
-        const results1 = await searchTurboPuffer({
+        const results1 = await bm25SearchTurboPuffer({
             organizationId,
             namespaceId: namespaceId + '_topk',
-            query: { textQuery: 'test' },
+            query: 'test',
             topK: 1
         })
 
@@ -170,10 +156,10 @@ describe('Query TurboPuffer Simple', () => {
         }
 
         // Test topK=2
-        const results2 = await searchTurboPuffer({
+        const results2 = await bm25SearchTurboPuffer({
             organizationId,
             namespaceId: namespaceId + '_topk',
-            query: { textQuery: 'test' },
+            query: 'test',
             topK: 2
         })
 

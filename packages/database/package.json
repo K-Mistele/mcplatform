@@ -1,27 +1,27 @@
 {
-  "name": "database",
-  "module": "index.ts",
-  "type": "module",
-  "scripts": {
-    "db:generate": "drizzle-kit generate",
-    "db:migrate": "drizzle-kit migrate",
-    "db:push": "drizzle-kit push",
-    "db:introspect": "drizzle-kit introspect",
-    "db:pull": "drizzle-kit pull",
-    "db:studio": "drizzle-kit studio",
-    "db:auth:migrate": "bunx @better-auth/cli migrate"
-  },
-  "dependencies": {
-    "@turbopuffer/turbopuffer": "^0.10.14",
-    "@upstash/redis": "^1.35.1",
-    "common": "workspace:*",
-    "ioredis": "^5.6.1"
-  },
-  "devDependencies": {
-    "@types/bun": "^1.2.18"
-  },
-  "peerDependencies": {
-    "typescript": "^5"
-  },
-  "private": true
+    "name": "database",
+    "module": "index.ts",
+    "type": "module",
+    "scripts": {
+        "db:generate": "drizzle-kit generate",
+        "db:migrate": "drizzle-kit migrate",
+        "db:push": "drizzle-kit push",
+        "db:introspect": "drizzle-kit introspect",
+        "db:pull": "drizzle-kit pull",
+        "db:studio": "drizzle-kit studio",
+        "db:auth:migrate": "bunx @better-auth/cli migrate"
+    },
+    "dependencies": {
+        "@turbopuffer/turbopuffer": "^0.10.14",
+        "@upstash/redis": "^1.35.1",
+        "common": "workspace:*",
+        "ioredis": "^5.6.1"
+    },
+    "devDependencies": {
+        "@types/bun": "^1.2.18"
+    },
+    "peerDependencies": {
+        "typescript": "^5"
+    },
+    "private": true
 }

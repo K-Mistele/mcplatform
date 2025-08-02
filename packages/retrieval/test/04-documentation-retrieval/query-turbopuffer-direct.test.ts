@@ -4,8 +4,8 @@ import { eq } from 'drizzle-orm'
 import { randomUUID } from 'node:crypto'
 import fs from 'node:fs/promises'
 import path from 'node:path'
-import { searchTurboPuffer, turboPuffer, upsertIntoTurboPuffer } from '../../src/turbopuffer'
-import { embed, embedMany } from 'ai'
+import { bm25SearchTurboPuffer, vectorSearchTurboPuffer, hybridSearchTurboPuffer, turboPuffer, upsertIntoTurboPuffer } from '../../src/turbopuffer'
+import { embedMany } from 'ai'
 import { geminiEmbedding } from '../../src/inference'
 import { chunkDocument } from '../../src/documents/preprocessing'
 
@@ -107,12 +107,10 @@ describe('Query TurboPuffer Direct', () => {
         // Step 4: Query the data
 
         // Query 1: Search for "context window" content
-        const contextWindowQuery = await searchTurboPuffer({
+        const contextWindowQuery = await bm25SearchTurboPuffer({
             organizationId,
             namespaceId,
-            query: {
-                textQuery: 'context window'
-            },
+            query: 'context window',
             topK: 5
         })
 
@@ -128,12 +126,10 @@ describe('Query TurboPuffer Direct', () => {
         expect(contextWindowResult).toBeDefined()
 
         // Query 2: Search for "directed graphs" content
-        const graphQuery = await searchTurboPuffer({
+        const graphQuery = await bm25SearchTurboPuffer({
             organizationId,
             namespaceId,
-            query: {
-                textQuery: 'directed graphs'
-            },
+            query: 'directed graphs',
             topK: 5
         })
 
@@ -146,22 +142,10 @@ describe('Query TurboPuffer Direct', () => {
         }
 
         // Query 3: Vector search for "12 factor principles" 
-        const vectorQueryResult = await embed({
-            model: geminiEmbedding,
-            value: '12 factor principles for building agents',
-            providerOptions: {
-                google: {
-                    taskType: 'RETRIEVAL_QUERY'
-                }
-            }
-        })
-
-        const vectorSearchResults = await searchTurboPuffer({
+        const vectorSearchResults = await vectorSearchTurboPuffer({
             organizationId,
             namespaceId,
-            query: {
-                vectorQuery: vectorQueryResult.embedding
-            },
+            query: '12 factor principles for building agents',
             topK: 5
         })
 
@@ -178,23 +162,10 @@ describe('Query TurboPuffer Direct', () => {
         console.log('Found principles result:', !!principlesResult)
 
         // Query 4: Hybrid search (text + vector)
-        const hybridEmbeddingResult = await embed({
-            model: geminiEmbedding,
-            value: 'agents',
-            providerOptions: {
-                google: {
-                    taskType: 'RETRIEVAL_QUERY'
-                }
-            }
-        })
-
-        const hybridResults = await searchTurboPuffer({
+        const hybridResults = await hybridSearchTurboPuffer({
             organizationId,
             namespaceId,
-            query: {
-                textQuery: 'agents',
-                vectorQuery: hybridEmbeddingResult.embedding
-            },
+            query: 'agents',
             topK: 5
         })
 
@@ -213,12 +184,10 @@ describe('Query TurboPuffer Direct', () => {
         const emptyNamespaceId = `ns_empty_${randomUUID().substring(0, 8)}`
 
         // Query an empty namespace
-        const emptyQuery = await searchTurboPuffer({
+        const emptyQuery = await bm25SearchTurboPuffer({
             organizationId,
             namespaceId: emptyNamespaceId,
-            query: {
-                textQuery: 'anything'
-            },
+            query: 'anything',
             topK: 5
         })
 
@@ -230,12 +199,10 @@ describe('Query TurboPuffer Direct', () => {
 
     test('should respect topK parameter', async () => {
         // Query with topK=2
-        const topK2Results = await searchTurboPuffer({
+        const topK2Results = await bm25SearchTurboPuffer({
             organizationId,
             namespaceId,
-            query: {
-                textQuery: 'agents factors'
-            },
+            query: 'agents factors',
             topK: 2
         })
 
@@ -244,12 +211,10 @@ describe('Query TurboPuffer Direct', () => {
         }
 
         // Query with topK=5
-        const topK5Results = await searchTurboPuffer({
+        const topK5Results = await bm25SearchTurboPuffer({
             organizationId,
             namespaceId,
-            query: {
-                textQuery: 'agents factors'
-            },
+            query: 'agents factors',
             topK: 5
         })
 

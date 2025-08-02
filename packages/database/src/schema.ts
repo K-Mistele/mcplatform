@@ -3,11 +3,13 @@ import {
     type AnyPgColumn,
     bigint,
     date,
+    foreignKey,
     index,
     integer,
     jsonb,
     pgEnum,
     pgTable,
+    primaryKey,
     text,
     unique
 } from 'drizzle-orm/pg-core'
@@ -313,9 +315,6 @@ export const retrievalNamespace = pgTable(
 export const documents = pgTable(
     'retrieval_documents',
     {
-        id: text('id')
-            .primaryKey()
-            .$defaultFn(() => `rd_${nanoid(16)}`),
         title: text('title'),
         filePath: text('file_path').notNull(),
         contentType: text('content_type'),
@@ -333,7 +332,11 @@ export const documents = pgTable(
     },
     (t) => [
         index('retrieval_documents_namespace_id_idx').on(t.namespaceId),
-        unique('retrieval_documents_unique_file_path').on(t.title, t.organizationId, t.namespaceId)
+        unique('retrieval_documents_namespace_organization_unique').on(t.namespaceId, t.organizationId, t.filePath),
+        primaryKey({
+            columns: [t.filePath, t.organizationId, t.namespaceId],
+            name: 'retrieval_documents_unique_file_path'
+        })
     ]
 )
 /**
@@ -346,9 +349,7 @@ export const chunks = pgTable(
         id: text('id')
             .primaryKey()
             .$defaultFn(() => `rc_${nanoid(16)}`),
-        documentPath: text('document_path')
-            .references(() => documents.title, { onDelete: 'cascade' })
-            .notNull(),
+        documentPath: text('document_path').notNull(),
         namespaceId: text('namespace_id')
             .references(() => retrievalNamespace.id, { onDelete: 'cascade' })
             .notNull(),
@@ -363,7 +364,7 @@ export const chunks = pgTable(
         updatedAt: bigint('updated_at', { mode: 'number' }).$defaultFn(() => Date.now())
     },
     (t) => [
-        index('retrieval_chunks_document_id_idx').on(t.documentPath),
+        index('retrieval_chunks_document_path_order_idx').on(t.documentPath, t.namespaceId, t.organizationId),
         index('retrieval_chunks_namespace_id_idx').on(t.namespaceId),
         //index('retrieval_chunks_embedding_index').using('hnsw', t.embedding.op('vector_cosine_ops')),
         unique('retrieval_chunks_unique_document_order').on(
@@ -371,7 +372,12 @@ export const chunks = pgTable(
             t.orderInDocument,
             t.namespaceId,
             t.organizationId
-        )
+        ),
+        foreignKey({
+            columns: [t.documentPath, t.namespaceId, t.organizationId],
+            foreignColumns: [documents.filePath, documents.namespaceId, documents.organizationId],
+            name: 'retrieval_chunks_document_namespace_organization_fk'
+        })
     ]
 )
 

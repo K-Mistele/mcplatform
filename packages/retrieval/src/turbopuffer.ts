@@ -1,5 +1,7 @@
 import { Turbopuffer } from '@turbopuffer/turbopuffer'
 import type { JSONValue } from 'ai'
+import { embed } from 'ai'
+import { geminiEmbedding } from './inference'
 
 export const turboPuffer = new Turbopuffer({
     apiKey: process.env.TURBOPUFFER_API_KEY!,
@@ -91,6 +93,103 @@ export async function searchTurboPuffer(data: {
         return await ns.multiQuery({
             queries: [textQuery, vectorQuery]
         })
-    else if (textQuery || vectorQuery) return await ns.query(textQuery ?? vectorQuery)
+    else if (textQuery) return await ns.query(textQuery)
+    else if (vectorQuery) return await ns.query(vectorQuery)
     else throw new Error('No query provided')
+}
+
+/**
+ * Vector search using TurboPuffer.
+ * Takes a text query string and converts it to an embedding for vector search.
+ *
+ * @param data - The data to search for.
+ * @returns The search results.
+ */
+export async function vectorSearchTurboPuffer(data: {
+    organizationId: string
+    namespaceId: string
+    query: string
+    topK?: number
+}) {
+    const ns = turboPuffer.namespace(`${data.organizationId}-${data.namespaceId}`)
+
+    // Convert the text query to an embedding using RETRIEVAL_QUERY task type
+    const { embedding } = await embed({
+        model: geminiEmbedding,
+        value: data.query,
+        providerOptions: {
+            google: {
+                taskType: 'RETRIEVAL_QUERY'
+            }
+        }
+    })
+
+    return await ns.query({
+        rank_by: ['vector', 'ANN', embedding],
+        top_k: data.topK ?? 10,
+        include_attributes: ['content', 'document_path', 'id', 'contextualized_content']
+    })
+}
+
+/**
+ * BM25 text search using TurboPuffer.
+ *
+ * @param data - The data to search for.
+ * @returns The search results.
+ */
+export async function bm25SearchTurboPuffer(data: {
+    organizationId: string
+    namespaceId: string
+    query: string
+    topK?: number
+}) {
+    const ns = turboPuffer.namespace(`${data.organizationId}-${data.namespaceId}`)
+
+    return await ns.query({
+        rank_by: ['content', 'BM25', data.query],
+        top_k: data.topK ?? 10,
+        include_attributes: ['content', 'document_path', 'id', 'contextualized_content']
+    })
+}
+
+/**
+ * Hybrid search (vector + BM25) using TurboPuffer.
+ * Takes a text query string and performs both vector and BM25 search.
+ *
+ * @param data - The data to search for.
+ * @returns The search results.
+ */
+export async function hybridSearchTurboPuffer(data: {
+    organizationId: string
+    namespaceId: string
+    query: string
+    topK?: number
+}) {
+    const ns = turboPuffer.namespace(`${data.organizationId}-${data.namespaceId}`)
+
+    // Convert the text query to an embedding for the vector search component
+    const { embedding } = await embed({
+        model: geminiEmbedding,
+        value: data.query,
+        providerOptions: {
+            google: {
+                taskType: 'RETRIEVAL_QUERY'
+            }
+        }
+    })
+
+    return await ns.multiQuery({
+        queries: [
+            {
+                rank_by: ['content', 'BM25', data.query],
+                top_k: data.topK ?? 10,
+                include_attributes: ['content', 'document_path', 'id', 'contextualized_content']
+            },
+            {
+                rank_by: ['vector', 'ANN', embedding],
+                top_k: data.topK ?? 10,
+                include_attributes: ['content', 'document_path', 'id', 'contextualized_content']
+            }
+        ]
+    })
 }

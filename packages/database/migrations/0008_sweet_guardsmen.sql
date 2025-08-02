@@ -1,2 +1,0 @@
-ALTER TABLE "walkthrough_steps" ADD COLUMN "display_order" integer DEFAULT 0 NOT NULL;--> statement-breakpoint
-CREATE INDEX "walkthrough_steps_display_order_idx" ON "walkthrough_steps" USING btree ("display_order");

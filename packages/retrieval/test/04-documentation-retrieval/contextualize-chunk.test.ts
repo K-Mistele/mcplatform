@@ -159,6 +159,7 @@ describe('Inngest Functions', async () => {
                     .values({
                         id: organizationId,
                         name: 'Test Organization',
+                        slug: `test-org-${organizationId}`,
                         createdAt: new Date()
                     })
                     .onConflictDoNothing()
@@ -181,7 +182,7 @@ describe('Inngest Functions', async () => {
                     .insert(schema.documents)
                     .values({
                         filePath: documentPath,
-                        fileName: 'test_file.md',
+                        title: 'test_file.md',
                         contentType: 'text/markdown',
                         namespaceId,
                         organizationId,
@@ -265,7 +266,7 @@ describe('Inngest Functions', async () => {
                     .insert(schema.documents)
                     .values({
                         filePath: uniqueDocPath,
-                        fileName: uniqueDocPath,
+                        title: uniqueDocPath,
                         contentType: 'text/markdown',
                         namespaceId,
                         organizationId,
@@ -406,6 +407,7 @@ describe('Inngest Functions', async () => {
                     .values({
                         id: organizationId,
                         name: 'Test Organization Storage',
+                        slug: `test-org-storage-${organizationId}`,
                         createdAt: new Date()
                     })
                     .onConflictDoNothing()
@@ -428,7 +430,7 @@ describe('Inngest Functions', async () => {
                     .insert(schema.documents)
                     .values({
                         filePath: documentPath,
-                        fileName: 'test_file.md',
+                        title: 'test_file.md',
                         contentType: 'text/markdown',
                         namespaceId,
                         organizationId,
@@ -617,7 +619,7 @@ This is custom content for testing frontmatter extraction.`
                     .insert(schema.documents)
                     .values({
                         filePath: 'doc-with-frontmatter.md',
-                        fileName: 'doc-with-frontmatter.md',
+                        title: 'doc-with-frontmatter.md',
                         contentType: 'text/markdown',
                         namespaceId,
                         organizationId,

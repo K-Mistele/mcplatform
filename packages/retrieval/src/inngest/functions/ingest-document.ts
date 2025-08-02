@@ -74,7 +74,7 @@ export const ingestDocument = (inngest: Inngest) =>
             }
 
             // STEP -- increment the total documents count for the batch
-            await step.run('increment-batch-total-documents', async () => {
+            const incrementDocumentsInBatchPromise = step.run('increment-batch-total-documents', async () => {
                 const result = await db.transaction(
                     async (tx) => {
                         await tx
@@ -106,7 +106,7 @@ export const ingestDocument = (inngest: Inngest) =>
             })
 
             // STEP -- split the document into chunks
-            const chunks: string[] = await step.run('split-document-into-chunks', async () => {
+            const chunksPromise = step.run('split-document-into-chunks', async () => {
                 const chunks = chunkDocument(Buffer.from(base64DocumentBytes, 'base64').toString())
                 if (!chunks) {
                     logger.error(`failed to split document into chunks`)
@@ -120,7 +120,7 @@ export const ingestDocument = (inngest: Inngest) =>
             })
 
             // STEP -- get chunks from the database for the document
-            const existingChunks = await step.run('get-existing-chunks-from-db', async () => {
+            const existingChunksPromise = step.run('get-existing-chunks-from-db', async () => {
                 const chunks = await db
                     .select()
                     .from(schema.chunks)
@@ -135,6 +135,13 @@ export const ingestDocument = (inngest: Inngest) =>
 
                 return chunks
             })
+
+            const [incrementResult, cacheDocumentsResult, existingChunks, chunks] = await Promise.all([
+                incrementDocumentsInBatchPromise,
+                cacheDocumentPromise,
+                existingChunksPromise,
+                chunksPromise
+            ])
 
             if (!existingChunks.length)
                 logger.info(`No existing chunks found for document ${data.documentPath}; creating new chunks`)
@@ -158,6 +165,7 @@ export const ingestDocument = (inngest: Inngest) =>
             logger.info(`${chunksToProcess.length} chunks to update out of ${chunks.length}`)
 
             if (chunksToProcess.length) {
+                const chunksToInsert: Array<typeof schema.chunks.$inferInsert> = []
                 const stepPromises = []
                 if (chunks.length > 400) {
                     logger.warn(`${chunks.length} chunks is too many to process at once; skipping`)
@@ -182,15 +190,48 @@ export const ingestDocument = (inngest: Inngest) =>
 
                 const chunkPromiseResults = await Promise.allSettled(chunkPromises)
                 for (let i = 0; i < chunkPromiseResults.length; i++) {
-                    const originalChunk = chunksToProcess[i]
+                    const originalChunk = chunksToProcess[i]!
                     const chunkPromiseResult = chunkPromiseResults[i]
                     if (chunkPromiseResult?.status === 'rejected') {
                         logger.error(`Failed to process chunk ${i}:`, originalChunk)
                     } else if (chunkPromiseResult?.status === 'fulfilled') {
                         const chunkResult = chunkPromiseResult.value
+                        if (!chunkResult || !originalChunk) {
+                            logger.error(`Failed to process chunk ${i}:`, originalChunk, chunkResult)
+                            continue
+                        }
+                        chunksToInsert.push({
+                            originalContent: originalChunk.chunk,
+                            contextualizedContent: chunkResult.contextualizedContent,
+                            documentPath: data.documentPath,
+                            orderInDocument: originalChunk.index,
+                            namespaceId: data.namespaceId,
+                            organizationId: data.organizationId,
+                            metadata: null,
+                            id: crypto.randomUUID(),
+                            createdAt: Date.now(),
+                            updatedAt: Date.now()
+                        })
                     }
                 }
                 // TODO embed chunks & insert
+
+                await db
+                    .insert(schema.chunks)
+                    .values(chunksToInsert)
+                    .onConflictDoUpdate({
+                        target: [
+                            schema.chunks.documentPath,
+                            schema.chunks.orderInDocument,
+                            schema.chunks.namespaceId,
+                            schema.chunks.organizationId
+                        ],
+                        set: {
+                            contextualizedContent: sql`excluded.contextualizedContent`,
+                            originalContent: sql`excluded.originalContent`,
+                            updatedAt: Date.now()
+                        }
+                    })
                 // TODO wait for completion
                 // TODO remove old chunks from DB and Turbopuffer
             }

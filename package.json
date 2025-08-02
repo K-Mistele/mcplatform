@@ -10,6 +10,9 @@
         "lint": "bunx @biomejs/biome lint --write",
         "dev": "sst dev",
         "studio": "cd packages/database && bun run db:studio",
+        "db:migrate": "cd packages/database && bun run db:migrate",
+        "db:generate": "cd packages/database && bun run db:generate",
+        "db:push": "cd packages/database && bun run db:push",
         "next:dev": "cd packages/dashboard && bun run dev",
         "tests": "bun sst shell -- bun test --timeout 15000",
         "ngrok": "bash scripts/ngrok.sh"

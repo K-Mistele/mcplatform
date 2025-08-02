@@ -1,1 +1,0 @@
-ALTER TABLE "mcp_server_session" ADD COLUMN "title" text;

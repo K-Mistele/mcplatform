@@ -1,2 +1,0 @@
-ALTER TABLE "support_requests" ADD COLUMN "mcp_server_session_id" text;--> statement-breakpoint
-ALTER TABLE "support_requests" ADD CONSTRAINT "support_requests_mcp_server_session_id_mcp_server_session_mcp_server_session_id_fk" FOREIGN KEY ("mcp_server_session_id") REFERENCES "public"."mcp_server_session"("mcp_server_session_id") ON DELETE cascade ON UPDATE no action;
