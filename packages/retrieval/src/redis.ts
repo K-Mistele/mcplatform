@@ -1,7 +1,7 @@
 import { Redis } from 'ioredis'
 import { Resource } from 'sst'
 
-const { username, password, host, port } = Resource.McpPlatformRedis
+const { username, password, host, port } = Resource.Redis
 export const redisClient = new Redis({
     host,
     port,

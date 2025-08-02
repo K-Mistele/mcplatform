@@ -1,7 +1,7 @@
 import { Inngest } from 'inngest'
 import { Resource } from 'sst'
 
-const inngestUrl = Resource.McpPlatformInngestService.url
+const inngestUrl = Resource.Inngest.url
 const inngestHttpUrl = `${inngestUrl}:8288`
 const inngestWebsocketUrl = `${inngestUrl}:8289`.replace('https://', 'wss://').replace('http://', 'ws://')
 

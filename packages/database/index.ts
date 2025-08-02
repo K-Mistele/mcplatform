@@ -11,7 +11,7 @@ export const schema = {
     ...mcpAuthSchema
 }
 
-const pg = Resource.McpPlatformPostgres
+const pg = Resource.Postgres
 const dbUrl = `postgresql://${pg.username}:${pg.password}@${pg.host}:${pg.port}/${pg.database}`
 export const db = drizzle(dbUrl, {
     schema: schema

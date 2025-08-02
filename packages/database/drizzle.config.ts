@@ -8,7 +8,7 @@ if (!process.env.DATABASE_URL) {
     console.error('missing DATABASE_URL for migrations.')
     process.exit(1)
 }
-const dbUrl = `postgresql://${Resource.McpPlatformPostgres.username}:${Resource.McpPlatformPostgres.password}@${Resource.McpPlatformPostgres.host}:${Resource.McpPlatformPostgres.port}/${Resource.McpPlatformPostgres.database}`
+const dbUrl = `postgresql://${Resource.Postgres.username}:${Resource.Postgres.password}@${Resource.Postgres.host}:${Resource.Postgres.port}/${Resource.Postgres.database}`
 export default defineConfig({
     dialect: 'postgresql',
     schema: ['./src/schema.ts', './src/auth-schema.ts', './src/mcp-auth-schema.ts'],

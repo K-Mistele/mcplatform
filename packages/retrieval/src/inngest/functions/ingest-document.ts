@@ -1,9 +1,10 @@
 import { db, schema } from 'database'
 import { and, asc, eq, sql } from 'drizzle-orm'
 import { type Inngest, NonRetriableError } from 'inngest'
+import type { InvocationResult } from 'inngest/types'
 import z from 'zod'
-import { chunkDocument, getDocumentFromS3, removeDocumentFromCache } from '../../documents'
-import type { ContextualizeChunkResult } from './contextualize-chunk'
+import { chunkDocument, getDocumentFromS3, removeDocumentFromCache, setDocumentInCache } from '../../documents'
+import { type ProcessChunkEvent, type ProcessChunkResult, processChunk } from './process-chunk'
 
 export const ingestDocumentEventSchema = z.object({
     organizationId: z.string(),
@@ -40,6 +41,11 @@ export const ingestDocument = (inngest: Inngest) =>
                     documentRelativePath: data.documentPath
                 })
                 return await Buffer.from(await document.transformToByteArray()).toString('base64')
+            })
+
+            // add the document to the ccache
+            const cacheDocumentPromise = step.run('cache-document-id', async () => {
+                await setDocumentInCache(data.organizationId, data.namespaceId, data.documentPath, 'text')
             })
 
             // NOTE that if the document is NOT markdown we need a different ingestion approach
@@ -152,14 +158,38 @@ export const ingestDocument = (inngest: Inngest) =>
             logger.info(`${chunksToProcess.length} chunks to update out of ${chunks.length}`)
 
             if (chunksToProcess.length) {
+                const stepPromises = []
                 if (chunks.length > 400) {
                     logger.warn(`${chunks.length} chunks is too many to process at once; skipping`)
                 }
-                const chunkPromises: Promise<ContextualizeChunkResult>[] = []
+
+                // create promises for contextualizing and then handling all the chunks
+                const chunkPromises: InvocationResult<ProcessChunkResult | null>[] = []
                 for (const chunk of chunksToProcess) {
-                    chunkPromises.push(new Promise<ContextualizeChunkResult>((resolve, reject) => {}))
+                    const embeddedChunkPromise = step.invoke('process-chunk', {
+                        function: processChunk(inngest),
+                        data: {
+                            organizationId: data.organizationId,
+                            namespaceId: data.namespaceId,
+                            documentPath: data.documentPath,
+                            chunkIndex: chunk.index,
+                            chunkContent: chunk.chunk,
+                            correlationId: data.batchId
+                        } satisfies ProcessChunkEvent
+                    })
+                    chunkPromises.push(embeddedChunkPromise)
                 }
 
+                const chunkPromiseResults = await Promise.allSettled(chunkPromises)
+                for (let i = 0; i < chunkPromiseResults.length; i++) {
+                    const originalChunk = chunksToProcess[i]
+                    const chunkPromiseResult = chunkPromiseResults[i]
+                    if (chunkPromiseResult?.status === 'rejected') {
+                        logger.error(`Failed to process chunk ${i}:`, originalChunk)
+                    } else if (chunkPromiseResult?.status === 'fulfilled') {
+                        const chunkResult = chunkPromiseResult.value
+                    }
+                }
                 // TODO embed chunks & insert
                 // TODO wait for completion
                 // TODO remove old chunks from DB and Turbopuffer

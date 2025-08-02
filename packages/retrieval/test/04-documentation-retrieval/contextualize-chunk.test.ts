@@ -51,7 +51,7 @@ describe('Inngest Functions', async () => {
 
         // Clean up documents (they reference namespaces)
         for (const doc of createdResources.documents) {
-            await db.delete(schema.documents).where(eq(schema.documents.filePath, doc.filePath))
+            await db.delete(schema.documents).where(eq(schema.documents.title, doc.filePath))
         }
 
         console.log('Cleaning up namespaces...')

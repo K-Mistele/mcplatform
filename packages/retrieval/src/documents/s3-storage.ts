@@ -43,7 +43,7 @@ export async function getDocumentUploadUrl({
  * @param document
  * @param param1
  */
-export async function storeDocument(
+export async function storeDocumentInS3(
     document: Buffer,
     {
         organizationId,
@@ -86,7 +86,7 @@ export async function shouldReingestDocument({
             and(
                 eq(schema.documents.organizationId, organizationId),
                 eq(schema.documents.namespaceId, namespaceId),
-                eq(schema.documents.filePath, documentRelativePath)
+                eq(schema.documents.title, documentRelativePath)
             )
         )
 
@@ -114,7 +114,7 @@ export async function getDocumentFromS3({
     documentRelativePath: string
 }) {
     const command = new GetObjectCommand({
-        Bucket: Resource.McpPlatformBucket.name,
+        Bucket: Resource.Bucket.name,
         Key: `${organizationId}/${namespaceId}/${documentRelativePath}`
     })
 

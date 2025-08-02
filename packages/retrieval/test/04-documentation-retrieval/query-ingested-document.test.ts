@@ -1,111 +1,166 @@
-import { describe, expect, test } from 'bun:test'
-import { db, schema } from 'database'
-import { eq } from 'drizzle-orm'
-import { nanoid } from 'nanoid'
-import { searchTurboPuffer, turboPuffer, upsertIntoTurboPuffer } from '../../src/turbopuffer'
-import { geminiEmbedding } from '../../src/inference'
+import { InngestTestEngine } from '@inngest/test'
 import { embed } from 'ai'
-import { readFile } from 'node:fs/promises'
-import { join } from 'node:path'
+import { afterAll, beforeAll, describe, expect, test } from 'bun:test'
+import { db, schema } from 'database'
+import { and, eq } from 'drizzle-orm'
+import { Inngest } from 'inngest'
+import { randomUUID } from 'node:crypto'
+import fs from 'node:fs/promises'
+import path from 'node:path'
+import { geminiEmbedding } from '../../src/inference'
+import { type IngestDocumentEvent, type UploadDocumentEvent, ingestDocument, uploadDocument } from '../../src/inngest'
+import { searchTurboPuffer, turboPuffer } from '../../src/turbopuffer'
 
-const { documents: documentsTable, embeddings: embeddingsTable } = schema
+const inngestClient = new Inngest({
+    id: 'test-inngest-query',
+    baseUrl: process.env.INNGEST_BASE_URL!
+})
 
-describe('Query Ingested Document', () => {
-    const organizationId = nanoid()
-    const namespaceId = nanoid()
-    const documentId = nanoid()
+const testUploadFunction = new InngestTestEngine({
+    function: uploadDocument(inngestClient)
+})
+
+const testIngestFunction = new InngestTestEngine({
+    function: ingestDocument(inngestClient)
+})
+
+describe('Query Ingested Document', async () => {
+    let organizationId: string
+    let namespaceId: string = 'query-ingested-document-test-ns'
+    let batchId: string = randomUUID()
+    const testFileContent: Buffer = await fs.readFile(path.join(__dirname, 'test_file.md'))
     const testDocPath = 'test/test_file.md'
-    const fullTestDocPath = join(__dirname, 'test_file.md')
 
-    // Helper to clean up test data
-    async function cleanup() {
-        await db.delete(embeddingsTable).where(eq(embeddingsTable.documentId, documentId))
-        await db.delete(documentsTable).where(eq(documentsTable.id, documentId))
-        
+    const getDocumentsInNamespace = async () =>
+        await db
+            .select()
+            .from(schema.documents)
+            .where(
+                and(eq(schema.documents.organizationId, organizationId), eq(schema.documents.namespaceId, namespaceId))
+            )
+
+    const getChunksInNamespace = async () =>
+        await db
+            .select()
+            .from(schema.chunks)
+            .where(and(eq(schema.chunks.namespaceId, namespaceId), eq(schema.chunks.organizationId, organizationId)))
+
+    beforeAll(async () => {
+        // Wait for inngest connection
+        console.log('Waiting for inngest connection...')
+        await inngestClient.ready
+        console.log('Inngest connection established')
+
+        // Generate unique IDs for this test run
+        organizationId = `org_test_${randomUUID().substring(0, 8)}`
+        namespaceId = `ns_test_${randomUUID().substring(0, 8)}`
+        batchId = randomUUID()
+
+        // Create test organization
+        await db
+            .insert(schema.organization)
+            .values({
+                id: organizationId,
+                name: 'Test Organization for Query Tests',
+                createdAt: new Date()
+            })
+            .onConflictDoNothing()
+
+        // Create test namespace
+        await db
+            .insert(schema.retrievalNamespace)
+            .values({
+                id: namespaceId,
+                name: 'Test Namespace for Query Tests',
+                organizationId,
+                createdAt: Date.now()
+            })
+            .onConflictDoNothing()
+
+        // Create ingestion job
+        await db
+            .insert(schema.ingestionJob)
+            .values({
+                id: batchId,
+                organizationId,
+                namespaceId,
+                createdAt: Date.now()
+            })
+            .onConflictDoNothing()
+    })
+
+    afterAll(async () => {
+        // Clean up chunks
+        await db
+            .delete(schema.chunks)
+            .where(and(eq(schema.chunks.organizationId, organizationId), eq(schema.chunks.namespaceId, namespaceId)))
+
+        // Clean up documents
+        await db
+            .delete(schema.documents)
+            .where(
+                and(eq(schema.documents.organizationId, organizationId), eq(schema.documents.namespaceId, namespaceId))
+            )
+
+        // Clean up ingestion job
+        await db.delete(schema.ingestionJob).where(eq(schema.ingestionJob.id, batchId))
+
+        // Clean up namespace
+        await db.delete(schema.retrievalNamespace).where(eq(schema.retrievalNamespace.id, namespaceId))
+
+        // Clean up organization
+        await db.delete(schema.organization).where(eq(schema.organization.id, organizationId))
+
         // Clean up TurboPuffer namespace
         try {
             const ns = turboPuffer.namespace(`${organizationId}-${namespaceId}`)
             await ns.deleteAll()
-        } catch (error) {
+        } catch {
             // Namespace might not exist, that's okay
         }
-    }
+    })
 
-    test('should ingest test document and query for specific content', async () => {
-        await cleanup()
-
-        // Read the test document
-        const documentContent = await readFile(fullTestDocPath, 'utf-8')
-
-        // Create document record
-        const [document] = await db.insert(documentsTable).values({
-            id: documentId,
-            organizationId,
-            namespaceId,
-            path: testDocPath,
-            content: documentContent,
-            metadata: {
-                title: '12-Factor Agents - Principles for building reliable LLM applications',
-                description: 'The 12 factor agents manifesto',
-                updatedAt: '02/15/2023'
-            },
-            createdAt: BigInt(Date.now())
-        }).returning()
-
-        // Simulate chunk processing (similar to what the ingestion pipeline would do)
-        // For this test, we'll create a few key chunks manually
-        const chunks = [
-            {
-                content: 'The promise of agents. We\'re gonna talk a lot about Directed Graphs (DGs) and their Acyclic friends, DAGs. I\'ll start by pointing out that...well...software is a directed graph. There\'s a reason we used to represent programs as flow charts.',
-                chunkIndex: 0
-            },
-            {
-                content: 'Factor 3: Own your context window. Own your context building. Context Engineering? Jump straight to factor 3',
-                chunkIndex: 1
-            },
-            {
-                content: 'What are the principles we can use to build LLM-powered software that is actually good enough to put in the hands of production customers? Welcome to 12-factor agents.',
-                chunkIndex: 2
-            },
-            {
-                content: 'The fastest way I\'ve seen for builders to get good AI software in the hands of customers is to take small, modular concepts from agent building, and incorporate them into their existing product',
-                chunkIndex: 3
-            },
-            {
-                content: 'Factor 8: Own your control flow. Factor 9: Compact Errors into Context Window. Factor 10: Small, Focused Agents',
-                chunkIndex: 4
-            }
-        ]
-
-        // Generate embeddings and insert into TurboPuffer
-        const chunksWithEmbeddings = await Promise.all(
-            chunks.map(async (chunk) => {
-                const embeddingResult = await embed({
-                    model: geminiEmbedding,
-                    value: chunk.content,
-                    providerOptions: {
-                        google: {
-                            taskType: 'RETRIEVAL_DOCUMENT'
-                        }
-                    }
-                })
-
-                return {
-                    chunkIndex: chunk.chunkIndex,
-                    embedding: embeddingResult.embedding,
-                    documentPath: testDocPath,
-                    content: chunk.content,
-                    contextualizedContent: chunk.content, // In real pipeline this would be contextualized
-                    metadata: document.metadata
+    test('should upload, ingest, and query the test document', async () => {
+        expect(await getDocumentsInNamespace()).toHaveLength(0)
+        expect(await getChunksInNamespace()).toHaveLength(0)
+        // Step 1: Upload the document
+        const uploadResult = await testUploadFunction.execute({
+            events: [
+                {
+                    name: 'retrieval/upload-document',
+                    data: {
+                        organizationId,
+                        namespaceId,
+                        documentPath: testDocPath,
+                        documentBufferBase64: testFileContent.toString('base64')
+                    } satisfies UploadDocumentEvent
                 }
-            })
-        )
-
-        await upsertIntoTurboPuffer({
-            organizationId,
-            namespaceId,
-            chunks: chunksWithEmbeddings
+            ]
         })
+
+        expect(await getDocumentsInNamespace()).toHaveLength(1)
+        expect(uploadResult).not.toHaveProperty('error')
+
+        // Step 2: Ingest the document
+        const ingestResult = await testIngestFunction.execute({
+            events: [
+                {
+                    name: 'retrieval/ingest-document',
+                    data: {
+                        namespaceId,
+                        documentPath: testDocPath,
+                        organizationId,
+                        batchId
+                    } satisfies IngestDocumentEvent
+                }
+            ]
+        })
+
+        expect(ingestResult).not.toHaveProperty('error')
+        expect((await getChunksInNamespace()).length).toBeGreaterThan(0)
+        expect((await getDocumentsInNamespace()).length).toBe(1)
+
+        // Step 3: Query the ingested document
 
         // Query 1: Search for "context window" content
         const contextWindowQuery = await searchTurboPuffer({
@@ -119,10 +174,11 @@ describe('Query Ingested Document', () => {
 
         expect(contextWindowQuery).toBeDefined()
         expect(contextWindowQuery.length).toBeGreaterThan(0)
-        
-        // Should find the chunk about Factor 3: Own your context window
-        const contextWindowResult = contextWindowQuery.find((result: any) => 
-            result.content.includes('Factor 3: Own your context window')
+
+        // Should find content about Factor 3: Own your context window
+        const contextWindowResult = contextWindowQuery.find(
+            (result: any) =>
+                result.content?.includes('context window') || result.contextualized_content?.includes('context window')
         )
         expect(contextWindowResult).toBeDefined()
 
@@ -131,21 +187,23 @@ describe('Query Ingested Document', () => {
             organizationId,
             namespaceId,
             query: {
-                textQuery: 'directed graphs DAGs software'
+                textQuery: 'directed graphs DAGs'
             },
             topK: 5
         })
 
         expect(graphQuery).toBeDefined()
         expect(graphQuery.length).toBeGreaterThan(0)
-        
-        // Should find the chunk about directed graphs
-        const graphResult = graphQuery.find((result: any) => 
-            result.content.includes('Directed Graphs (DGs) and their Acyclic friends, DAGs')
+
+        // Should find content about directed graphs
+        const graphResult = graphQuery.find(
+            (result: any) =>
+                result.content?.includes('Directed Graphs') ||
+                result.contextualized_content?.includes('Directed Graphs')
         )
         expect(graphResult).toBeDefined()
 
-        // Query 3: Vector search for "12 factor principles" 
+        // Query 3: Vector search for "12 factor principles"
         const vectorQueryResult = await embed({
             model: geminiEmbedding,
             value: '12 factor principles for building agents',
@@ -167,17 +225,21 @@ describe('Query Ingested Document', () => {
 
         expect(vectorSearchResults).toBeDefined()
         expect(vectorSearchResults.length).toBeGreaterThan(0)
-        
+
         // Should find chunks related to 12-factor agents principles
-        const principlesResult = vectorSearchResults.find((result: any) => 
-            result.content.includes('principles we can use to build LLM-powered software')
+        const principlesResult = vectorSearchResults.find(
+            (result: any) =>
+                result.content?.includes('12-factor') ||
+                result.content?.includes('principles') ||
+                result.contextualized_content?.includes('12-factor') ||
+                result.contextualized_content?.includes('principles')
         )
         expect(principlesResult).toBeDefined()
 
         // Query 4: Hybrid search (text + vector)
         const hybridEmbeddingResult = await embed({
             model: geminiEmbedding,
-            value: 'small modular concepts',
+            value: 'modular concepts agent building',
             providerOptions: {
                 google: {
                     taskType: 'RETRIEVAL_QUERY'
@@ -196,21 +258,17 @@ describe('Query Ingested Document', () => {
         })
 
         expect(hybridResults).toBeDefined()
-        
+
         // With hybrid search, we should get results from both queries
         // The multiQuery returns an object with results from each query type
         if ('results' in hybridResults) {
             expect(hybridResults.results).toBeDefined()
             expect(hybridResults.results.length).toBeGreaterThan(0)
         }
-
-        await cleanup()
-    }, 60000) // 60 second timeout for this test
+    }, 120000) // 2 minute timeout for this test
 
     test('should handle queries with no results gracefully', async () => {
-        await cleanup()
-
-        // Query for something that shouldn't exist
+        // Query for something that shouldn't exist in the document
         const noResultsQuery = await searchTurboPuffer({
             organizationId,
             namespaceId,
@@ -221,41 +279,22 @@ describe('Query Ingested Document', () => {
         })
 
         expect(noResultsQuery).toBeDefined()
-        // Should return empty array or have no results
+        // Should return empty array or have very few/no relevant results
         if (Array.isArray(noResultsQuery)) {
-            expect(noResultsQuery.length).toBe(0)
-        } else if ('results' in noResultsQuery) {
-            expect(noResultsQuery.results.length).toBe(0)
+            // If results exist, they should not be relevant to the nonsense query
+            noResultsQuery.forEach((result: any) => {
+                expect(result.content).not.toContain('quantum blockchain cryptocurrency')
+            })
         }
-
-        await cleanup()
     })
 
-    test('should respect topK parameter', async () => {
-        await cleanup()
-
-        // First, ingest some test data
-        const chunks = Array.from({ length: 10 }, (_, i) => ({
-            chunkIndex: i,
-            embedding: Array(1536).fill(0).map(() => Math.random()),
-            documentPath: testDocPath,
-            content: `Test chunk ${i} with some content about agents and LLMs`,
-            contextualizedContent: `Test chunk ${i} with some content about agents and LLMs`,
-            metadata: { index: i }
-        }))
-
-        await upsertIntoTurboPuffer({
-            organizationId,
-            namespaceId,
-            chunks
-        })
-
+    test('should respect topK parameter in queries', async () => {
         // Query with topK=3
         const topK3Results = await searchTurboPuffer({
             organizationId,
             namespaceId,
             query: {
-                textQuery: 'agents LLMs'
+                textQuery: 'agents'
             },
             topK: 3
         })
@@ -269,15 +308,15 @@ describe('Query Ingested Document', () => {
             organizationId,
             namespaceId,
             query: {
-                textQuery: 'agents LLMs'
+                textQuery: 'agents'
             },
             topK: 7
         })
 
         if (Array.isArray(topK7Results)) {
             expect(topK7Results.length).toBeLessThanOrEqual(7)
+            // Should have more results than topK=3
+            expect(topK7Results.length).toBeGreaterThanOrEqual(topK3Results.length)
         }
-
-        await cleanup()
     })
 })

@@ -175,7 +175,7 @@ export default $config({
         new sst.x.DevCommand('Ngrok', {
             link: [nextjsApp],
             dev: {
-                command: 'bun run ngrok'
+                command: 'bun run scripts/ngrok.ts'
             }
         })
     }

@@ -78,13 +78,13 @@ export async function searchTurboPuffer(data: {
         textQuery = {
             rank_by: ['content', 'BM25', data.query.textQuery],
             top_k: data.topK ?? 10,
-            include_attributes: ['content', 'document_path', 'id', 'title']
+            include_attributes: ['content', 'document_path', 'id', 'contextualized_content']
         } satisfies TurboPufferQuery
     if ('vectorQuery' in data.query)
         vectorQuery = {
             rank_by: ['vector', 'ANN', data.query.vectorQuery],
             top_k: data.topK ?? 10,
-            include_attributes: ['content', 'document_path', 'id', 'title']
+            include_attributes: ['content', 'document_path', 'id', 'contextualized_content']
         } satisfies TurboPufferQuery
 
     if (textQuery && vectorQuery)

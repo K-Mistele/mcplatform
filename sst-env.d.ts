@@ -9,25 +9,21 @@ declare module "sst" {
       "name": string
       "type": "sst.aws.Bucket"
     }
-    "McpPlatformBucket": {
-      "name": string
-      "type": "sst.aws.Bucket"
-    }
-    "McpPlatformDatabaseMigrator": {
+    "DatabaseMigrator": {
       "name": string
       "type": "sst.aws.Function"
     }
-    "McpPlatformInngestService": {
+    "Inngest": {
       "service": string
       "type": "sst.aws.Service"
       "url": string
     }
-    "McpPlatformNextjsApp": {
+    "NextjsApp": {
       "service": string
       "type": "sst.aws.Service"
       "url": string
     }
-    "McpPlatformPostgres": {
+    "Postgres": {
       "database": string
       "host": string
       "password": string
@@ -35,21 +31,12 @@ declare module "sst" {
       "type": "sst.aws.Postgres"
       "username": string
     }
-    "McpPlatformRedis": {
+    "Redis": {
       "host": string
       "password": string
       "port": number
       "type": "sst.aws.Redis"
       "username": string
-    }
-    "McpPlatformVpc": {
-      "bastion": string
-      "type": "sst.aws.Vpc"
-    }
-    "NextjsApp": {
-      "service": string
-      "type": "sst.aws.Service"
-      "url": string
     }
     "Vpc": {
       "bastion": string

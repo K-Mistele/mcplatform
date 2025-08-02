@@ -2,7 +2,7 @@ import { serve } from 'inngest/next'
 import { functions, inngest } from 'retrieval'
 import { Resource } from 'sst'
 
-const inngestUrl = Resource.McpPlatformInngestService.url
+const inngestUrl = `${Resource.Inngest.url}:8288`
 console.log('inngestUrl', inngestUrl)
 
 // Create the API handler for Inngest

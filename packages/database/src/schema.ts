@@ -313,9 +313,12 @@ export const retrievalNamespace = pgTable(
 export const documents = pgTable(
     'retrieval_documents',
     {
-        filePath: text('file_path').primaryKey(),
-        fileName: text('file_name').notNull(),
-        contentType: text('content_type').notNull(),
+        id: text('id')
+            .primaryKey()
+            .$defaultFn(() => `rd_${nanoid(16)}`),
+        title: text('title'),
+        filePath: text('file_path').notNull(),
+        contentType: text('content_type'),
         metadata: jsonb('metadata').$defaultFn(() => ({})),
         tags: jsonb('tags').$type<string[]>().default([]),
         namespaceId: text('namespace_id')
@@ -328,7 +331,10 @@ export const documents = pgTable(
         updatedAt: bigint('updated_at', { mode: 'number' }).$defaultFn(() => Date.now()),
         contentHash: text('content_hash').notNull()
     },
-    (t) => [index('retrieval_documents_namespace_id_idx').on(t.namespaceId)]
+    (t) => [
+        index('retrieval_documents_namespace_id_idx').on(t.namespaceId),
+        unique('retrieval_documents_unique_file_path').on(t.title, t.organizationId, t.namespaceId)
+    ]
 )
 /**
  * TODO - note that we are NOT storing the embeddings since we will use turbopuffer to do that.
@@ -341,7 +347,7 @@ export const chunks = pgTable(
             .primaryKey()
             .$defaultFn(() => `rc_${nanoid(16)}`),
         documentPath: text('document_path')
-            .references(() => documents.filePath, { onDelete: 'cascade' })
+            .references(() => documents.title, { onDelete: 'cascade' })
             .notNull(),
         namespaceId: text('namespace_id')
             .references(() => retrievalNamespace.id, { onDelete: 'cascade' })

@@ -1,3 +1,4 @@
+import type { JSONValue } from 'ai'
 import { type EventPayload, type Inngest, NonRetriableError } from 'inngest'
 import z from 'zod'
 import type { EmbedContextualizedChunkEvent, EmbedContextualizedChunkResultEvent } from './batch-chunk-for-embedding'
@@ -13,6 +14,11 @@ export const processChunkEventSchema = z.object({
     correlationId: z.string()
 })
 export type ProcessChunkEvent = z.infer<typeof processChunkEventSchema>
+export type ProcessChunkResult = {
+    embedding: number[]
+    contextualizedContent: string
+    metadata: Record<string, JSONValue> | null
+}
 
 export const processChunk = (inngest: Inngest) =>
     inngest.createFunction(
@@ -70,8 +76,14 @@ export const processChunk = (inngest: Inngest) =>
                     match: 'data.correlationId'
                 }
             )
-            if (result) {
+            if (result?.data) {
                 logger.info(`embedding result ${result.data}`)
+                return {
+                    embedding: result.data.embedding,
+                    contextualizedContent: contextualizedChunk.chunkContextualizedContent,
+                    metadata: contextualizedChunk.metadata
+                } satisfies ProcessChunkResult
             }
+            return null
         }
     )
