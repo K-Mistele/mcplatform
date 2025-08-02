@@ -75,6 +75,8 @@ export const updateWalkthroughAction = base
 
         revalidatePath('/dashboard/walkthroughs')
         revalidatePath(`/dashboard/walkthroughs/${input.walkthroughId}`)
+        revalidatePath(`/dashboard/walkthroughs/${input.walkthroughId}/edit`)
+        revalidatePath(`/dashboard/walkthroughs/${input.walkthroughId}/settings`)
         return updatedWalkthrough
     })
     .actionable({})
