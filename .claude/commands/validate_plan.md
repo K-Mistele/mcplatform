@@ -77,9 +77,7 @@ For each phase in the implementation plan document
    - Execute each command from "Automated Verification" section
    - Use MCPlatform specific tools:
      ```bash
-     cd packages/dashboard && bun lint
-     cd packages/database && bun test
-     cd packages/dashboard && bun run build
+     bun run tests
      ```
    - Document pass/fail status
    - If failures, investigate root cause
@@ -113,7 +111,7 @@ Create comprehensive validation summary:
 ### Automated Verification Results
 ✅ Biome check passes: `bun lint`
 ✅ Build succeeds: `cd packages/dashboard && bun run build`
-❌ Database tests fail: `cd packages/database && bun test` (2 failures)
+❌ Database tests fail: `cd packages/database && bun run tests` (2 failures)
 
 ### Code Review Findings
 

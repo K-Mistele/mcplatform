@@ -370,7 +370,7 @@ bun sst shell -- bun test packages/dashboard/tests/03-interactive-walkthrough/wa
 ```
 
 ### Helpful references for bun:test
-- [`bun test`](https://bun.com/docs/cli/test.md): Bun's test runner uses Jest-compatible syntax but runs 100x faster.
+- [`bun:test`](https://bun.com/docs/cli/test.md): Bun's test runner uses Jest-compatible syntax but runs 100x faster.
 - [Writing tests](https://bun.com/docs/test/writing.md): Write your tests using Jest-like expect matchers, plus setup/teardown hooks, snapshot testing, and more
 - [Watch mode](https://bun.com/docs/test/hot.md): Reload your tests automatically on change.
 - [Lifecycle hooks](https://bun.com/docs/test/lifecycle.md): Add lifecycle hooks to your tests that run before/after each test or test run
@@ -545,3 +545,11 @@ describe('Walkthrough CRUD Operations', () => {
 ```
 
 Remember: **Test the real thing, not a mock of the thing. Track every resource you create. Clean up only what you created.**
+
+
+## Test running:
+**Important** Requires using the package scripts since we need to use `bun sst shell -- <command>` to run commands so that they can reach redis & postgres; so use `bun run tests` which runs `bun sst shell -- bun test --timeout 150000`:
+
+- Run tests (from repo root): `bun run tests`
+- Run a specific file: `bun run tests contextualize-chunks.test.ts`
+- Run a specific directory's tests: `bun runt tests retrieval`

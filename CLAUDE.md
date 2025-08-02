@@ -62,9 +62,9 @@ The database schema is managed with Drizzle ORM.
 *   **Lint & Format**: The project uses **Biome**. Run `bun lint` to lint and format.
 *   **Testing**:
     *   Tests should be in a subdirectory of `tests/` pertaining to the in-progress feature.
-    *   Run all tests: `bun test`
-    *   Run a single test file: `bun test <path_to_file>`
-    *   Run tests by name: `bun test --grep "test description"`
+    *   Run all tests: `bun run tests`
+    *   Run a single test file: `bun run tests <path_to_file>`
+    *   Run tests by name: `bun run tests --grep "test description"`
 *   **Database Migrations**:
     *   Generate: `cd packages/database && bun run db:generate`
     *   Run: `cd packages/database && bun run db:migrate`
@@ -116,7 +116,7 @@ If you are prompted to login you can navigate to `/login-for-claude` to be autom
 Default to using Bun instead of Node.js.
 
 - Use `bun <file>` instead of `node <file>` or `ts-node <file>`
-- Use `bun test` instead of `jest` or `vitest`
+- Use `bun run tests` instead of `jest` or `vitest`
 - Use `bun build <file.html|file.ts|file.css>` instead of `webpack` or `esbuild`
 - Use `bun install` instead of `npm install` or `yarn install` or `pnpm install`
 - Use `bun run <script>` instead of `npm run <script>` or `yarn run <script>` or `pnpm run <script>`

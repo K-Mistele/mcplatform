@@ -7,6 +7,7 @@ import { randomUUID } from 'node:crypto'
 import fs from 'node:fs/promises'
 import path from 'node:path'
 import { contextualizeChunk, ingestDocument } from '../../src/inngest'
+import { nukeTurbopufferNamespace } from '../../src/turbopuffer'
 
 const inngestClient = new Inngest({
     id: 'test-inngest',
@@ -76,6 +77,9 @@ describe('Comprehensive Ingest Document Tests', async () => {
     })
 
     afterAll(async () => {
+        // Clean up turbopuffer namespace
+        await nukeTurbopufferNamespace({ organizationId, namespaceId })
+        
         // Clean up chunks
         await db
             .delete(schema.chunks)

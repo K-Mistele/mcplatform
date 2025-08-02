@@ -7,6 +7,7 @@ import { randomUUID } from 'node:crypto'
 import fs from 'node:fs/promises'
 import path from 'node:path'
 import { ingestDocument } from '../../src/inngest'
+import { nukeTurbopufferNamespace } from '../../src/turbopuffer'
 
 const inngestClient = new Inngest({
     id: 'test-inngest',
@@ -94,10 +95,15 @@ describe('Inngest Functions', async () => {
             })
 
             afterAll(async () => {
+                // Clean up turbopuffer namespace
+                await nukeTurbopufferNamespace({ organizationId, namespaceId })
+
                 await Promise.all([
                     db.delete(schema.organization).where(eq(schema.organization.id, organizationId)),
                     db.delete(schema.retrievalNamespace).where(eq(schema.retrievalNamespace.id, namespaceId)),
-                    db.delete(schema.ingestionJob).where(eq(schema.ingestionJob.id, batchId))
+                    db.delete(schema.ingestionJob).where(eq(schema.ingestionJob.id, batchId)),
+                    db.delete(schema.documents).where(eq(schema.documents.namespaceId, namespaceId)),
+                    db.delete(schema.chunks).where(eq(schema.chunks.namespaceId, namespaceId))
                 ])
             })
             test('should fail for unsupported file type (pdf)', async () => {
@@ -171,7 +177,7 @@ describe('Inngest Functions', async () => {
                             data: {
                                 organizationId,
                                 namespaceId,
-                                documentPath: 'test-file.md',
+                                documentPath: 'test-file2.md',
                                 batchId,
                                 documentBufferBase64: documentContents
                             }

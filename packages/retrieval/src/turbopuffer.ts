@@ -105,7 +105,7 @@ export async function searchTurboPuffer(data: {
  * @param data - The data to search for.
  * @returns The search results.
  */
-export async function vectorSearchTurboPuffer(data: {
+export async function vectorSearchTurbopuffer(data: {
     organizationId: string
     namespaceId: string
     query: string
@@ -137,7 +137,7 @@ export async function vectorSearchTurboPuffer(data: {
  * @param data - The data to search for.
  * @returns The search results.
  */
-export async function bm25SearchTurboPuffer(data: {
+export async function bm25SearchTurbopuffer(data: {
     organizationId: string
     namespaceId: string
     query: string
@@ -159,7 +159,7 @@ export async function bm25SearchTurboPuffer(data: {
  * @param data - The data to search for.
  * @returns The search results.
  */
-export async function hybridSearchTurboPuffer(data: {
+export async function hybridSearchTurbopuffer(data: {
     organizationId: string
     namespaceId: string
     query: string
@@ -192,4 +192,28 @@ export async function hybridSearchTurboPuffer(data: {
             }
         ]
     })
+}
+
+/**
+ * Nuke a Turbopuffer namespace.
+ *
+ * @param param0 - The data to nuke the namespace for.
+ * @returns The search results.
+ */
+export async function nukeTurbopufferNamespace({
+    organizationId,
+    namespaceId
+}: {
+    organizationId: string
+    namespaceId: string
+}) {
+    try {
+        const ns = turboPuffer.namespace(`${organizationId}-${namespaceId}`)
+        await ns.deleteAll()
+    } catch (error: any) {
+        // Ignore 404 errors - namespace doesn't exist
+        if (error?.status !== 404) {
+            throw error
+        }
+    }
 }

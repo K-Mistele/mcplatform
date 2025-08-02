@@ -377,7 +377,7 @@ export const chunks = pgTable(
             columns: [t.documentPath, t.namespaceId, t.organizationId],
             foreignColumns: [documents.filePath, documents.namespaceId, documents.organizationId],
             name: 'retrieval_chunks_document_namespace_organization_fk'
-        })
+        }).onDelete('cascade')
     ]
 )
 

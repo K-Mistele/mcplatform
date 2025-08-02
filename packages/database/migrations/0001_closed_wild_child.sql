@@ -1,0 +1,3 @@
+ALTER TABLE "retrieval_chunks" DROP CONSTRAINT "retrieval_chunks_document_namespace_organization_fk";
+--> statement-breakpoint
+ALTER TABLE "retrieval_chunks" ADD CONSTRAINT "retrieval_chunks_document_namespace_organization_fk" FOREIGN KEY ("document_path","namespace_id","organization_id") REFERENCES "public"."retrieval_documents"("file_path","namespace_id","organization_id") ON DELETE cascade ON UPDATE no action;

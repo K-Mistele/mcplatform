@@ -8,17 +8,17 @@ import fs from 'node:fs/promises'
 import path from 'node:path'
 import { type IngestDocumentEvent, ingestDocument } from '../../src/inngest'
 import {
-    bm25SearchTurboPuffer,
-    hybridSearchTurboPuffer,
+    bm25SearchTurbopuffer,
+    hybridSearchTurbopuffer,
+    nukeTurbopufferNamespace,
     turboPuffer,
-    vectorSearchTurboPuffer
+    vectorSearchTurbopuffer
 } from '../../src/turbopuffer'
 
 const inngestClient = new Inngest({
     id: 'test-inngest-query',
     baseUrl: process.env.INNGEST_BASE_URL!
 })
-
 
 const testIngestFunction = new InngestTestEngine({
     function: ingestDocument(inngestClient)
@@ -112,12 +112,7 @@ describe('Query Ingested Document', async () => {
         await db.delete(schema.organization).where(eq(schema.organization.id, organizationId))
 
         // Clean up TurboPuffer namespace
-        try {
-            const ns = turboPuffer.namespace(`${organizationId}-${namespaceId}`)
-            await ns.deleteAll()
-        } catch {
-            // Namespace might not exist, that's okay
-        }
+        await nukeTurbopufferNamespace({ organizationId, namespaceId })
     })
 
     test('should upload, ingest, and query the test document', async () => {
@@ -146,7 +141,7 @@ describe('Query Ingested Document', async () => {
         // Step 3: Query the ingested document
 
         // Query 1: Search for "context window" content
-        const contextWindowQuery = await bm25SearchTurboPuffer({
+        const contextWindowQuery = await bm25SearchTurbopuffer({
             organizationId,
             namespaceId,
             query: 'context window',
@@ -167,7 +162,7 @@ describe('Query Ingested Document', async () => {
         expect(contextWindowResult).toBeDefined()
 
         // Query 2: Search for "directed graphs DAGs" content
-        const graphQueryResult = await bm25SearchTurboPuffer({
+        const graphQueryResult = await bm25SearchTurbopuffer({
             organizationId,
             namespaceId,
             query: 'directed graphs DAGs',
@@ -187,7 +182,7 @@ describe('Query Ingested Document', async () => {
         expect(graphResult).toBeDefined()
 
         // Query 3: Vector search for "12 factor principles"
-        const vectorSearchResults = await vectorSearchTurboPuffer({
+        const vectorSearchResults = await vectorSearchTurbopuffer({
             organizationId,
             namespaceId,
             query: '12 factor principles for building agents',
@@ -209,7 +204,7 @@ describe('Query Ingested Document', async () => {
         expect(principlesResult).toBeDefined()
 
         // Query 4: Hybrid search (text + vector)
-        const hybridResults = await hybridSearchTurboPuffer({
+        const hybridResults = await hybridSearchTurbopuffer({
             organizationId,
             namespaceId,
             query: 'modular concepts',
@@ -228,7 +223,7 @@ describe('Query Ingested Document', async () => {
 
     test('should handle queries with no results gracefully', async () => {
         // Query for something that shouldn't exist in the document
-        const noResultsQuery = await bm25SearchTurboPuffer({
+        const noResultsQuery = await bm25SearchTurbopuffer({
             organizationId,
             namespaceId,
             query: 'quantum blockchain cryptocurrency NFT metaverse',
@@ -247,7 +242,7 @@ describe('Query Ingested Document', async () => {
 
     test('should respect topK parameter in queries', async () => {
         // Query with topK=3
-        const topK3Results = await bm25SearchTurboPuffer({
+        const topK3Results = await bm25SearchTurbopuffer({
             organizationId,
             namespaceId,
             query: 'agents',
@@ -259,7 +254,7 @@ describe('Query Ingested Document', async () => {
         }
 
         // Query with topK=7
-        const topK7Results = await bm25SearchTurboPuffer({
+        const topK7Results = await bm25SearchTurbopuffer({
             organizationId,
             namespaceId,
             query: 'agents',

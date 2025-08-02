@@ -8,6 +8,13 @@
       "when": 1754119582865,
       "tag": "0000_first_skreet",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1754165343174,
+      "tag": "0001_closed_wild_child",
+      "breakpoints": true
     }
   ]
 }

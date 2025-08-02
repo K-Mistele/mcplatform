@@ -1,13 +1,20 @@
+import { embedMany } from 'ai'
 import { afterAll, beforeAll, describe, expect, test } from 'bun:test'
 import { db, schema } from 'database'
 import { eq } from 'drizzle-orm'
 import { randomUUID } from 'node:crypto'
 import fs from 'node:fs/promises'
 import path from 'node:path'
-import { bm25SearchTurboPuffer, vectorSearchTurboPuffer, hybridSearchTurboPuffer, turboPuffer, upsertIntoTurboPuffer } from '../../src/turbopuffer'
-import { embedMany } from 'ai'
-import { geminiEmbedding } from '../../src/inference'
 import { chunkDocument } from '../../src/documents/preprocessing'
+import { geminiEmbedding } from '../../src/inference'
+import {
+    bm25SearchTurbopuffer,
+    hybridSearchTurbopuffer,
+    nukeTurbopufferNamespace,
+    turboPuffer,
+    upsertIntoTurboPuffer,
+    vectorSearchTurbopuffer
+} from '../../src/turbopuffer'
 
 describe('Query TurboPuffer Direct', () => {
     let organizationId: string
@@ -53,12 +60,7 @@ describe('Query TurboPuffer Direct', () => {
         await db.delete(schema.organization).where(eq(schema.organization.id, organizationId))
 
         // Clean up TurboPuffer namespace
-        try {
-            const ns = turboPuffer.namespace(`${organizationId}-${namespaceId}`)
-            await ns.deleteAll()
-        } catch {
-            // Namespace might not exist, that's okay
-        }
+        await nukeTurbopufferNamespace({ organizationId, namespaceId })
     })
 
     test('should insert chunks directly and query them', async () => {
@@ -107,7 +109,7 @@ describe('Query TurboPuffer Direct', () => {
         // Step 4: Query the data
 
         // Query 1: Search for "context window" content
-        const contextWindowQuery = await bm25SearchTurboPuffer({
+        const contextWindowQuery = await bm25SearchTurbopuffer({
             organizationId,
             namespaceId,
             query: 'context window',
@@ -117,16 +119,17 @@ describe('Query TurboPuffer Direct', () => {
         console.log('Context window query results:', contextWindowQuery.length)
         expect(contextWindowQuery).toBeDefined()
         expect(contextWindowQuery.length).toBeGreaterThan(0)
-        
+
         // Should find content about Factor 3: Own your context window
-        const contextWindowResult = contextWindowQuery.find((result: any) => 
-            result.content?.toLowerCase().includes('context') || 
-            result.contextualized_content?.toLowerCase().includes('context')
+        const contextWindowResult = contextWindowQuery.find(
+            (result: any) =>
+                result.content?.toLowerCase().includes('context') ||
+                result.contextualized_content?.toLowerCase().includes('context')
         )
         expect(contextWindowResult).toBeDefined()
 
         // Query 2: Search for "directed graphs" content
-        const graphQuery = await bm25SearchTurboPuffer({
+        const graphQuery = await bm25SearchTurbopuffer({
             organizationId,
             namespaceId,
             query: 'directed graphs',
@@ -135,14 +138,14 @@ describe('Query TurboPuffer Direct', () => {
 
         console.log('Graph query results:', graphQuery.length)
         expect(graphQuery).toBeDefined()
-        
+
         // May or may not find graphs in first 10 chunks
         if (graphQuery.length > 0) {
             console.log('Found directed graphs content')
         }
 
-        // Query 3: Vector search for "12 factor principles" 
-        const vectorSearchResults = await vectorSearchTurboPuffer({
+        // Query 3: Vector search for "12 factor principles"
+        const vectorSearchResults = await vectorSearchTurbopuffer({
             organizationId,
             namespaceId,
             query: '12 factor principles for building agents',
@@ -152,17 +155,18 @@ describe('Query TurboPuffer Direct', () => {
         console.log('Vector search results:', vectorSearchResults.length)
         expect(vectorSearchResults).toBeDefined()
         expect(vectorSearchResults.length).toBeGreaterThan(0)
-        
+
         // Should find chunks related to 12-factor agents principles
-        const principlesResult = vectorSearchResults.find((result: any) => 
-            result.content?.includes('12') || 
-            result.content?.includes('factor') ||
-            result.content?.includes('principles')
+        const principlesResult = vectorSearchResults.find(
+            (result: any) =>
+                result.content?.includes('12') ||
+                result.content?.includes('factor') ||
+                result.content?.includes('principles')
         )
         console.log('Found principles result:', !!principlesResult)
 
         // Query 4: Hybrid search (text + vector)
-        const hybridResults = await hybridSearchTurboPuffer({
+        const hybridResults = await hybridSearchTurbopuffer({
             organizationId,
             namespaceId,
             query: 'agents',
@@ -171,7 +175,7 @@ describe('Query TurboPuffer Direct', () => {
 
         console.log('Hybrid search results:', hybridResults)
         expect(hybridResults).toBeDefined()
-        
+
         // With hybrid search, we should get results from both queries
         // The multiQuery returns an object with results from each query type
         if ('results' in hybridResults) {
@@ -184,7 +188,7 @@ describe('Query TurboPuffer Direct', () => {
         const emptyNamespaceId = `ns_empty_${randomUUID().substring(0, 8)}`
 
         // Query an empty namespace
-        const emptyQuery = await bm25SearchTurboPuffer({
+        const emptyQuery = await bm25SearchTurbopuffer({
             organizationId,
             namespaceId: emptyNamespaceId,
             query: 'anything',
@@ -199,7 +203,7 @@ describe('Query TurboPuffer Direct', () => {
 
     test('should respect topK parameter', async () => {
         // Query with topK=2
-        const topK2Results = await bm25SearchTurboPuffer({
+        const topK2Results = await bm25SearchTurbopuffer({
             organizationId,
             namespaceId,
             query: 'agents factors',
@@ -211,7 +215,7 @@ describe('Query TurboPuffer Direct', () => {
         }
 
         // Query with topK=5
-        const topK5Results = await bm25SearchTurboPuffer({
+        const topK5Results = await bm25SearchTurbopuffer({
             organizationId,
             namespaceId,
             query: 'agents factors',

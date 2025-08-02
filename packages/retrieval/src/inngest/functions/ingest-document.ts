@@ -134,7 +134,8 @@ export const ingestDocument = (inngest: Inngest) =>
             })
 
             // STEP -- increment the total documents count for the batch
-            const incrementDocumentsInBatchPromise = step.run('increment-batch-total-documents', async () => {
+            await step.run('increment-batch-total-documents', async () => {
+                logger.info(`incrementing total documents count for batch ${data.batchId}`)
                 const result = await db.transaction(
                     async (tx) => {
                         await tx
@@ -155,18 +156,19 @@ export const ingestDocument = (inngest: Inngest) =>
                         accessMode: 'read write'
                     }
                 )
-                console.log(result)
+                logger.info(
+                    `incremented total documents count for batch ${data.batchId} to ${result?.totalDocuments} for document ${data.documentPath}`
+                )
                 if (!result) {
                     logger.error(`failed to increment total documents count for batch ${data.batchId}`)
                     throw new Error('Failed to increment total documents count for batch')
                 }
-                logger.info(
-                    `incremented total documents count for batch ${data.batchId} to ${result?.totalDocuments} (${result?.totalDocuments}/${result?.totalDocuments})`
-                )
+                return result
             })
 
             // STEP -- split the document into chunks
-            const chunksPromise = step.run('split-document-into-chunks', async () => {
+            const chunks = await step.run('split-document-into-chunks', async () => {
+                logger.info('splitting document into chunks')
                 const chunks = chunkDocument(documentBuffer.toString())
                 if (!chunks) {
                     logger.error(`failed to split document into chunks`)
@@ -176,11 +178,13 @@ export const ingestDocument = (inngest: Inngest) =>
                     logger.warn(`failed to split document into chunks, skipping`)
                     return [] satisfies string[]
                 }
+                logger.info(`split document into ${chunks.length} chunks`)
                 return chunks
             })
 
             // STEP -- get chunks from the database for the document
-            const existingChunksPromise = step.run('get-existing-chunks-from-db', async () => {
+            const existingChunks = await step.run('get-existing-chunks-from-db', async () => {
+                logger.info('getting existing chunks from db')
                 const chunks = await db
                     .select()
                     .from(schema.chunks)
@@ -193,34 +197,34 @@ export const ingestDocument = (inngest: Inngest) =>
                     )
                     .orderBy(asc(schema.chunks.orderInDocument))
 
+                logger.info(`found ${chunks.length} existing chunks for document ${data.documentPath}`)
                 return chunks
             })
 
-            const [incrementResult, existingChunks, chunks] = await Promise.all([
-                incrementDocumentsInBatchPromise,
-                existingChunksPromise,
-                chunksPromise
-            ])
+            const [shouldEraseExistingChunksBeforeSave, chunksToProcess] = await step.run(
+                'determine-if-we-should-erase-existing-chunks',
+                async () => {
+                    logger.info('calculating chunks to process')
+                    // Calculate the chunks to process by finding the non-matching chunks
+                    // no need to do this in a step since it's deterministic and cheap
+                    const chunksToProcess: Array<{ chunk: string; index: number }> = []
+                    chunks.forEach((chunk, index) => {
+                        const existingChunk = existingChunks[index]
+                        if (
+                            !existingChunk ||
+                            (existingChunk && chunk.trim() !== existingChunk.originalContent.trim())
+                        ) {
+                            chunksToProcess.push({ chunk, index })
+                        }
+                    })
+                    logger.info(`calculated ${chunksToProcess.length} chunks to process`)
 
-            // If there are more chunks that exist than we have now; we need to erase everything beyond the chunks we have
-            const shouldEraseExistingChunksBeforeSave = existingChunks.length > chunks.length
-
-            // Calculate the chunks to process by finding the non-matching chunks
-            // no need to do this in a step since it's deterministic and cheap
-            const chunksToProcess: Array<{ chunk: string; index: number }> = []
-            chunks.forEach((chunk, index) => {
-                const existingChunk = existingChunks[index]
-                if (!existingChunk || (existingChunk && chunk.trim() !== existingChunk.originalContent.trim())) {
-                    chunksToProcess.push({ chunk, index })
+                    logger.info('determining if we should erase existing chunks before save')
+                    return [existingChunks.length > chunks.length, chunksToProcess] as const
                 }
-            })
+            )
 
             if (chunksToProcess.length) {
-                const chunksToInsert: Array<typeof schema.chunks.$inferInsert> = []
-                if (chunks.length > 400) {
-                    logger.warn(`${chunks.length} chunks is too many to process at once; skipping`)
-                }
-
                 // create promises for contextualizing and then handling all the chunks
                 const chunkPromises: InvocationResult<ProcessChunkResult | null>[] = []
                 for (const chunk of chunksToProcess) {
@@ -238,8 +242,13 @@ export const ingestDocument = (inngest: Inngest) =>
                     chunkPromises.push(embeddedChunkPromise)
                 }
                 const chunkPromiseResults = await Promise.allSettled(chunkPromises)
+
+                // STEP -- Build a list of chunks to insert
                 const chunkListToInsert = await step.run('build-chunks-to-insert', async () => {
+                    logger.info('building chunks to insert')
                     const chunksToInsert: Array<typeof schema.chunks.$inferInsert> = []
+
+                    // loop over chunks and if the chunk resolved; add it to the list of chunks to insert
                     for (let i = 0; i < chunkPromiseResults.length; i++) {
                         const originalChunk = chunksToProcess[i]!
                         const chunkPromiseResult = chunkPromiseResults[i]
@@ -265,10 +274,12 @@ export const ingestDocument = (inngest: Inngest) =>
                             })
                         }
                     }
+                    logger.info(`built ${chunksToInsert.length} chunks to insert`)
                     return chunksToInsert
                 })
 
                 await step.run('insert-chunks-into-db', async () => {
+                    logger.info(`inserting ${chunkListToInsert.length} chunks into db`)
                     await db
                         .insert(schema.chunks)
                         .values(chunkListToInsert)
@@ -287,12 +298,16 @@ export const ingestDocument = (inngest: Inngest) =>
                         })
                 })
 
-                // TODO wait for completion
+                logger.info(`inserted ${chunkListToInsert.length} chunks into db`)
+
                 // TODO remove old chunks from DB and Turbopuffer
+            } else {
+                logger.warn('no chunks to process for document', data.documentPath)
             }
 
             // STEP -- update the processed documents count in the database
             await step.run('increment-batch-processed-documents', async () => {
+                logger.info(`incrementing processed documents count for batch ${data.batchId}`)
                 const result = await db.transaction(
                     async (tx) => {
                         await tx
