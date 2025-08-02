@@ -1,16 +1,24 @@
+import { createHash } from 'crypto'
 import { db, schema } from 'database'
 import { and, asc, eq, sql } from 'drizzle-orm'
 import { type Inngest, NonRetriableError } from 'inngest'
 import type { InvocationResult } from 'inngest/types'
 import z from 'zod'
-import { chunkDocument, getDocumentFromS3, removeDocumentFromCache, setDocumentInCache } from '../../documents'
+import {
+    chunkDocument,
+    removeDocumentFromCache,
+    setDocumentInCache,
+    shouldReingestDocument,
+    storeDocumentInS3
+} from '../../documents'
 import { type ProcessChunkEvent, type ProcessChunkResult, processChunk } from './process-chunk'
 
 export const ingestDocumentEventSchema = z.object({
     organizationId: z.string(),
     namespaceId: z.string(),
     documentPath: z.string(),
-    batchId: z.string().uuid().describe('The ID of the batch to ingest the document to')
+    batchId: z.string().uuid().describe('The ID of the batch to ingest the document to'),
+    documentBufferBase64: z.string().describe('The file buffer in base64 format')
 })
 export type IngestDocumentEvent = z.infer<typeof ingestDocumentEventSchema>
 
@@ -31,22 +39,6 @@ export const ingestDocument = (inngest: Inngest) =>
                 logger.error(`invalid event data:\n\n${prettyError}`)
                 throw new NonRetriableError(prettyError)
             }
-
-            // STEP -- Get the document from S3 (if it doesn't exist there is no point in continuing)
-            // IMPORTANT: we need to convert the document to a base64 string because the document is a stream
-            const base64DocumentBytes: string = await step.run('get-document-from-s3', async () => {
-                const document = await getDocumentFromS3({
-                    organizationId: data.organizationId,
-                    namespaceId: data.namespaceId,
-                    documentRelativePath: data.documentPath
-                })
-                return await Buffer.from(await document.transformToByteArray()).toString('base64')
-            })
-
-            // add the document to the ccache
-            const cacheDocumentPromise = step.run('cache-document-id', async () => {
-                await setDocumentInCache(data.organizationId, data.namespaceId, data.documentPath, 'text')
-            })
 
             // NOTE that if the document is NOT markdown we need a different ingestion approach
             const isLikelyImage =
@@ -72,6 +64,74 @@ export const ingestDocument = (inngest: Inngest) =>
                 logger.error('unable to process non-markdown documents')
                 throw new NonRetriableError('unable to process non-markdown documents')
             }
+
+            // STEP -- Check if document should be reingested
+            const documentBuffer = Buffer.from(data.documentBufferBase64, 'base64')
+            const ingestionDecision = await step.run('make-reingestion-decision', async () => {
+                logger.info('Making ingestion decision')
+                return await shouldReingestDocument({
+                    organizationId: data.organizationId,
+                    namespaceId: data.namespaceId,
+                    documentRelativePath: data.documentPath,
+                    contentHash: createHash('sha1').update(documentBuffer).digest('hex')
+                })
+            })
+
+            if (!ingestionDecision.shouldReingest) {
+                logger.info(`document ${data.documentPath} already exists, skipping ingestion`)
+                return
+            }
+
+            // STEP -- Upload document to S3
+            await step.run('upload-document-to-s3', async () => {
+                logger.info('Uploading document to S3')
+                await storeDocumentInS3(documentBuffer, {
+                    organizationId: data.organizationId,
+                    namespaceId: data.namespaceId,
+                    documentRelativePath: data.documentPath
+                })
+            })
+
+            // STEP -- Create or update document record in database
+            await step.run('create-document-record', async () => {
+                logger.info('Creating document record in database')
+                const contentHash = createHash('sha1').update(documentBuffer).digest('hex')
+                await db
+                    .insert(schema.documents)
+                    .values({
+                        filePath: data.documentPath,
+                        namespaceId: data.namespaceId,
+                        organizationId: data.organizationId,
+                        contentType: 'text/markdown',
+                        contentHash,
+                        createdAt: Date.now(),
+                        updatedAt: Date.now()
+                    })
+                    .onConflictDoUpdate({
+                        target: [
+                            schema.documents.filePath,
+                            schema.documents.namespaceId,
+                            schema.documents.organizationId
+                        ],
+                        set: {
+                            contentHash,
+                            updatedAt: Date.now()
+                        }
+                    })
+            })
+
+            // Use the document buffer directly
+            // add the document to the cache - this MUST complete before chunk processing
+            await step.run('cache-document-id', async () => {
+                logger.info('caching document')
+                await setDocumentInCache(
+                    data.organizationId,
+                    data.namespaceId,
+                    data.documentPath,
+                    documentBuffer,
+                    'text'
+                )
+            })
 
             // STEP -- increment the total documents count for the batch
             const incrementDocumentsInBatchPromise = step.run('increment-batch-total-documents', async () => {
@@ -107,7 +167,7 @@ export const ingestDocument = (inngest: Inngest) =>
 
             // STEP -- split the document into chunks
             const chunksPromise = step.run('split-document-into-chunks', async () => {
-                const chunks = chunkDocument(Buffer.from(base64DocumentBytes, 'base64').toString())
+                const chunks = chunkDocument(documentBuffer.toString())
                 if (!chunks) {
                     logger.error(`failed to split document into chunks`)
                     throw new Error('Failed to split document into chunks')
@@ -136,19 +196,11 @@ export const ingestDocument = (inngest: Inngest) =>
                 return chunks
             })
 
-            const [incrementResult, cacheDocumentsResult, existingChunks, chunks] = await Promise.all([
+            const [incrementResult, existingChunks, chunks] = await Promise.all([
                 incrementDocumentsInBatchPromise,
-                cacheDocumentPromise,
                 existingChunksPromise,
                 chunksPromise
             ])
-
-            if (!existingChunks.length)
-                logger.info(`No existing chunks found for document ${data.documentPath}; creating new chunks`)
-            if (existingChunks.length !== chunks.length && existingChunks.length !== 0)
-                logger.info(
-                    `Detected ${Math.abs(existingChunks.length - chunks.length)} ${chunks.length > existingChunks.length ? 'more' : 'fewer'} chunks in ${data.organizationId}/${data.namespaceId}/${data.documentPath}`
-                )
 
             // If there are more chunks that exist than we have now; we need to erase everything beyond the chunks we have
             const shouldEraseExistingChunksBeforeSave = existingChunks.length > chunks.length
@@ -162,11 +214,9 @@ export const ingestDocument = (inngest: Inngest) =>
                     chunksToProcess.push({ chunk, index })
                 }
             })
-            logger.info(`${chunksToProcess.length} chunks to update out of ${chunks.length}`)
 
             if (chunksToProcess.length) {
                 const chunksToInsert: Array<typeof schema.chunks.$inferInsert> = []
-                const stepPromises = []
                 if (chunks.length > 400) {
                     logger.warn(`${chunks.length} chunks is too many to process at once; skipping`)
                 }
@@ -187,51 +237,56 @@ export const ingestDocument = (inngest: Inngest) =>
                     })
                     chunkPromises.push(embeddedChunkPromise)
                 }
-
                 const chunkPromiseResults = await Promise.allSettled(chunkPromises)
-                for (let i = 0; i < chunkPromiseResults.length; i++) {
-                    const originalChunk = chunksToProcess[i]!
-                    const chunkPromiseResult = chunkPromiseResults[i]
-                    if (chunkPromiseResult?.status === 'rejected') {
-                        logger.error(`Failed to process chunk ${i}:`, originalChunk)
-                    } else if (chunkPromiseResult?.status === 'fulfilled') {
-                        const chunkResult = chunkPromiseResult.value
-                        if (!chunkResult || !originalChunk) {
-                            logger.error(`Failed to process chunk ${i}:`, originalChunk, chunkResult)
-                            continue
+                const chunkListToInsert = await step.run('build-chunks-to-insert', async () => {
+                    const chunksToInsert: Array<typeof schema.chunks.$inferInsert> = []
+                    for (let i = 0; i < chunkPromiseResults.length; i++) {
+                        const originalChunk = chunksToProcess[i]!
+                        const chunkPromiseResult = chunkPromiseResults[i]
+                        if (chunkPromiseResult?.status === 'rejected') {
+                            logger.error(`Failed to process chunk ${i}:`, originalChunk)
+                        } else if (chunkPromiseResult?.status === 'fulfilled') {
+                            const chunkResult = chunkPromiseResult.value
+                            if (!chunkResult || !originalChunk) {
+                                logger.error(`Failed to process chunk ${i}:`, originalChunk, chunkResult)
+                                continue
+                            }
+                            chunksToInsert.push({
+                                originalContent: originalChunk.chunk,
+                                contextualizedContent: chunkResult.contextualizedContent,
+                                documentPath: data.documentPath,
+                                orderInDocument: originalChunk.index,
+                                namespaceId: data.namespaceId,
+                                organizationId: data.organizationId,
+                                metadata: null,
+                                id: crypto.randomUUID(),
+                                createdAt: Date.now(),
+                                updatedAt: Date.now()
+                            })
                         }
-                        chunksToInsert.push({
-                            originalContent: originalChunk.chunk,
-                            contextualizedContent: chunkResult.contextualizedContent,
-                            documentPath: data.documentPath,
-                            orderInDocument: originalChunk.index,
-                            namespaceId: data.namespaceId,
-                            organizationId: data.organizationId,
-                            metadata: null,
-                            id: crypto.randomUUID(),
-                            createdAt: Date.now(),
-                            updatedAt: Date.now()
-                        })
                     }
-                }
-                // TODO embed chunks & insert
+                    return chunksToInsert
+                })
 
-                await db
-                    .insert(schema.chunks)
-                    .values(chunksToInsert)
-                    .onConflictDoUpdate({
-                        target: [
-                            schema.chunks.documentPath,
-                            schema.chunks.orderInDocument,
-                            schema.chunks.namespaceId,
-                            schema.chunks.organizationId
-                        ],
-                        set: {
-                            contextualizedContent: sql`excluded.contextualizedContent`,
-                            originalContent: sql`excluded.originalContent`,
-                            updatedAt: Date.now()
-                        }
-                    })
+                await step.run('insert-chunks-into-db', async () => {
+                    await db
+                        .insert(schema.chunks)
+                        .values(chunkListToInsert)
+                        .onConflictDoUpdate({
+                            target: [
+                                schema.chunks.documentPath,
+                                schema.chunks.orderInDocument,
+                                schema.chunks.namespaceId,
+                                schema.chunks.organizationId
+                            ],
+                            set: {
+                                contextualizedContent: sql`excluded.contextualized_content`,
+                                originalContent: sql`excluded.original_content`,
+                                updatedAt: Date.now()
+                            }
+                        })
+                })
+
                 // TODO wait for completion
                 // TODO remove old chunks from DB and Turbopuffer
             }
