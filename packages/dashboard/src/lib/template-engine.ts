@@ -1,4 +1,4 @@
-import type { Walkthrough, WalkthroughStep } from 'database'
+import type { WalkthroughStep } from 'database'
 
 // nunjucks.configure({
 //     autoescape: false,
@@ -38,7 +38,7 @@ When the step's objectives have been met, you should ask the user if they are re
 If so, you should use the step navigation tools to move to the next step.
 
 <step_information_and_objectives>
-{{ introductionForAgent }}
+${introductionForAgent}
 </step_information_and_objectives>
 `
         : ''
@@ -51,7 +51,7 @@ The following information between <background_information_context> and </backgro
 This information is for the agent (you) to reference when you are performing the step or helping the user through it. 
 
 <background_information_context>
-{{ contextForAgent }}
+${contextForAgent}
 </background_information_context>
 `
         : ''
@@ -66,7 +66,7 @@ When the user has completed the step, you should ask them to confirm the step is
 If so, you should use the step navigation tools to move to the next step.
 
 <operations_to_perform>
-{{ operationsForAgent }}
+${operationsForAgent}
 </operations_to_perform>
 `
         : ''
@@ -78,6 +78,8 @@ ${
 The following information between <step_content> and </step_content> contains the content for the user to read.
 This is the information that the user will see when they are performing the step.
 You should repeat this information to the user VERBATIM as it is written before taking other actions such as the operations, asking questions, etc.
+
+This is **VERY IMPORTANT**: make sure to repeat this information to the user in your response before anything else.
 
 <step_content>
 ${contentForUser}
@@ -94,11 +96,11 @@ ${contentForUser}
  * Renders a walkthrough step using the Nunjucks template engine
  * Combines walkthrough and step data into a structured template for AI agent consumption
  */
-export function renderWalkthroughStep(walkthrough: Walkthrough, step: WalkthroughStep): string {
+export function renderWalkthroughStep(walkthroughTitle: string, step: WalkthroughStep): string {
     const contentFields = step.contentFields as any
 
     const templateData = {
-        walkthroughTitle: walkthrough.title,
+        walkthroughTitle,
         stepTitle: step.title,
         displayOrder: step.displayOrder,
         introductionForAgent: contentFields?.introductionForAgent || '',
@@ -108,4 +110,33 @@ export function renderWalkthroughStep(walkthrough: Walkthrough, step: Walkthroug
     }
 
     return walkthroughTemplate(templateData)
+}
+
+export function renderWalkthroughStepOutput(
+    walkthroughStep: string,
+    {
+        progressPercent,
+        completed,
+        stepId,
+        totalSteps,
+        completedSteps,
+        walkthroughId
+    }: {
+        progressPercent: number
+        completed: boolean
+        stepId: string
+        totalSteps: number
+        completedSteps: number
+        walkthroughId: string
+    }
+): string {
+    return `
+${walkthroughStep}
+
+## Course Info
+- walkthrough ID: ${walkthroughId}
+- Progress: ${progressPercent}% (${completedSteps} / ${totalSteps})
+- Completed: ${completed}
+- Current Step: ${stepId}
+`
 }

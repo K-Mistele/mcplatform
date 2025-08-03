@@ -1,20 +1,18 @@
 import {
-    type Walkthrough,
-    type WalkthroughProgress,
-    type WalkthroughStep,
     db,
     mcpServerWalkthroughs,
     walkthroughProgress,
     walkthroughSteps,
-    walkthroughs
+    walkthroughs,
+    type Walkthrough,
+    type WalkthroughProgress,
+    type WalkthroughStep
 } from 'database'
 import { and, asc, desc, eq, inArray, sql } from 'drizzle-orm'
 
-export interface WalkthroughStepInfo {
-    id: string
-    title: string
-    instructions: string // Rendered content for backward compatibility with MCP tools
-    displayOrder: number
+export interface CalculateNextStepResult {
+    step: WalkthroughStep | null
+    walkthrough: Walkthrough
     isCompleted: boolean
     totalSteps: number
     completedCount: number
@@ -64,60 +62,40 @@ export interface WalkthroughListItem {
  * This algorithm ensures progress is not lost when authors edit walkthroughs.
  */
 export async function calculateNextStep(
-    mcpServerUserId: string,
-    walkthroughId: string
-): Promise<WalkthroughStepInfo | null> {
-    const progress = await db
-        .select()
-        .from(walkthroughProgress)
-        .where(
-            and(
-                eq(walkthroughProgress.mcpServerUserId, mcpServerUserId),
-                eq(walkthroughProgress.walkthroughId, walkthroughId)
-            )
-        )
-        .limit(1)
-
-    const steps = await db
+    walkthroughId: string,
+    progress: WalkthroughProgress | null
+): Promise<CalculateNextStepResult | null> {
+    const result = await db
         .select()
         .from(walkthroughSteps)
+        .leftJoin(walkthroughs, eq(walkthroughSteps.walkthroughId, walkthroughs.id))
         .where(eq(walkthroughSteps.walkthroughId, walkthroughId))
         .orderBy(asc(walkthroughSteps.displayOrder))
 
-    if (steps.length === 0) {
+    if (result.length === 0) {
+        return null
+    }
+    const steps = result.map((r) => r.walkthrough_steps)
+    const [walkthrough] = result.map((r) => r.walkthroughs)
+    if (!walkthrough) {
         return null
     }
 
-    const completedStepIds = progress[0]?.completedSteps || []
+    const completedStepIds = progress?.completedSteps || []
     const completedCount = completedStepIds.length
+    const totalSteps = steps.length
+    const progressPercent = totalSteps > 0 ? Math.round((completedCount / totalSteps) * 100) : 0
 
     // Find the first step that hasn't been completed
     const nextStep = steps.find((step) => !completedStepIds.includes(step.id))
 
-    if (!nextStep) {
-        // All steps completed, return the last step with completion status
-        const lastStep = steps[steps.length - 1]
-        return {
-            id: lastStep.id,
-            title: lastStep.title,
-            instructions: renderStepInstructions(lastStep),
-            displayOrder: lastStep.displayOrder,
-            isCompleted: true,
-            totalSteps: steps.length,
-            completedCount,
-            progressPercent: 100
-        }
-    }
-
     return {
-        id: nextStep.id,
-        title: nextStep.title,
-        instructions: renderStepInstructions(nextStep),
-        displayOrder: nextStep.displayOrder,
-        isCompleted: false,
-        totalSteps: steps.length,
+        step: nextStep || null,
+        walkthrough,
+        isCompleted: !nextStep,
+        totalSteps,
         completedCount,
-        progressPercent: Math.round((completedCount / steps.length) * 100)
+        progressPercent: nextStep ? progressPercent : 100
     }
 }
 
@@ -311,8 +289,8 @@ export async function getWalkthroughDetails(
     // Calculate current step
     let currentStepId: string | null = null
     if (!isCompleted && totalSteps > 0) {
-        const nextStepInfo = await calculateNextStep(mcpServerUserId, walkthroughId)
-        currentStepId = nextStepInfo?.id || null
+        const nextStepInfo = await calculateNextStep(walkthroughId, progress[0] || null)
+        currentStepId = nextStepInfo?.step?.id || null
     }
 
     return {
@@ -325,6 +303,18 @@ export async function getWalkthroughDetails(
     }
 }
 
+export interface WalkthroughStepInfo {
+    id: string
+    title: string
+    contentFields: WalkthroughStep['contentFields']
+    displayOrder: number
+    isCompleted: boolean
+    totalSteps: number
+    completedCount: number
+    progressPercent: number
+    walkthroughTitle: string
+}
+
 /**
  * Get all steps for a walkthrough with completion status
  */
@@ -332,22 +322,34 @@ export async function getWalkthroughStepsWithProgress(
     walkthroughId: string,
     mcpServerUserId?: string
 ): Promise<WalkthroughStepInfo[]> {
-    const steps = await db
+    const result = await db
         .select()
         .from(walkthroughSteps)
+        .leftJoin(walkthroughs, eq(walkthroughSteps.walkthroughId, walkthroughs.id))
         .where(eq(walkthroughSteps.walkthroughId, walkthroughId))
         .orderBy(asc(walkthroughSteps.displayOrder))
+
+    if (result.length === 0) {
+        return []
+    }
+
+    const steps = result.map((r) => r.walkthrough_steps)
+    const [walkthrough] = result.map((r) => r.walkthroughs)
+    if (!walkthrough) {
+        return []
+    }
 
     if (!mcpServerUserId) {
         return steps.map((step) => ({
             id: step.id,
             title: step.title,
-            instructions: renderStepInstructions(step),
+            contentFields: step.contentFields,
             displayOrder: step.displayOrder,
             isCompleted: false,
             totalSteps: steps.length,
             completedCount: 0,
-            progressPercent: 0
+            progressPercent: 0,
+            walkthroughTitle: walkthrough.title
         }))
     }
 
@@ -369,11 +371,12 @@ export async function getWalkthroughStepsWithProgress(
     return steps.map((step) => ({
         id: step.id,
         title: step.title,
-        instructions: renderStepInstructions(step),
+        contentFields: step.contentFields,
         displayOrder: step.displayOrder,
         isCompleted: completedStepIds.includes(step.id),
         totalSteps: steps.length,
         completedCount,
-        progressPercent
+        progressPercent,
+        walkthroughTitle: walkthrough.title
     }))
 }

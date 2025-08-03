@@ -1,13 +1,9 @@
 import { db, schema } from 'database'
-import { and, eq, desc } from 'drizzle-orm'
+import { and, desc, eq } from 'drizzle-orm'
 import { z } from 'zod'
+import { renderWalkthroughStep, renderWalkthroughStepOutput } from '../../template-engine'
 import type { McpServer, McpServerConfig } from '../types'
-import {
-    calculateNextStep,
-    completeStep,
-    getOrInitializeProgress,
-    getServerWalkthroughs
-} from '../walkthrough-utils'
+import { calculateNextStep, completeStep, getOrInitializeProgress, getServerWalkthroughs } from '../walkthrough-utils'
 
 /**
  * Register all walkthrough-related MCP tools
@@ -26,10 +22,10 @@ export function registerWalkthroughTools({
 }) {
     // Register list_walkthroughs tool
     registerListWalkthroughsTool({ server, serverConfig, mcpServerUserId, serverSessionId })
-    
+
     // Register start_walkthrough tool
     registerStartWalkthroughTool({ server, serverConfig, mcpServerUserId, serverSessionId })
-    
+
     // Register get_next_step tool
     registerGetNextStepTool({ server, serverConfig, mcpServerUserId, serverSessionId })
 }
@@ -51,7 +47,7 @@ function registerListWalkthroughsTool({
 }) {
     // Empty schema for list_walkthroughs
     const inputSchema = z.object({})
-    
+
     server.registerTool(
         'list_walkthroughs',
         {
@@ -62,9 +58,9 @@ function registerListWalkthroughsTool({
         async (args) => {
             try {
                 inputSchema.parse(args)
-                
+
                 const walkthroughs = await getServerWalkthroughs(serverConfig.id, mcpServerUserId)
-                
+
                 // Track the tool call
                 await db.insert(schema.toolCalls).values({
                     mcpServerId: serverConfig.id,
@@ -74,25 +70,31 @@ function registerListWalkthroughsTool({
                     input: args,
                     output: { walkthroughs: walkthroughs.length }
                 })
-                
+
                 return {
                     content: [
                         {
                             type: 'text',
-                            text: JSON.stringify({
-                                walkthroughs: walkthroughs.map(({ walkthrough, progress, totalSteps, progressPercent }) => ({
-                                    id: walkthrough.id,
-                                    title: walkthrough.title,
-                                    description: walkthrough.description,
-                                    type: walkthrough.type,
-                                    totalSteps,
-                                    progressPercent,
-                                    isStarted: progress != null && progress.startedAt != null,
-                                    isCompleted: progress?.completedAt != null,
-                                    estimatedDurationMinutes: walkthrough.estimatedDurationMinutes,
-                                    tags: walkthrough.tags || []
-                                }))
-                            }, null, 2)
+                            text: JSON.stringify(
+                                {
+                                    walkthroughs: walkthroughs.map(
+                                        ({ walkthrough, progress, totalSteps, progressPercent }) => ({
+                                            id: walkthrough.id,
+                                            title: walkthrough.title,
+                                            description: walkthrough.description,
+                                            type: walkthrough.type,
+                                            totalSteps,
+                                            progressPercent,
+                                            isStarted: progress != null && progress.startedAt != null,
+                                            isCompleted: progress?.completedAt != null,
+                                            estimatedDurationMinutes: walkthrough.estimatedDurationMinutes,
+                                            tags: walkthrough.tags || []
+                                        })
+                                    )
+                                },
+                                null,
+                                2
+                            )
                         }
                     ]
                 }
@@ -128,28 +130,32 @@ function registerStartWalkthroughTool({
 }) {
     const inputSchema = z.object({
         name: z.string().describe('The name/title of the walkthrough to start'),
-        restart: z.boolean().default(false).describe('Optional: If true, restart the walkthrough from the beginning (default: false, resumes progress)')
+        restart: z
+            .boolean()
+            .default(false)
+            .describe(
+                'Optional: If true, restart the walkthrough from the beginning (default: false, resumes progress)'
+            )
     })
-    
+
     server.registerTool(
         'start_walkthrough',
         {
             title: 'Start or Resume a Walkthrough',
-            description: 'Starts or resumes a walkthrough by name. By default resumes existing progress, but can be forced to restart.',
+            description:
+                'Starts or resumes a walkthrough by name. By default resumes existing progress, but can be forced to restart.',
             inputSchema: inputSchema.shape
         },
         async (args) => {
             try {
                 const { name, restart } = inputSchema.parse(args)
-                
+
                 // Get available walkthroughs
                 const walkthroughs = await getServerWalkthroughs(serverConfig.id, mcpServerUserId)
-                
+
                 // Find by exact name match
-                const selectedWalkthrough = walkthroughs.find(w => 
-                    w.walkthrough.title === name
-                )
-                
+                const selectedWalkthrough = walkthroughs.find((w) => w.walkthrough.title === name)
+
                 if (!selectedWalkthrough) {
                     return {
                         content: [
@@ -160,24 +166,26 @@ function registerStartWalkthroughTool({
                         ]
                     }
                 }
-                
+
                 // If restart is requested, clear existing progress
                 if (restart && selectedWalkthrough.progress) {
-                    await db.delete(schema.walkthroughProgress).where(
-                        and(
-                            eq(schema.walkthroughProgress.mcpServerUserId, mcpServerUserId),
-                            eq(schema.walkthroughProgress.walkthroughId, selectedWalkthrough.walkthrough.id)
+                    await db
+                        .delete(schema.walkthroughProgress)
+                        .where(
+                            and(
+                                eq(schema.walkthroughProgress.mcpServerUserId, mcpServerUserId),
+                                eq(schema.walkthroughProgress.walkthroughId, selectedWalkthrough.walkthrough.id)
+                            )
                         )
-                    )
                 }
-                
+
                 // Initialize or get progress
-                await getOrInitializeProgress(mcpServerUserId, selectedWalkthrough.walkthrough.id)
-                
+                const progress = await getOrInitializeProgress(mcpServerUserId, selectedWalkthrough.walkthrough.id)
+
                 // Get the first/next step
-                const nextStep = await calculateNextStep(mcpServerUserId, selectedWalkthrough.walkthrough.id)
-                
-                if (!nextStep) {
+                const nextStepResult = await calculateNextStep(selectedWalkthrough.walkthrough.id, progress)
+
+                if (!nextStepResult) {
                     return {
                         content: [
                             {
@@ -187,7 +195,7 @@ function registerStartWalkthroughTool({
                         ]
                     }
                 }
-                
+
                 // Track the tool call
                 await db.insert(schema.toolCalls).values({
                     mcpServerId: serverConfig.id,
@@ -195,40 +203,41 @@ function registerStartWalkthroughTool({
                     mcpServerUserId: mcpServerUserId,
                     mcpServerSessionId: serverSessionId,
                     input: args,
-                    output: { 
+                    output: {
                         walkthroughId: selectedWalkthrough.walkthrough.id,
-                        nextStepId: nextStep.id,
+                        nextStepId: nextStepResult.step?.id || null,
                         wasRestarted: restart
                     }
                 })
-                
+
+                // If there's no step, show error
+                if (!nextStepResult.step) {
+                    return {
+                        content: [
+                            {
+                                type: 'text',
+                                text: 'No steps found in this walkthrough'
+                            }
+                        ]
+                    }
+                }
+
+                // Return the same format as get_next_step
                 return {
                     content: [
                         {
                             type: 'text',
-                            text: JSON.stringify({
-                                walkthrough: {
-                                    id: selectedWalkthrough.walkthrough.id,
-                                    title: selectedWalkthrough.walkthrough.title,
-                                    description: selectedWalkthrough.walkthrough.description,
-                                    type: selectedWalkthrough.walkthrough.type,
-                                    estimatedDurationMinutes: selectedWalkthrough.walkthrough.estimatedDurationMinutes,
-                                    tags: selectedWalkthrough.walkthrough.tags
-                                },
-                                nextStep: nextStep.isCompleted ? null : {
-                                    id: nextStep.id,
-                                    title: nextStep.title,
-                                    instructions: nextStep.instructions,
-                                    displayOrder: nextStep.displayOrder
-                                },
-                                progress: {
-                                    totalSteps: nextStep.totalSteps,
-                                    completedCount: nextStep.completedCount,
-                                    progressPercent: nextStep.progressPercent,
-                                    isCompleted: nextStep.isCompleted,
-                                    wasRestarted: restart
+                            text: renderWalkthroughStepOutput(
+                                renderWalkthroughStep(selectedWalkthrough.walkthrough.title, nextStepResult.step),
+                                {
+                                    progressPercent: nextStepResult.progressPercent,
+                                    completed: nextStepResult.isCompleted,
+                                    stepId: nextStepResult.step.id,
+                                    totalSteps: nextStepResult.totalSteps,
+                                    completedSteps: nextStepResult.completedCount,
+                                    walkthroughId: selectedWalkthrough.walkthrough.id
                                 }
-                            }, null, 2)
+                            )
                         }
                     ]
                 }
@@ -264,20 +273,24 @@ function registerGetNextStepTool({
     serverSessionId: string
 }) {
     const inputSchema = z.object({
-        currentStepId: z.string().optional().describe('Optional: The ID of the current step to mark as completed before getting the next step')
+        currentStepId: z
+            .string()
+            .optional()
+            .describe('Optional: The ID of the current step to mark as completed before getting the next step')
     })
-    
+
     server.registerTool(
         'get_next_step',
         {
             title: 'Get Next Walkthrough Step',
-            description: 'Gets the next step in your active walkthrough. If currentStepId is provided, marks it as completed first. Use start_walkthrough first to begin a walkthrough.',
+            description:
+                'Gets the next step in your active walkthrough. If currentStepId is provided, marks it as completed first. Use start_walkthrough first to begin a walkthrough.',
             inputSchema: inputSchema.shape
         },
         async (args) => {
             try {
                 const { currentStepId } = inputSchema.parse(args)
-                
+
                 // Find the user's active walkthrough (most recent progress)
                 const activeProgress = await db
                     .select()
@@ -285,7 +298,7 @@ function registerGetNextStepTool({
                     .where(eq(schema.walkthroughProgress.mcpServerUserId, mcpServerUserId))
                     .orderBy(desc(schema.walkthroughProgress.lastActivityAt))
                     .limit(1)
-                
+
                 if (!activeProgress[0]) {
                     return {
                         content: [
@@ -296,18 +309,30 @@ function registerGetNextStepTool({
                         ]
                     }
                 }
-                
+
                 const walkthroughId = activeProgress[0].walkthroughId
-                
+
                 // If currentStepId is provided, mark it as completed first
                 if (currentStepId) {
                     await completeStep(mcpServerUserId, walkthroughId, currentStepId)
                 }
-                
+
+                // Get updated progress after potential completion
+                const currentProgress = await db
+                    .select()
+                    .from(schema.walkthroughProgress)
+                    .where(
+                        and(
+                            eq(schema.walkthroughProgress.mcpServerUserId, mcpServerUserId),
+                            eq(schema.walkthroughProgress.walkthroughId, walkthroughId)
+                        )
+                    )
+                    .limit(1)
+
                 // Get the next step (or current if no step was completed)
-                const nextStep = await calculateNextStep(mcpServerUserId, walkthroughId)
-                
-                if (!nextStep) {
+                const nextStepResult = await calculateNextStep(walkthroughId, currentProgress[0] || null)
+
+                if (!nextStepResult) {
                     return {
                         content: [
                             {
@@ -317,7 +342,7 @@ function registerGetNextStepTool({
                         ]
                     }
                 }
-                
+
                 // Track the tool call
                 await db.insert(schema.toolCalls).values({
                     mcpServerId: serverConfig.id,
@@ -325,39 +350,50 @@ function registerGetNextStepTool({
                     mcpServerUserId: mcpServerUserId,
                     mcpServerSessionId: serverSessionId,
                     input: args,
-                    output: { 
+                    output: {
                         completedStepId: currentStepId || null,
-                        nextStepId: nextStep.id,
+                        nextStepId: nextStepResult.step?.id || null,
                         walkthroughId: walkthroughId,
-                        isWalkthroughCompleted: nextStep.isCompleted
+                        isWalkthroughCompleted: nextStepResult.isCompleted
                     }
                 })
-                
+                // If there's no step (walkthrough completed), show completion message
+                if (!nextStepResult.step) {
+                    return {
+                        content: [
+                            {
+                                type: 'text',
+                                text: renderWalkthroughStepOutput(
+                                    `# Walkthrough Complete!\n\nCongratulations! You have completed the "${nextStepResult.walkthrough.title}" walkthrough.`,
+                                    {
+                                        progressPercent: 100,
+                                        completed: true,
+                                        stepId: 'completed',
+                                        totalSteps: nextStepResult.totalSteps,
+                                        completedSteps: nextStepResult.completedCount,
+                                        walkthroughId: walkthroughId
+                                    }
+                                )
+                            }
+                        ]
+                    }
+                }
+
                 return {
                     content: [
                         {
                             type: 'text',
-                            text: JSON.stringify({
-                                ...(currentStepId && {
-                                    completedStep: {
-                                        stepId: currentStepId,
-                                        walkthroughId
-                                    }
-                                }),
-                                nextStep: nextStep.isCompleted ? null : {
-                                    id: nextStep.id,
-                                    title: nextStep.title,
-                                    instructions: nextStep.instructions,
-                                    displayOrder: nextStep.displayOrder
-                                },
-                                progress: {
-                                    totalSteps: nextStep.totalSteps,
-                                    completedCount: nextStep.completedCount,
-                                    progressPercent: nextStep.progressPercent,
-                                    isWalkthroughCompleted: nextStep.isCompleted
-                                },
-                                walkthroughId: walkthroughId
-                            }, null, 2)
+                            text: renderWalkthroughStepOutput(
+                                renderWalkthroughStep(nextStepResult.walkthrough.title, nextStepResult.step),
+                                {
+                                    progressPercent: nextStepResult.progressPercent,
+                                    completed: nextStepResult.isCompleted,
+                                    stepId: nextStepResult.step.id,
+                                    totalSteps: nextStepResult.totalSteps,
+                                    completedSteps: nextStepResult.completedCount,
+                                    walkthroughId: walkthroughId
+                                }
+                            )
                         }
                     ]
                 }
