@@ -15,6 +15,13 @@
       "when": 1754165343174,
       "tag": "0001_closed_wild_child",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1754242915473,
+      "tag": "0002_boring_cobalt_man",
+      "breakpoints": true
     }
   ]
 }

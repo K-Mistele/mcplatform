@@ -131,7 +131,7 @@ export const mcpServerUser = pgTable(
         id: text('id')
             .primaryKey()
             .$defaultFn(() => `mcpu_${nanoid(12)}`),
-        trackingId: text('distinct_id').unique('mcp_server_user_distinct_id_unique', { nulls: 'not distinct' }),
+        trackingId: text('distinct_id').unique('mcp_server_user_distinct_id_unique', { nulls: 'distinct' }),
         email: text('email'),
         firstSeenAt: bigint('first_seen_at', { mode: 'number' }).$defaultFn(() => Date.now())
     },
