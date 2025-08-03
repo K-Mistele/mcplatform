@@ -1,10 +1,9 @@
 import { db, schema } from 'database'
 import { and, eq } from 'drizzle-orm'
 import { createMcpHandler } from 'mcp-handler'
-import { z } from 'zod'
 import { auth } from '../auth/mcp/auth'
 import { registerMcpSupportTool } from './tools/support'
-import { walkthroughTools } from './tools/walkthrough'
+import { registerWalkthroughTools } from './tools/walkthrough'
 import type { McpServer, McpServerConfig } from './types'
 import { withMcpAuth } from './with-mcp-auth'
 export { protectedResourceHandler } from './protected-resource-handler'
@@ -102,7 +101,7 @@ export async function registerMcpServerToolsFromConfig({
         if (hasWalkthroughs) {
             registerWalkthroughTools({
                 server,
-                mcpServerId: serverConfig.id,
+                serverConfig,
                 mcpServerUserId,
                 serverSessionId
             })
@@ -180,46 +179,3 @@ async function checkServerHasWalkthroughs(mcpServerId: string): Promise<boolean>
     return walkthroughCount.length > 0
 }
 
-/**
- * Register all walkthrough tools with the MCP server
- */
-function registerWalkthroughTools({
-    server,
-    mcpServerId,
-    mcpServerUserId,
-    serverSessionId
-}: {
-    server: McpServer
-    mcpServerId: string
-    mcpServerUserId: string
-    serverSessionId: string
-}) {
-    const toolContext = {
-        mcpServerId,
-        mcpServerUserId,
-        serverSessionId
-    }
-
-    // Register all walkthrough tools
-    Object.entries(walkthroughTools).forEach(([toolName, { tool, handler }]) => {
-        server.registerTool(
-            toolName,
-            {
-                title: tool.description,
-                description: tool.description,
-                inputSchema: z.object({}).shape // Use empty schema for now, proper validation is in handlers
-            },
-            async (args) => {
-                // Convert args format to request format expected by handlers
-                const request = {
-                    method: 'tools/call' as const,
-                    params: {
-                        name: toolName,
-                        arguments: args
-                    }
-                }
-                return handler(request, toolContext)
-            }
-        )
-    })
-}

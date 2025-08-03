@@ -29,6 +29,7 @@ export function registerMcpSupportTool({
     if (serverConfig.supportTicketType === 'linear') throw new Error('Linear tickets are not supported yet')
 
     // Otherwise the support ticket type is `dashboard` which is currently supported
+    // biome-ignore lint/correctness/useHookAtTopLevel: This is NOT a react hook.
     useDashboardSupportBackend({ server, serverConfig, trackingId, email, mcpServerUserId, serverSessionId })
 }
 
