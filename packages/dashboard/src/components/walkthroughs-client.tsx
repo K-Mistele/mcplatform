@@ -13,8 +13,7 @@ import {
     getSortedRowModel,
     useReactTable
 } from '@tanstack/react-table'
-import * as React from 'react'
-import { use } from 'react'
+import { use, useState } from 'react'
 
 import { CreateWalkthroughModal } from '@/components/create-walkthrough-modal'
 import { Badge } from '@/components/ui/badge'
@@ -37,11 +36,11 @@ interface WalkthroughTableData {
 }
 
 const walkthroughTypeConfig = {
-    course: { icon: '📚', label: 'Course', description: 'Educational content' },
-    installer: { icon: '⚙️', label: 'Installer', description: 'Installation guide' },
-    troubleshooting: { icon: '🔧', label: 'Troubleshooting', description: 'Problem solving' },
-    integration: { icon: '🔗', label: 'Integration', description: 'System integration' },
-    quickstart: { icon: '⚡', label: 'Quickstart', description: 'Getting started' }
+    course: { label: 'Course', description: 'Educational content' },
+    installer: { label: 'Installer', description: 'Installation guide' },
+    troubleshooting: { label: 'Troubleshooting', description: 'Problem solving' },
+    integration: { label: 'Integration', description: 'System integration' },
+    quickstart: { label: 'Quickstart', description: 'Getting started' }
 } as const
 
 function formatDate(timestamp: number | null): string {
@@ -103,17 +102,13 @@ const columns: ColumnDef<WalkthroughTableData>[] = [
         cell: ({ row }) => {
             const type = row.original.walkthrough.type as keyof typeof walkthroughTypeConfig
             const config = walkthroughTypeConfig[type] || {
-                icon: '📄',
                 label: 'Unknown',
                 description: 'Unknown walkthrough type'
             }
             return (
-                <div className="flex items-center gap-2">
-                    <span className="text-lg">{config.icon}</span>
-                    <div>
-                        <Badge variant="secondary">{config.label}</Badge>
-                        <p className="text-xs text-muted-foreground mt-1">{config.description}</p>
-                    </div>
+                <div>
+                    <Badge variant="secondary">{config.label}</Badge>
+                    <p className="text-xs text-muted-foreground mt-1">{config.description}</p>
                 </div>
             )
         }
@@ -190,10 +185,10 @@ interface WalkthroughsClientProps {
 
 export function WalkthroughsClient({ walkthroughsPromise }: WalkthroughsClientProps) {
     const walkthroughs = use(walkthroughsPromise)
-    const [sorting, setSorting] = React.useState<SortingState>([])
-    const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>([])
-    const [columnVisibility, setColumnVisibility] = React.useState<VisibilityState>({})
-    const [createModalOpen, setCreateModalOpen] = React.useState(false)
+    const [sorting, setSorting] = useState<SortingState>([])
+    const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([])
+    const [columnVisibility, setColumnVisibility] = useState<VisibilityState>({})
+    const [createModalOpen, setCreateModalOpen] = useState(false)
 
     const table = useReactTable({
         data: walkthroughs,
@@ -264,9 +259,9 @@ export function WalkthroughsClient({ walkthroughsPromise }: WalkthroughsClientPr
             <div className="flex items-center gap-4">
                 <Input
                     placeholder="Search walkthroughs..."
-                    value={(table.getColumn('walkthrough.title')?.getFilterValue() as string) ?? ''}
+                    value={(table.getColumn('title')?.getFilterValue() as string) ?? ''}
                     onChange={(event) =>
-                        table.getColumn('walkthrough.title')?.setFilterValue(event.target.value)
+                        table.getColumn('title')?.setFilterValue(event.target.value)
                     }
                     className="max-w-sm"
                 />

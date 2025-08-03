@@ -1,3 +1,4 @@
+'use client'
 import { Suspense } from 'react'
 import { ErrorBoundary } from 'react-error-boundary'
 import { ActiveUsersCard } from './active-users-card'
@@ -6,7 +7,7 @@ import { QuickCreateSection } from './quick-create-section'
 import { SupportTicketsCard } from './support-tickets-card'
 import { ToolCallsCard } from './tool-calls-card'
 
-export async function SectionCards({
+export function SectionCards({
     toolCallsPromise,
     supportTicketsPromise,
     activeUsersPromise

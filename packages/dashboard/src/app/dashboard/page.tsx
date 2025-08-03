@@ -7,42 +7,48 @@ import { count, eq } from 'drizzle-orm'
 export default async function DashboardPage() {
     console.log('DashboardPage')
     const session = await requireSession()
-    const toolCallsPromise = db
-        .select({
-            count: count(schema.toolCalls.id)
-        })
-        .from(schema.toolCalls)
-        .leftJoin(schema.mcpServers, eq(schema.toolCalls.mcpServerId, schema.mcpServers.id))
-        .where(eq(schema.mcpServers.organizationId, session.session.activeOrganizationId))
-        .then((result) => result[0] || { count: 0 })
-        .catch((error) => {
-            console.error('Error fetching tool calls', error)
-            return { count: 0 }
-        })
+    const toolCallsPromise = new Promise<{ count: number }>((resolve) => {
+        db
+            .select({
+                count: count(schema.toolCalls.id)
+            })
+            .from(schema.toolCalls)
+            .leftJoin(schema.mcpServers, eq(schema.toolCalls.mcpServerId, schema.mcpServers.id))
+            .where(eq(schema.mcpServers.organizationId, session.session.activeOrganizationId))
+            .then((result) => resolve(result[0] || { count: 0 }))
+            .catch((error) => {
+                console.error('Error fetching tool calls', error)
+                resolve({ count: 0 })
+            })
+    })
 
-    const supportTicketsPromise = db
-        .select({
-            count: count(schema.supportRequests.id)
-        })
-        .from(schema.supportRequests)
-        .where(eq(schema.supportRequests.organizationId, session.session.activeOrganizationId))
-        .then((result) => result[0] || { count: 0 })
-        .catch((error) => {
-            console.error('Error fetching support tickets', error)
-            return { count: 0 }
-        })
+    const supportTicketsPromise = new Promise<{ count: number }>((resolve) => {
+        db
+            .select({
+                count: count(schema.supportRequests.id)
+            })
+            .from(schema.supportRequests)
+            .where(eq(schema.supportRequests.organizationId, session.session.activeOrganizationId))
+            .then((result) => resolve(result[0] || { count: 0 }))
+            .catch((error) => {
+                console.error('Error fetching support tickets', error)
+                resolve({ count: 0 })
+            })
+    })
 
-    const activeUsersPromise = db
-        .select({
-            count: count(schema.mcpServers.id)
-        })
-        .from(schema.mcpServers)
-        .where(eq(schema.mcpServers.organizationId, session.session.activeOrganizationId))
-        .then((result) => result[0] || { count: 0 })
-        .catch((error) => {
-            console.error('Error fetching active users', error)
-            return { count: 0 }
-        })
+    const activeUsersPromise = new Promise<{ count: number }>((resolve) => {
+        db
+            .select({
+                count: count(schema.mcpServers.id)
+            })
+            .from(schema.mcpServers)
+            .where(eq(schema.mcpServers.organizationId, session.session.activeOrganizationId))
+            .then((result) => resolve(result[0] || { count: 0 }))
+            .catch((error) => {
+                console.error('Error fetching active users', error)
+                resolve({ count: 0 })
+            })
+    })
 
     console.log('queries run')
 

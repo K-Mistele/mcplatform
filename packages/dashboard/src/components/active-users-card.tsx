@@ -17,7 +17,7 @@ export function ActiveUsersCard({ activeUsersPromise }: ActiveUsersCardProps) {
             <CardHeader>
                 <CardDescription>Active Users</CardDescription>
                 <CardTitle className="text-4xl font-semibold tabular-nums @[250px]/card:text-5xl">
-                    {data.count?.toLocaleString() ?? 0}
+                    {data.count?.toLocaleString('en-US') ?? 0}
                 </CardTitle>
                 <CardAction>
                     <Badge variant="outline">
