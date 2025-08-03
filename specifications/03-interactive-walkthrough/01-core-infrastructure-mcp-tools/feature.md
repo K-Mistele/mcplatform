@@ -7,8 +7,8 @@ repository: mcplatform
 topic: "Sub-Feature: Core Infrastructure & MCP Tools"
 tags: [sub-feature-definition, interactive-walkthrough, core-infrastructure, mcp-tools]
 status: complete
-last_updated: 2025-07-22
-last_updated_by: Kyle Mistele
+last_updated: 2025-08-03
+last_updated_by: Claude
 type: sub_feature_definition
 ---
 
@@ -201,6 +201,8 @@ const availableWalkthroughs = await db
 ```
 
 **Returns:** Array of walkthrough metadata with step counts, ordered by server-specific `displayOrder`
+
+**Important Visibility Rule:** The actual implementation uses an INNER JOIN with `walkthroughSteps`, which means **walkthroughs without any steps will not be visible** to MCP clients. This ensures that only walkthroughs with actual content are exposed to end-users. Authors must create at least one step before a walkthrough becomes accessible through the MCP tools.
 
 #### 2. `select_walkthrough` Tool
 
