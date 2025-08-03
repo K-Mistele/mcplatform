@@ -37,6 +37,7 @@ export const walkthroughStepContentFieldVersion1 = z.object({
             'A list of operations that the agent should perform including CRUD operations on files, tools, MCP tools etc.'
         )
 })
+export type WalkthroughStepContentFieldVersion1 = z.infer<typeof walkthroughStepContentFieldVersion1>
 export const walkthroughStepContentField = z.discriminatedUnion('version', [walkthroughStepContentFieldVersion1])
 
 const supportRequestStatusValues = ['needs_email', 'pending', 'in_progress', 'resolved', 'closed'] as const
