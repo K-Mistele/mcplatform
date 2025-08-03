@@ -1,7 +1,7 @@
 import { describe, expect, test } from 'bun:test'
 import { nanoid } from 'common/nanoid'
-import { renderWalkthroughStep } from '../../../src/lib/template-engine'
 import type { Walkthrough, WalkthroughStep } from 'database'
+import { renderWalkthroughStep } from '../../../src/lib/template-engine'
 
 describe('Template Engine - Updated Tests', () => {
     // Helper function to create mock walkthrough
@@ -33,8 +33,10 @@ describe('Template Engine - Updated Tests', () => {
             operationsForAgent: 'Operations the agent should perform'
         },
         displayOrder: 1,
+        metadata: {},
         createdAt: Date.now(),
         updatedAt: Date.now(),
+        nextStepId: null,
         ...overrides
     })
 
@@ -49,7 +51,7 @@ describe('Template Engine - Updated Tests', () => {
             expect(result).toContain('# Walkthrough: Test Walkthrough')
             expect(result).toContain('## Step 1: Test Step')
             expect(result).toContain('*This is step 1 in the "Test Walkthrough" walkthrough')
-            
+
             // Check user content section
             expect(result).toContain('<step_content>')
             expect(result).toContain('Main content for the user')
@@ -60,13 +62,13 @@ describe('Template Engine - Updated Tests', () => {
             expect(result).toContain('<step_information_and_objectives>')
             expect(result).toContain('Introduction for the agent')
             expect(result).toContain('</step_information_and_objectives>')
-            expect(result).toContain('When the step\'s objectives have been met')
-            
+            expect(result).toContain("When the step's objectives have been met")
+
             expect(result).toContain('<background_information_context>')
             expect(result).toContain('Background context information')
             expect(result).toContain('</background_information_context>')
             expect(result).toContain('This information is for the agent (you) to reference')
-            
+
             expect(result).toContain('<operations_to_perform>')
             expect(result).toContain('Operations the agent should perform')
             expect(result).toContain('</operations_to_perform>')
@@ -168,7 +170,8 @@ describe('Template Engine - Updated Tests', () => {
                     version: 'v1' as const,
                     introductionForAgent: '**Bold** and *italic* text with `code`',
                     contextForAgent: 'Text with <tags> and & symbols',
-                    contentForUser: '# Markdown Header\n\n- List item 1\n- List item 2\n\n```javascript\nconst code = "example";\n```',
+                    contentForUser:
+                        '# Markdown Header\n\n- List item 1\n- List item 2\n\n```javascript\nconst code = "example";\n```',
                     operationsForAgent: 'Run `npm install` and check @mentions'
                 }
             })
@@ -345,13 +348,13 @@ Final paragraph`
             const lines = result.split('\n')
 
             // Find indices of key sections
-            const titleIndex = lines.findIndex(line => line.includes('# Walkthrough:'))
-            const stepIndex = lines.findIndex(line => line.includes('## Step'))
-            const headerInfoIndex = lines.findIndex(line => line.includes('*This is step'))
-            const stepInfoIndex = lines.findIndex(line => line.includes('<step_information_and_objectives>'))
-            const backgroundIndex = lines.findIndex(line => line.includes('<background_information_context>'))
-            const operationsIndex = lines.findIndex(line => line.includes('<operations_to_perform>'))
-            const userContentIndex = lines.findIndex(line => line.includes('<step_content>'))
+            const titleIndex = lines.findIndex((line) => line.includes('# Walkthrough:'))
+            const stepIndex = lines.findIndex((line) => line.includes('## Step'))
+            const headerInfoIndex = lines.findIndex((line) => line.includes('*This is step'))
+            const stepInfoIndex = lines.findIndex((line) => line.includes('<step_information_and_objectives>'))
+            const backgroundIndex = lines.findIndex((line) => line.includes('<background_information_context>'))
+            const operationsIndex = lines.findIndex((line) => line.includes('<operations_to_perform>'))
+            const userContentIndex = lines.findIndex((line) => line.includes('<step_content>'))
 
             // Verify correct ordering based on actual template
             expect(titleIndex).toBeLessThan(stepIndex)
@@ -413,15 +416,15 @@ Final paragraph`
             expect(result).toContain('# Walkthrough: Test WK\n\n## Step 3: Test ST')
             expect(result).toContain('*This is step 3 in the "Test WK" walkthrough.')
             expect(result).toContain('Use the step navigation tools to guide the user through the process.*')
-            
+
             // Verify each section's complete structure
             expect(result).toContain(
                 'The below information between <step_information_and_objectives> and </step_information_and_objectives> contains information about the step including learning objectives and definitions of done.\n' +
-                'When the step\'s objectives have been met, you should ask the user if they are ready to move on to the next step.\n' +
-                'If so, you should use the step navigation tools to move to the next step.\n\n' +
-                '<step_information_and_objectives>\n' +
-                'INTRO\n' +
-                '</step_information_and_objectives>'
+                    "When the step's objectives have been met, you should ask the user if they are ready to move on to the next step.\n" +
+                    'If so, you should use the step navigation tools to move to the next step.\n\n' +
+                    '<step_information_and_objectives>\n' +
+                    'INTRO\n' +
+                    '</step_information_and_objectives>'
             )
         })
     })
