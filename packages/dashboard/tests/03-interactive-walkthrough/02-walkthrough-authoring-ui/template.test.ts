@@ -45,7 +45,7 @@ describe('Template Engine - Updated Tests', () => {
             const walkthrough = createMockWalkthrough()
             const step = createMockStep()
 
-            const result = renderWalkthroughStep(walkthrough, step)
+            const result = renderWalkthroughStep(walkthrough.title, step)
 
             // Check basic structure
             expect(result).toContain('# Walkthrough: Test Walkthrough')
@@ -90,7 +90,7 @@ describe('Template Engine - Updated Tests', () => {
                 }
             })
 
-            const result = renderWalkthroughStep(walkthrough, step)
+            const result = renderWalkthroughStep(walkthrough.title, step)
 
             // Should still have basic structure
             expect(result).toContain('# Walkthrough: Test Walkthrough')
@@ -117,7 +117,7 @@ describe('Template Engine - Updated Tests', () => {
                 }
             })
 
-            const result = renderWalkthroughStep(walkthrough, step)
+            const result = renderWalkthroughStep(walkthrough.title, step)
 
             // Should have intro and operations sections
             expect(result).toContain('<step_information_and_objectives>')
@@ -152,7 +152,7 @@ describe('Template Engine - Updated Tests', () => {
                 }
             })
 
-            const result = renderWalkthroughStep(walkthrough, step)
+            const result = renderWalkthroughStep(walkthrough.title, step)
 
             expect(result).toContain('# Walkthrough: Advanced Integration Guide')
             expect(result).toContain('## Step 5: Configure Authentication')
@@ -176,7 +176,7 @@ describe('Template Engine - Updated Tests', () => {
                 }
             })
 
-            const result = renderWalkthroughStep(walkthrough, step)
+            const result = renderWalkthroughStep(walkthrough.title, step)
 
             // Should preserve all special characters and markdown
             expect(result).toContain('Special Characters & Markdown Test')
@@ -201,7 +201,7 @@ describe('Template Engine - Updated Tests', () => {
                 }
             })
 
-            const result = renderWalkthroughStep(walkthrough, step)
+            const result = renderWalkthroughStep(walkthrough.title, step)
 
             // Should handle null/undefined gracefully
             expect(result).toContain('Valid user content')
@@ -223,7 +223,7 @@ describe('Template Engine - Updated Tests', () => {
                 }
             })
 
-            const result = renderWalkthroughStep(walkthrough, step)
+            const result = renderWalkthroughStep(walkthrough.title, step)
 
             // Should not show sections with empty or whitespace-only content
             expect(result).not.toContain('<step_information_and_objectives>')
@@ -245,7 +245,7 @@ describe('Template Engine - Updated Tests', () => {
                 }
             })
 
-            const result = renderWalkthroughStep(walkthrough, step)
+            const result = renderWalkthroughStep(walkthrough.title, step)
 
             // Should handle long content without issues
             expect(result).toContain('<step_information_and_objectives>')
@@ -276,7 +276,7 @@ Final paragraph`
                 }
             })
 
-            const result = renderWalkthroughStep(walkthrough, step)
+            const result = renderWalkthroughStep(walkthrough.title, step)
 
             // Should preserve line breaks and formatting
             expect(result).toContain('First line\nSecond line')
@@ -291,7 +291,7 @@ Final paragraph`
                 contentFields: null as any
             })
 
-            const result = renderWalkthroughStep(walkthrough, step)
+            const result = renderWalkthroughStep(walkthrough.title, step)
 
             // Should handle gracefully with empty content
             expect(result).toContain('# Walkthrough: Test Walkthrough')
@@ -306,8 +306,8 @@ Final paragraph`
             const walkthrough = createMockWalkthrough()
             const step = createMockStep()
 
-            const result1 = renderWalkthroughStep(walkthrough, step)
-            const result2 = renderWalkthroughStep(walkthrough, step)
+            const result1 = renderWalkthroughStep(walkthrough.title, step)
+            const result2 = renderWalkthroughStep(walkthrough.title, step)
 
             expect(result1).toBe(result2)
         })
@@ -327,7 +327,7 @@ Final paragraph`
                 }
             })
 
-            const result = renderWalkthroughStep(walkthrough, step)
+            const result = renderWalkthroughStep(walkthrough.title, step)
 
             // Should preserve all unicode characters
             expect(result).toContain('Unicode Test 🚀 中文 العربية')
@@ -344,7 +344,7 @@ Final paragraph`
             const walkthrough = createMockWalkthrough()
             const step = createMockStep()
 
-            const result = renderWalkthroughStep(walkthrough, step)
+            const result = renderWalkthroughStep(walkthrough.title, step)
             const lines = result.split('\n')
 
             // Find indices of key sections
@@ -369,7 +369,7 @@ Final paragraph`
             const walkthrough = createMockWalkthrough()
             const step = createMockStep()
 
-            const result = renderWalkthroughStep(walkthrough, step)
+            const result = renderWalkthroughStep(walkthrough.title, step)
 
             // Should have proper markdown headers
             expect(result).toMatch(/^# Walkthrough: .+$/m) // H1 title
@@ -410,7 +410,7 @@ Final paragraph`
                 }
             })
 
-            const result = renderWalkthroughStep(walkthrough, step)
+            const result = renderWalkthroughStep(walkthrough.title, step)
 
             // Verify exact format including line breaks and structure
             expect(result).toContain('# Walkthrough: Test WK\n\n## Step 3: Test ST')

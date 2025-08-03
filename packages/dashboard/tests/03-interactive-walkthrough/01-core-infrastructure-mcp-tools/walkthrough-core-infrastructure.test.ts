@@ -171,12 +171,13 @@ describe('Walkthrough Core Infrastructure', () => {
 
     describe('calculateNextStep', () => {
         test('should return first step for new user', async () => {
-            const nextStep = await calculateNextStep(testMcpServerUserId, testWalkthroughId)
+            const nextStep = await calculateNextStep(testWalkthroughId, null)
 
             expect(nextStep).toBeDefined()
-            expect(nextStep!.id).toBe(testStepIds[0])
-            expect(nextStep!.title).toBe('Step 1')
-            expect(nextStep!.displayOrder).toBe(1)
+            expect(nextStep!.step).toBeDefined()
+            expect(nextStep!.step!.id).toBe(testStepIds[0])
+            expect(nextStep!.step!.title).toBe('Step 1')
+            expect(nextStep!.step!.displayOrder).toBe(1)
             expect(nextStep!.isCompleted).toBe(false)
             expect(nextStep!.totalSteps).toBe(3)
             expect(nextStep!.completedCount).toBe(0)
@@ -186,13 +187,26 @@ describe('Walkthrough Core Infrastructure', () => {
         test('should return second step after completing first step', async () => {
             // Complete first step
             await completeStep(testMcpServerUserId, testWalkthroughId, testStepIds[0])
+            
+            // Get updated progress
+            const progress = await db
+                .select()
+                .from(walkthroughProgress)
+                .where(
+                    and(
+                        eq(walkthroughProgress.mcpServerUserId, testMcpServerUserId),
+                        eq(walkthroughProgress.walkthroughId, testWalkthroughId)
+                    )
+                )
+                .limit(1)
 
-            const nextStep = await calculateNextStep(testMcpServerUserId, testWalkthroughId)
+            const nextStep = await calculateNextStep(testWalkthroughId, progress[0])
 
             expect(nextStep).toBeDefined()
-            expect(nextStep!.id).toBe(testStepIds[1])
-            expect(nextStep!.title).toBe('Step 2')
-            expect(nextStep!.displayOrder).toBe(2)
+            expect(nextStep!.step).toBeDefined()
+            expect(nextStep!.step!.id).toBe(testStepIds[1])
+            expect(nextStep!.step!.title).toBe('Step 2')
+            expect(nextStep!.step!.displayOrder).toBe(2)
             expect(nextStep!.isCompleted).toBe(false)
             expect(nextStep!.completedCount).toBe(1)
             expect(nextStep!.progressPercent).toBe(33) // 1/3 rounded
@@ -203,11 +217,23 @@ describe('Walkthrough Core Infrastructure', () => {
             for (const stepId of testStepIds) {
                 await completeStep(testMcpServerUserId, testWalkthroughId, stepId)
             }
+            
+            // Get updated progress
+            const progress = await db
+                .select()
+                .from(walkthroughProgress)
+                .where(
+                    and(
+                        eq(walkthroughProgress.mcpServerUserId, testMcpServerUserId),
+                        eq(walkthroughProgress.walkthroughId, testWalkthroughId)
+                    )
+                )
+                .limit(1)
 
-            const nextStep = await calculateNextStep(testMcpServerUserId, testWalkthroughId)
+            const nextStep = await calculateNextStep(testWalkthroughId, progress[0])
 
             expect(nextStep).toBeDefined()
-            expect(nextStep!.id).toBe(testStepIds[2])
+            expect(nextStep!.step).toBeNull() // No more steps
             expect(nextStep!.isCompleted).toBe(true)
             expect(nextStep!.completedCount).toBe(3)
             expect(nextStep!.progressPercent).toBe(100)
@@ -224,7 +250,7 @@ describe('Walkthrough Core Infrastructure', () => {
             })
             createdWalkthroughs.push(emptyWalkthroughId)
 
-            const nextStep = await calculateNextStep(testMcpServerUserId, emptyWalkthroughId)
+            const nextStep = await calculateNextStep(emptyWalkthroughId, null)
             expect(nextStep).toBeNull()
         })
     })
@@ -423,11 +449,24 @@ describe('Walkthrough Core Infrastructure', () => {
 
             await db.update(walkthroughSteps).set({ displayOrder: 1 }).where(eq(walkthroughSteps.id, testStepIds[2]))
 
+            // Get updated progress
+            const progress = await db
+                .select()
+                .from(walkthroughProgress)
+                .where(
+                    and(
+                        eq(walkthroughProgress.mcpServerUserId, testMcpServerUserId),
+                        eq(walkthroughProgress.walkthroughId, testWalkthroughId)
+                    )
+                )
+                .limit(1)
+                
             // Should still calculate next step correctly based on completed array
-            const nextStep = await calculateNextStep(testMcpServerUserId, testWalkthroughId)
+            const nextStep = await calculateNextStep(testWalkthroughId, progress[0])
 
             // Should return the step that hasn't been completed (original step 3, now reordered to position 1)
-            expect(nextStep!.id).toBe(testStepIds[2])
+            expect(nextStep!.step).toBeDefined()
+            expect(nextStep!.step!.id).toBe(testStepIds[2])
             expect(nextStep!.completedCount).toBe(2)
         })
 
@@ -450,10 +489,23 @@ describe('Walkthrough Core Infrastructure', () => {
             })
             createdWalkthroughSteps.push(newStepId)
 
-            const nextStep = await calculateNextStep(testMcpServerUserId, testWalkthroughId)
+            // Get updated progress
+            const progress = await db
+                .select()
+                .from(walkthroughProgress)
+                .where(
+                    and(
+                        eq(walkthroughProgress.mcpServerUserId, testMcpServerUserId),
+                        eq(walkthroughProgress.walkthroughId, testWalkthroughId)
+                    )
+                )
+                .limit(1)
+                
+            const nextStep = await calculateNextStep(testWalkthroughId, progress[0])
 
             // Should find the new step as next (lowest display order among uncompleted)
-            expect(nextStep!.id).toBe(newStepId)
+            expect(nextStep!.step).toBeDefined()
+            expect(nextStep!.step!.id).toBe(newStepId)
             expect(nextStep!.completedCount).toBe(1) // Original step still completed
             expect(nextStep!.totalSteps).toBe(4) // Now 4 total steps
         })

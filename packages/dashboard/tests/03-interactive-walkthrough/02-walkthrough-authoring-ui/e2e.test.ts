@@ -199,7 +199,7 @@ describe('Walkthrough Authoring Integration Tests', () => {
             expect(updatedStep1.contentFields.contentForUser).toContain('Copy this key as you will need it')
 
             // Step 6: Test template rendering for each step
-            const renderedStep1 = renderWalkthroughStep(newWalkthrough, updatedStep1)
+            const renderedStep1 = renderWalkthroughStep(newWalkthrough.title, updatedStep1)
             expect(renderedStep1).toContain('# Walkthrough: Complete Integration Guide')
             expect(renderedStep1).toContain('## Step 1: API Setup and Configuration')
             expect(renderedStep1).toContain('<step_information_and_objectives>')
@@ -212,10 +212,10 @@ describe('Walkthrough Authoring Integration Tests', () => {
             expect(renderedStep1).toContain('Copy this key as you will need it')
             expect(renderedStep1).toContain('</step_content>')
 
-            const renderedStep2 = renderWalkthroughStep(newWalkthrough, step2)
+            const renderedStep2 = renderWalkthroughStep(newWalkthrough.title, step2)
             expect(renderedStep2).toContain('## Step 2: Authentication Configuration')
 
-            const renderedStep3 = renderWalkthroughStep(newWalkthrough, step3)
+            const renderedStep3 = renderWalkthroughStep(newWalkthrough.title, step3)
             expect(renderedStep3).toContain('## Step 3: Testing Your Integration')
 
             // Step 7: Verify database state
@@ -319,11 +319,11 @@ describe('Walkthrough Authoring Integration Tests', () => {
 
             // Test template rendering reflects new order
             const firstStep = steps[0] // Should be 'Testing' now
-            const renderedFirst = renderWalkthroughStep(walkthrough, firstStep)
+            const renderedFirst = renderWalkthroughStep(walkthrough.title, firstStep)
             expect(renderedFirst).toContain('## Step 1: Testing')
 
             const thirdStep = steps[2] // Should be 'Configuration' now
-            const renderedThird = renderWalkthroughStep(walkthrough, thirdStep)
+            const renderedThird = renderWalkthroughStep(walkthrough.title, thirdStep)
             expect(renderedThird).toContain('## Step 3: Configuration')
         })
     })
@@ -368,7 +368,7 @@ describe('Walkthrough Authoring Integration Tests', () => {
             createdWalkthroughSteps.push(installerStep.id)
 
             // Verify template includes both required sections
-            const renderedInstaller = renderWalkthroughStep(installerWalkthrough, installerStep)
+            const renderedInstaller = renderWalkthroughStep(installerWalkthrough.title, installerStep)
             expect(renderedInstaller).toContain('Required: Install the software')
             expect(renderedInstaller).toContain('Required: Execute installation commands')
             expect(renderedInstaller).toContain('<operations_to_perform>')
@@ -410,7 +410,7 @@ describe('Walkthrough Authoring Integration Tests', () => {
             createdWalkthroughSteps.push(troubleshootingStep.id)
 
             // Verify template includes both required sections
-            const renderedTroubleshooting = renderWalkthroughStep(troubleshootingWalkthrough, troubleshootingStep)
+            const renderedTroubleshooting = renderWalkthroughStep(troubleshootingWalkthrough.title, troubleshootingStep)
             expect(renderedTroubleshooting).toContain('Required: Check your firewall settings')
             expect(renderedTroubleshooting).toContain('Required: Common connection issues')
             expect(renderedTroubleshooting).toContain('<background_information_context>')
@@ -504,7 +504,7 @@ describe('Walkthrough Authoring Integration Tests', () => {
             expect(finalStep[0].contentFields.contentForUser).toBe('User B made the final changes and wins')
 
             // Verify template renders with final state
-            const renderedFinal = renderWalkthroughStep(walkthrough, finalStep[0])
+            const renderedFinal = renderWalkthroughStep(walkthrough.title, finalStep[0])
             expect(renderedFinal).toContain('User B Final Title')
             expect(renderedFinal).toContain('User B made the final changes and wins')
         })
