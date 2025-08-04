@@ -85,8 +85,9 @@ async function importWalkthrough() {
 
         console.log(`✅ Created walkthrough: ${newWalkthrough.title}`)
 
-        // Create the steps
-        for (let i = 0; i < exportData.steps.length; i++) {
+        // Create the steps in REVERSE order to avoid foreign key constraints
+        // Since each step references the next step, we insert from last to first
+        for (let i = exportData.steps.length - 1; i >= 0; i--) {
             const step = exportData.steps[i]
             const stepId = stepIdMap.get(i)!
 
