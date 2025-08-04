@@ -4,7 +4,6 @@ import { mcpServers, mcpServerWalkthroughs, walkthroughs } from 'database/src/sc
 import 'dotenv/config'
 import { and, eq } from 'drizzle-orm'
 import { drizzle } from 'drizzle-orm/node-postgres'
-import { nanoid } from 'nanoid'
 import pg from 'pg'
 import { Resource } from 'sst'
 
@@ -73,7 +72,6 @@ async function associateWalkthrough() {
         const [association] = await db
             .insert(mcpServerWalkthroughs)
             .values({
-                id: `mswt_${nanoid()}`,
                 mcpServerId: mcpServerId,
                 walkthroughId: walkthroughId,
                 displayOrder: displayOrder,
