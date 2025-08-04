@@ -1,0 +1,26 @@
+<table>
+    <tr>
+      <th width="30%">Field</th>
+      <th width="70%">Description</th>
+    </tr>
+    <tr>
+      <td>Hostname</td>
+      <td>Specify a registry domain that uses the Docker V2 protocol.</td>
+    </tr>
+    <tr>
+      <td>Username</td>
+      <td>Specify the username for the domain.</td>
+    </tr>
+    <tr>
+      <td>Password</td>
+      <td>Specify the password for the domain.</td>
+    </tr>
+    <tr>
+      <td>Registry Namespace</td>
+      <td>Specify the registry namespace. The registry namespace is the path between the registry and the image name. For example, `my.registry.com/namespace/image:tag`. For air gap environments, this setting overwrites the registry namespace where images where pushed when KOTS was installed.</td>
+    </tr>
+    <tr>
+      <td>Disable Pushing Images to Registry</td>
+      <td>(Optional) Select this option to disable KOTS from pushing images. Make sure that an external process is configured to push images to your registry instead. Your images are still read from your registry when the application is deployed.</td>
+    </tr>
+  </table>

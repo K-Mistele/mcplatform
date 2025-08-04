@@ -1,0 +1,30 @@
+```yaml
+- name: database_settings_group
+  title: Database Settings
+  items:
+  - name: db_type
+    title: Database Type
+    type: radio
+    default: external
+    items:
+    - name: external
+      title: External
+    - name: embedded
+      title: Embedded DB
+  - name: database_host
+    title: Database Hostname
+    type: text
+    when: repl{{ (ConfigOptionEquals "db_type" "external")}}
+  - name: database_password
+    title: Database Password
+    type: password
+    when: repl{{ (ConfigOptionEquals "db_type" "external")}}
+```
+
+<img alt="External option selected and conditional fields displayed" src="/images/config-when-enabled.png" width="500px"/>
+
+[View a larger version of this image](/images/config-when-enabled.png)
+
+<img alt="Embedded DB option selected and no additional fields displayed" src="/images/config-when-disabled.png" width="500px"/>
+
+[View a larger version of this image](/images/config-when-disabled.png)

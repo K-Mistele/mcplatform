@@ -1,0 +1,111 @@
+import ConfigValuesExample from "../partials/configValues/_configValuesExample.mdx"
+import ConfigValuesProcedure from "../partials/configValues/_config-values-procedure.mdx"
+import PlaceholdersGlobal from "../partials/install/_placeholders-global.mdx"
+import PlaceholderAirgapBundle from "../partials/install/_placeholder-airgap-bundle.mdx"
+import PlaceholderNamespaceExisting from "../partials/install/_placeholder-namespace-existing.mdx"
+import DownloadKotsBundle from "../partials/install/_download-kotsadm-bundle.mdx"
+import InstallKotsCliAirGap from "../partials/install/_install-kots-cli-airgap.mdx"
+import InstallKotsCli from "../partials/install/_install-kots-cli.mdx"
+import PushKotsImages from "../partials/install/_push-kotsadm-images.mdx"
+import KotsVersionMatch from "../partials/install/_kots-airgap-version-match.mdx"
+import PlaceholderRoCreds from "../partials/install/_placeholder-ro-creds.mdx"
+import AccessAdminConsole from "../partials/install/_access-admin-console.mdx"
+
+# Install with the KOTS CLI
+
+This topic describes how to install an application with Replicated KOTS in an existing cluster using the KOTS CLI.
+
+## Overview
+
+You can use the KOTS CLI to install an application with Replicated KOTS. A common use case for installing from the command line is to automate installation, such as performing headless installations as part of CI/CD pipelines.
+
+To install with the KOTS CLI, you provide all the necessary installation assets, such as the license file and the application config values, with the installation command rather than through the Admin Console UI. Any preflight checks defined for the application run automatically from the CLI rather than being displayed in the Admin Console.
+
+The following shows an example of the output from the kots install command:
+
+  ```
+  • Deploying Admin Console
+    • Creating namespace ✓
+    • Waiting for datastore to be ready ✓
+  • Waiting for Admin Console to be ready ✓
+  • Waiting for installation to complete ✓
+  • Waiting for preflight checks to complete ✓
+
+  • Press Ctrl+C to exit
+  • Go to http://localhost:8800 to access the Admin Console
+
+  • Go to http://localhost:8888 to access the application
+  ```
+
+## Prerequisite
+
+Create a ConfigValues YAML file to define the configuration values for the application release. The ConfigValues file allows you to pass the configuration values for an application from the command line with the install command, rather than through the Admin Console UI. For air-gapped environments, ensure that the ConfigValues file can be accessed from the installation environment. 
+
+The KOTS ConfigValues file includes the fields that are defined in the KOTS Config custom resource for an application release, along with the user-supplied and default values for each field, as shown in the example below:
+
+<ConfigValuesExample/>
+
+<ConfigValuesProcedure/>
+   
+## Online (Internet-Connected) Installation
+
+To install with KOTS in an online existing cluster:
+
+1. <InstallKotsCli/>
+
+1. Install the application:
+
+    ```bash 
+    kubectl kots install APP_NAME \
+      --shared-password PASSWORD \
+      --license-file PATH_TO_LICENSE \
+      --config-values PATH_TO_CONFIGVALUES \
+      --namespace NAMESPACE \
+      --no-port-forward
+    ```
+    Replace:
+
+    <PlaceholdersGlobal/>
+
+    <PlaceholderNamespaceExisting/>
+
+## Air Gap Installation {#air-gap}
+
+To install with KOTS in an air-gapped existing cluster:
+
+1. <InstallKotsCliAirGap/>
+
+1. <DownloadKotsBundle/>
+
+    <KotsVersionMatch/>
+
+1. <PushKotsImages/>
+
+1. Install the application:
+
+      ```bash
+      kubectl kots install APP_NAME \
+        --shared-password PASSWORD \
+        --license-file PATH_TO_LICENSE \
+        --config-values PATH_TO_CONFIGVALUES \
+        --airgap-bundle PATH_TO_AIRGAP_BUNDLE \
+        --namespace NAMESPACE \
+        --kotsadm-registry REGISTRY_HOST \
+        --registry-username RO_USERNAME \
+        --registry-password RO_PASSWORD \
+        --no-port-forward
+      ```
+
+      Replace:
+
+      <PlaceholdersGlobal/>
+      
+      <PlaceholderAirgapBundle/>
+
+      <PlaceholderNamespaceExisting/>
+      
+      <PlaceholderRoCreds/>
+
+## (Optional) Access the Admin Console
+
+<AccessAdminConsole/>

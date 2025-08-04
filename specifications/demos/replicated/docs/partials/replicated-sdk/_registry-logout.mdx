@@ -1,0 +1,7 @@
+If you see a 401 Unauthorized error after running `helm dependency update`, run the following command to remove credentials from the Replicated registry, then re-run `helm dependency update`:
+
+```bash
+helm registry logout registry.replicated.com
+```
+
+For more information, see [401 Unauthorized Error When Updating Helm Dependencies](replicated-sdk-installing#401).

@@ -1,0 +1,114 @@
+import VersionLimitation from "../partials/helm/_helm-version-limitation.mdx"
+import HelmBuilderRequirements from "../partials/helm/_helm-builder-requirements.mdx"
+import Chart from "../partials/helm/_helm-cr-chart.mdx"
+import ChartName from "../partials/helm/_helm-cr-chart-name.mdx"
+import ChartVersion from "../partials/helm/_helm-cr-chart-version.mdx"
+import ChartReleaseName from "../partials/helm/_helm-cr-chart-release-name.mdx"
+import HelmUpgradeFlags from "../partials/helm/_helm-cr-upgrade-flags.mdx"
+import Values from "../partials/helm/_helm-cr-values.mdx"
+import Weight from "../partials/helm/_helm-cr-weight.mdx"
+import Exclude from "../partials/helm/_helm-cr-exclude.mdx"
+import OptionalValues from "../partials/helm/_helm-cr-optional-values.mdx"
+import OptionalValuesWhen from "../partials/helm/_helm-cr-optional-values-when.mdx"
+import OptionalValuesRecursiveMerge from "../partials/helm/_helm-cr-optional-values-recursive-merge.mdx"
+import Namespace from "../partials/helm/_helm-cr-namespace.mdx"
+import BuilderAirgapIntro from "../partials/helm/_helm-cr-builder-airgap-intro.mdx"
+import BuilderExample from "../partials/helm/_helm-cr-builder-example.mdx"
+import V2Example from "../partials/helm/_v2-native-helm-cr-example.mdx"
+import KotsHelmCrDescription from "../partials/helm/_kots-helm-cr-description.mdx"
+
+# HelmChart v2
+
+This topic describes the KOTS HelmChart v2 custom resource.
+
+<KotsHelmCrDescription/>
+
+For more information, see [About Distributing Helm Charts with KOTS](/vendor/helm-native-about).
+
+## Example
+
+The following is an example manifest file for the HelmChart v2 custom resource:
+
+<V2Example/>
+
+## chart
+
+<Chart/>
+
+### chart.name
+
+<ChartName/>
+
+### chart.chartVersion
+
+<ChartVersion/>
+
+## releaseName
+
+<ChartReleaseName/>
+
+## weight
+
+<Weight/>
+
+## helmUpgradeFlags
+
+<HelmUpgradeFlags/>
+
+## exclude
+
+<Exclude/>
+
+## values
+
+<Values/>
+
+For more information about using `values`, see [Setting Helm Chart Values with KOTS](/vendor/helm-optional-value-keys).
+
+## optionalValues
+
+<OptionalValues/>
+
+For more information about using `optionalValues`, see [Setting Helm Chart Values with KOTS](/vendor/helm-optional-value-keys).
+
+### optionalValues.when
+
+<OptionalValuesWhen/>
+
+### optionalValues.recursiveMerge
+
+<OptionalValuesRecursiveMerge/>
+
+**Default**: False
+
+For an example of recursive and non-recursive merging, see [About Recursive Merge](/vendor/helm-optional-value-keys#recursive-merge).
+
+## namespace
+
+<Namespace/>
+
+## builder
+
+#### Overview
+
+The `builder` key contains the minimum Helm values required so that the output of `helm template` exposes all container images needed to install the chart in an air-gapped environment.
+
+The Replicated Vendor Portal uses the Helm values that you provide in the `builder` key to run `helm template` on the chart, then parses the output to discover the list of required images for the chart. 
+
+The Vendor Portal uses this list of images to create the Helm air gap installation instructions that are automatically made available to customers in the Replicated Enterprise Portal or Download Portal. For more information about installing with Helm in air-gapped environments, see [Install and Update with Helm in Air Gap Environments](/vendor/helm-install-airgap). 
+
+The list of images is also used when you build the `.airgap` bundle for a release to support air gap installations with a Replicated installer (Embedded Cluster, KOTS, kURL). For more information about how to build `.airgap` bundles, see [Package Air Gap Bundles for Helm Charts](/vendor/helm-packaging-airgap-bundles).
+
+The `builder` key is required to support the following installation types:
+
+* Air gap installations with a Replicated installer (Embedded Cluster, KOTS, kURL)
+* Air gap installations with Helm
+* Online installations with a Replicated installer where the user configured a local image registry in the Admin Console
+
+#### Requirements
+
+<HelmBuilderRequirements/>
+
+#### Example
+
+<BuilderExample/>

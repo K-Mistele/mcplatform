@@ -1,0 +1,193 @@
+{
+  "version": "1.0",
+  "exportedAt": "2025-08-04T00:00:00.000Z",
+  "walkthrough": {
+    "title": "Replicated Platform Quick Start",
+    "description": "A comprehensive quick start guide to help new users learn about the Replicated Platform. Complete this walkthrough to understand how to create, install, and update releases for applications using Replicated.",
+    "type": "quickstart",
+    "status": "published",
+    "estimatedDurationMinutes": 45,
+    "tags": ["replicated", "quickstart", "helm", "embedded-cluster", "kots"],
+    "metadata": {
+      "sourceDocument": "specifications/demos/replicated/quick-start-merged.mdx",
+      "createdFor": "Replicated demo"
+    }
+  },
+  "steps": [
+    {
+      "title": "Environment Setup and Requirements",
+      "displayOrder": 0,
+      "contentFields": {
+        "version": "v1",
+        "introductionForAgent": "This step ensures the user has a VM that meets the requirements for Embedded Cluster. Help them verify their VM specifications and ensure it meets all the prerequisites before proceeding.",
+        "contextForAgent": "Embedded Cluster requires a Linux VM with x86-64 architecture, systemd, at least 2GB RAM and 2 CPU cores. The disk must have proper latency for etcd. The VM needs access to replicated.app and proxy.replicated.com for online installations. This is critical as the entire installation will fail without proper VM setup.",
+        "contentForUser": "# Environment Setup and Requirements\n\nBefore we begin with the Replicated Platform quick start, let's ensure your VM meets all the requirements for Embedded Cluster:\n\n**System Requirements:**\n- Linux operating system with x86-64 architecture\n- systemd\n- At least 2GB of memory and 2 CPU cores\n- Disk with P99 write latency of 10ms or less\n- 40Gi+ of storage in `/var/lib/embedded-cluster` (less than 80% full)\n- Access to replicated.app and proxy.replicated.com\n\nLet's verify your VM meets these requirements.",
+        "operationsForAgent": "1. Check the operating system: `uname -a` and `cat /etc/os-release`\n2. Verify systemd is available: `systemctl --version`\n3. Check CPU and memory: `nproc` and `free -h`\n4. Check disk space: `df -h /var/lib/`\n5. Test connectivity to Replicated: `curl -I https://replicated.app` and `curl -I https://proxy.replicated.com`\n6. If any requirements are not met, guide the user on how to provision a suitable VM"
+      },
+      "nextStepReference": 1,
+      "metadata": {}
+    },
+    {
+      "title": "Create Vendor Portal Account and Install CLI",
+      "displayOrder": 1,
+      "contentFields": {
+        "version": "v1",
+        "introductionForAgent": "This step guides the user through creating a Vendor Portal account and installing the Replicated CLI on their local machine. The CLI is essential for creating and managing applications.",
+        "contextForAgent": "The Vendor Portal is the web interface for managing Replicated applications. The Replicated CLI allows developers to interact with the platform from the command line. The CLI can be installed via Homebrew on macOS or downloaded directly for other platforms.",
+        "contentForUser": "# Setting Up Your Replicated Account\n\nLet's get you started with the Replicated Platform by creating your account and installing the necessary tools.\n\n1. **Create a Vendor Portal account** at https://vendor.replicated.com\n   - You can create a new team or join an existing one\n\n2. **Install the Replicated CLI** on your local machine\n\nThe CLI will allow you to create applications, manage releases, and interact with the Replicated Platform.",
+        "operationsForAgent": "1. Guide the user to create an account at https://vendor.replicated.com\n2. Once they have an account, install the Replicated CLI:\n   - For macOS: Run `brew install replicatedhq/replicated/cli`\n   - For other platforms, refer to https://docs.replicated.com/reference/replicated-cli-installing\n3. Verify installation: `replicated version`\n4. Authorize the CLI: `replicated login`\n5. Help the user complete the browser-based authentication flow"
+      },
+      "nextStepReference": 2,
+      "metadata": {}
+    },
+    {
+      "title": "Create Your First Application",
+      "displayOrder": 2,
+      "contentFields": {
+        "version": "v1",
+        "introductionForAgent": "This step creates a new application called 'Gitea' using the Replicated CLI. The user will also set up an environment variable to make subsequent CLI commands easier.",
+        "contextForAgent": "When creating an application, Replicated generates a unique slug (like 'gitea-kite'). This slug is used to identify the application in all CLI commands. Setting the REPLICATED_APP environment variable eliminates the need to use --app flag with every command.",
+        "contentForUser": "# Creating Your First Application\n\nNow let's create your first application on the Replicated Platform. We'll create an application called 'Gitea' which is a self-hosted Git service.\n\nAfter creating the application, we'll set up an environment variable to make working with the CLI easier.",
+        "operationsForAgent": "1. Create the application: `replicated app create Gitea`\n2. Note the APP_SLUG from the output (e.g., 'gitea-kite')\n3. Set the environment variable: `export REPLICATED_APP=APP_SLUG`\n   - Replace APP_SLUG with the actual slug from step 2\n4. Verify the app was created: `replicated app ls`\n5. Explain that this environment variable allows omitting the --app flag in future commands"
+      },
+      "nextStepReference": 3,
+      "metadata": {}
+    },
+    {
+      "title": "Prepare the Gitea Helm Chart",
+      "displayOrder": 3,
+      "contentFields": {
+        "version": "v1",
+        "introductionForAgent": "This step downloads the Bitnami Gitea Helm chart and adds the Replicated SDK as a dependency. This is a crucial step that integrates Replicated features into the application.",
+        "contextForAgent": "The Replicated SDK is a Helm chart that provides access to Replicated features like telemetry, instance insights, and support bundle collection. It's added as a dependency in the Chart.yaml file. The chart is then packaged into a .tgz archive for distribution.",
+        "contentForUser": "# Preparing the Gitea Helm Chart\n\nLet's download the Bitnami Gitea Helm chart and integrate it with the Replicated SDK. The SDK enables features like:\n- Instance telemetry\n- Support bundle collection\n- License enforcement\n- Update notifications\n\nWe'll pull version 1.0.6 of the Gitea chart and add the Replicated SDK as a dependency.",
+        "operationsForAgent": "1. Pull the Gitea Helm chart: `helm pull --untar oci://registry-1.docker.io/bitnamicharts/gitea --version 1.0.6`\n2. Change to the gitea directory: `cd gitea`\n3. Edit Chart.yaml and add the Replicated SDK dependency:\n   ```yaml\n   dependencies:\n   - name: replicated\n     repository: oci://registry.replicated.com/library\n     version: 1.7.0\n   ```\n4. Update dependencies and package: `helm package -u .`\n5. Verify the .tgz file was created: `ls -la gitea-1.0.6.tgz`"
+      },
+      "nextStepReference": 4,
+      "metadata": {}
+    },
+    {
+      "title": "Create Manifest Files",
+      "displayOrder": 4,
+      "contentFields": {
+        "version": "v1",
+        "introductionForAgent": "This step creates the necessary YAML manifest files that configure how the application is deployed with KOTS and Embedded Cluster. Each file serves a specific purpose in the Replicated Platform.",
+        "contextForAgent": "The manifest files include: gitea.yaml (HelmChart CR for deployment instructions), kots-app.yaml (Application CR for Admin Console features), k8s-app.yaml (SIG Application CR for UI elements), and embedded-cluster.yaml (Config for Embedded Cluster version). These files must be in a 'manifests' directory along with the Helm chart .tgz file.",
+        "contentForUser": "# Creating Manifest Files\n\nNow we'll create the YAML files that tell Replicated how to deploy and manage your application. These files enable features like:\n\n- **HelmChart CR**: Instructions for deploying the Helm chart\n- **Application CR**: Admin Console branding and status monitoring\n- **SIG Application CR**: UI elements like the \"Open App\" button\n- **Embedded Cluster Config**: Cluster configuration settings\n\nLet's create these files in a manifests directory.",
+        "operationsForAgent": "1. Create manifests directory: `mkdir manifests`\n2. Move the Helm chart: `mv gitea-1.0.6.tgz manifests`\n3. Change to manifests: `cd manifests`\n4. Create the files: `touch gitea.yaml kots-app.yaml k8s-app.yaml embedded-cluster.yaml`\n5. Add the gitea.yaml content (HelmChart CR with NodePort configuration)\n6. Add the kots-app.yaml content (Application CR with status informers and ports)\n7. Add the k8s-app.yaml content (SIG Application CR with Open App link)\n8. Add the embedded-cluster.yaml content (Config with version 2.8.0+k8s-1.31)\n9. Verify all files are created: `ls -la`"
+      },
+      "nextStepReference": 5,
+      "metadata": {}
+    },
+    {
+      "title": "Lint and Create First Release",
+      "displayOrder": 5,
+      "contentFields": {
+        "version": "v1",
+        "introductionForAgent": "This step validates the YAML files using the linter and creates the first release, promoting it to the Unstable channel. This makes the application available for installation.",
+        "contextForAgent": "The linter checks for common issues and best practices. Warning messages about missing specs (config, preflight, troubleshoot) can be ignored for this quick start. The release create command packages all manifests and promotes to the specified channel in one operation.",
+        "contentForUser": "# Creating Your First Release\n\nBefore creating a release, let's validate our YAML files using the Replicated linter. This helps catch common issues early.\n\nAfter validation, we'll create the release and promote it to the Unstable channel, making it available for installation.\n\n**Note**: You can ignore warnings about missing config, preflight, and troubleshoot specs for this quick start.",
+        "operationsForAgent": "1. Run the linter: `replicated release lint --yaml-dir .`\n2. Review the output - warnings about missing specs are OK\n3. Create and promote the release: `replicated release create --yaml-dir . --promote Unstable`\n4. Note the sequence number (should be 1) and channel ID\n5. Verify the release: `replicated release ls`\n6. Explain that the release is now available in the Unstable channel"
+      },
+      "nextStepReference": 6,
+      "metadata": {}
+    },
+    {
+      "title": "Create a Customer",
+      "displayOrder": 6,
+      "contentFields": {
+        "version": "v1",
+        "introductionForAgent": "This step creates a customer in the Vendor Portal with appropriate entitlements. Customers represent organizations that install your application, and licenses control their access and features.",
+        "contextForAgent": "In the Vendor Portal, customers need specific entitlements enabled: KOTS Install Enabled and Embedded Cluster Enabled. The Development license type is appropriate for testing. The customer is assigned to the Unstable channel to access releases promoted there.",
+        "contentForUser": "# Creating a Customer\n\nIn Replicated, customers represent the organizations that install your application. Each customer gets a license that controls:\n- Which channels they can access\n- What features are enabled\n- Installation methods available\n\nLet's create a test customer with access to install via Embedded Cluster.",
+        "operationsForAgent": "1. Direct user to the Vendor Portal\n2. Select the Gitea application from the dropdown\n3. Navigate to Customers > Create customer\n4. Fill in the form:\n   - Customer name: 'Example Customer' or similar\n   - Channel: Unstable\n   - License type: Development\n   - Enable: KOTS Install Enabled\n   - Enable: Embedded Cluster Enabled\n5. Click Save Changes\n6. Explain that this customer can now install releases from the Unstable channel"
+      },
+      "nextStepReference": 7,
+      "metadata": {}
+    },
+    {
+      "title": "Install with Embedded Cluster",
+      "displayOrder": 7,
+      "contentFields": {
+        "version": "v1",
+        "introductionForAgent": "This step guides the user through installing the application on their VM using Embedded Cluster. This includes downloading the installer, running it, and setting up the Admin Console password.",
+        "contextForAgent": "Embedded Cluster provides a complete Kubernetes distribution with the application. The install instructions are unique per customer and include the license. The installation provisions the cluster and deploys the Admin Console, but not the application itself yet. Installation typically takes several minutes.",
+        "contentForUser": "# Installing with Embedded Cluster\n\nNow let's install your application on the VM using Embedded Cluster. This will:\n1. Provision a Kubernetes cluster\n2. Install the Replicated Admin Console\n3. Prepare for application deployment\n\nThe installation commands are unique to each customer and include their license.",
+        "operationsForAgent": "1. On the customer page, click 'Install instructions > Embedded Cluster'\n2. SSH into the VM\n3. Run the curl command to download the installer\n4. Run the tar command to extract files\n5. Run the install command (e.g., `sudo ./APP_SLUG install --license LICENSE_FILE`)\n6. When prompted, create an Admin Console password (min 6 characters)\n7. Wait for installation to complete (look for success messages)\n8. Note the Admin Console URL provided in the output\n9. Explain that the cluster is ready but the app isn't deployed yet"
+      },
+      "nextStepReference": 8,
+      "metadata": {}
+    },
+    {
+      "title": "Configure and Deploy Application",
+      "displayOrder": 8,
+      "contentFields": {
+        "version": "v1",
+        "introductionForAgent": "This step walks through the Admin Console setup wizard and deploys the application. The user will configure security settings and deploy the Gitea application.",
+        "contextForAgent": "The Admin Console uses self-signed certificates by default, causing browser warnings. The setup includes certificate configuration and cluster verification. After setup, the application is deployed from the dashboard. Status changes from Missing to Unavailable to Ready as pods are created.",
+        "contentForUser": "# Configuring and Deploying Your Application\n\nWith the Admin Console installed, let's complete the setup and deploy your Gitea application.\n\nYou'll:\n1. Secure the Admin Console connection\n2. Review cluster configuration\n3. Deploy the application\n4. Access the running Gitea instance\n\nThe application will be accessible once its status shows as 'Ready'.",
+        "operationsForAgent": "1. Navigate to the Admin Console URL in a browser\n2. Click 'Start' on the landing page\n3. On 'Secure the Admin Console', click Continue and bypass browser warnings\n4. On 'Certificate type', choose Self-signed or upload custom certs\n5. Log in with the password created during installation\n6. On 'Configure the cluster', review node info and click Continue\n7. On the dashboard, click 'Deploy' next to the version\n8. Confirm by clicking 'Yes, Deploy'\n9. Monitor status (Missing → Unavailable → Ready)\n10. Once Ready, click 'Open App' to access Gitea\n11. Verify Gitea loads successfully"
+      },
+      "nextStepReference": 9,
+      "metadata": {}
+    },
+    {
+      "title": "Verify Instance Telemetry",
+      "displayOrder": 9,
+      "contentFields": {
+        "version": "v1",
+        "introductionForAgent": "This step shows how to view instance telemetry in the Vendor Portal. This data helps vendors understand their customer deployments and usage patterns.",
+        "contextForAgent": "Instance telemetry is automatically collected by KOTS and the Replicated SDK. It includes information about the cluster, Kubernetes version, SDK version, and application status. This data appears in the Vendor Portal under the customer record.",
+        "contentForUser": "# Viewing Instance Telemetry\n\nReplicated automatically collects telemetry from installed instances, giving you visibility into:\n- Active installations\n- Kubernetes versions in use\n- Application versions deployed\n- Instance health status\n\nLet's check that your instance is reporting telemetry correctly.",
+        "operationsForAgent": "1. Return to the Vendor Portal\n2. Navigate to Customers\n3. Find your customer and verify an active instance is shown\n4. Click on the Instance ID to view details\n5. Show the instance information including:\n   - Kubernetes version\n   - Replicated SDK version\n   - Last check-in time\n   - Application status\n6. Explain how this telemetry helps understand customer deployments"
+      },
+      "nextStepReference": 10,
+      "metadata": {}
+    },
+    {
+      "title": "Add Preflight Checks",
+      "displayOrder": 10,
+      "contentFields": {
+        "version": "v1",
+        "introductionForAgent": "This step creates a new release that adds preflight checks to the application. Preflight checks validate the environment before deployment or updates.",
+        "contextForAgent": "Preflight checks use the Troubleshoot framework to validate environments. They're defined in a Secret with the troubleshoot.sh/kind: preflight label. The example checks Slack API accessibility. The Helm chart version must be incremented and the HelmChart CR updated to match.",
+        "contentForUser": "# Adding Preflight Checks\n\nPreflight checks validate the installation environment before deploying or updating your application. They can check:\n- System requirements\n- Network connectivity\n- Required services\n- Security policies\n\nLet's add a simple preflight check that verifies internet connectivity by testing access to the Slack API.",
+        "operationsForAgent": "1. Go to the gitea directory on local machine\n2. Create preflight file: `touch templates/gitea-preflights.yaml`\n3. Add the preflight Secret YAML with HTTP check for Slack API\n4. Update Chart.yaml version to 1.0.7\n5. Package the chart: `helm package -u .`\n6. Move to manifests: `mv gitea-1.0.7.tgz manifests`\n7. Update manifests/gitea.yaml chartVersion to 1.0.7\n8. Remove old chart: `rm manifests/gitea-1.0.6.tgz`\n9. Create new release: `replicated release create --yaml-dir manifests --promote Unstable --version 0.0.2`\n10. Note the sequence number (should be 2)"
+      },
+      "nextStepReference": 11,
+      "metadata": {}
+    },
+    {
+      "title": "Update Application",
+      "displayOrder": 11,
+      "contentFields": {
+        "version": "v1",
+        "introductionForAgent": "This final step demonstrates updating an installed application to a new version through the Admin Console. The update process includes running the new preflight checks.",
+        "contextForAgent": "Updates appear automatically in the Version History tab. The Embedded Cluster upgrade wizard guides through the update process, including preflight checks, configuration review, and deployment. The preflight check added in the previous step will run during the update.",
+        "contentForUser": "# Updating Your Application\n\nOne of Replicated's key features is seamless application updates. The Admin Console automatically detects new versions and guides users through the update process.\n\nLet's update to the new version with preflight checks and see how the update workflow works.",
+        "operationsForAgent": "1. In the Admin Console, go to 'Version history' tab\n2. Verify the new version (0.0.2) appears\n3. Click 'Deploy' next to the new version\n4. The Embedded Cluster upgrade wizard opens\n5. On 'Preflight checks', verify 'Slack Accessible' passes\n6. Click 'Next: Confirm and deploy'\n7. Note that Config screen is skipped (no Config CR in this release)\n8. On 'Confirm and Deploy', click 'Deploy'\n9. Monitor the update progress\n10. Verify the application is running the new version"
+      },
+      "nextStepReference": 12,
+      "metadata": {}
+    },
+    {
+      "title": "Clean Up and Next Steps",
+      "displayOrder": 12,
+      "contentFields": {
+        "version": "v1",
+        "introductionForAgent": "This step helps the user clean up their test installation and provides guidance on next steps for onboarding their own application.",
+        "contextForAgent": "The reset command removes the Embedded Cluster installation from the VM. After reset, the VM should be rebooted. The user has now completed the quick start and understands the basic workflow of creating, installing, and updating releases.",
+        "contentForUser": "# Congratulations! 🎉\n\nYou've successfully completed the Replicated quick start! You've learned how to:\n- Add the Replicated SDK to a Helm chart\n- Create and promote releases\n- Install with Embedded Cluster\n- View instance telemetry\n- Add preflight checks\n- Update applications\n\nLet's clean up the test installation and discuss next steps for onboarding your own application.",
+        "operationsForAgent": "1. SSH into the VM\n2. Run reset command: `sudo ./APP_SLUG reset`\n   - Replace APP_SLUG with the actual application slug\n3. Confirm the reset when prompted\n4. Reboot the VM: `sudo reboot`\n5. Provide next steps:\n   - Review 'Onboard to the Replicated Platform' documentation\n   - Explore additional features like Config, Support Bundles, and air-gapped installations\n   - Consider multi-node clusters and high availability\n   - Learn about license entitlements and custom metrics\n6. Share key documentation links"
+      },
+      "nextStepReference": null,
+      "metadata": {}
+    }
+  ],
+  "metadata": {
+    "originalId": "replicated-quickstart-demo",
+    "originalOrganizationId": "demo",
+    "stepCount": 13,
+    "serverAssociationCount": 0
+  }
+}

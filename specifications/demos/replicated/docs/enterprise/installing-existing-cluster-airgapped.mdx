@@ -1,0 +1,113 @@
+import IntroAirGap from "../partials/install/_intro-air-gap.mdx"
+import PrereqsExistingCluster from "../partials/install/_prereqs-existing-cluster.mdx"
+import BuildAirGapBundle from "../partials/install/_airgap-bundle-build.mdx"
+import DownloadAirGapBundle from "../partials/install/_airgap-bundle-download.mdx"
+import ViewAirGapBundle from "../partials/install/_airgap-bundle-view-contents.mdx"
+import LicenseFile from "../partials/install/_license-file-prereq.mdx"
+import AirGapLicense from "../partials/install/_airgap-license-download.mdx"
+import DownloadKotsBundle from "../partials/install/_download-kotsadm-bundle.mdx"
+import InstallCommandPrompts from "../partials/install/_kots-install-prompts.mdx"
+import AppNameUI from "../partials/install/_placeholder-app-name-UI.mdx"
+import InstallKotsCliAirGap from "../partials/install/_install-kots-cli-airgap.mdx"
+import PushKotsImages from "../partials/install/_push-kotsadm-images.mdx"
+import PlaceholderRoCreds from "../partials/install/_placeholder-ro-creds.mdx"
+import KotsVersionMatch from "../partials/install/_kots-airgap-version-match.mdx"
+
+# Air Gap Installation in Existing Clusters with KOTS
+
+This topic describes how to use Replicated KOTS to install an application in an existing Kubernetes cluster in an air-gapped environment.
+
+<IntroAirGap/>
+
+## Prerequisites
+
+Complete the following prerequisites:
+
+<PrereqsExistingCluster/>
+
+* Ensure that there is a compatible Docker image registry available inside the network. For more information about Docker registry compatibility, see [Compatible Image Registries](/enterprise/installing-general-requirements#registries).
+
+    KOTS rewrites the application image names in all application manifests to read from the on-premises registry, and it re-tags and pushes the images to the on-premises registry. When authenticating to the registry, credentials with `push` permissions are required.
+
+    A single application expects to use a single namespace in the Docker image registry. The namespace name can be any valid URL-safe string, supplied at installation time. A registry typically expects the namespace to exist before any images can be pushed into it.
+
+    :::note
+    Amazon Elastic Container Registry (ECR) does not use namespaces.
+    :::
+
+## Install {#air-gap}
+
+To install in an air gap cluster with KOTS:
+
+1. Download the customer license:
+
+   <AirGapLicense/>
+
+1. Go the channel where the target release was promoted to build and download the air gap bundle for the release:
+
+   <BuildAirGapBundle/>
+
+1. <DownloadAirGapBundle/>
+
+1. <ViewAirGapBundle/>
+
+1. <DownloadKotsBundle/> 
+
+1. <InstallKotsCliAirGap/>
+
+    <KotsVersionMatch/>
+
+1. <PushKotsImages/>
+
+1. Install the KOTS Admin Console using the images that you pushed in the previous step:
+
+   ```shell
+   kubectl kots install APP_NAME \
+     --kotsadm-registry REGISTRY_HOST \
+     --registry-username RO-USERNAME \
+     --registry-password RO-PASSWORD
+   ```
+
+   Replace:
+
+    * `APP_NAME` with a name for the application. This is the unique name that KOTS will use to refer to the application that you install.
+    <PlaceholderRoCreds/>
+
+1. <InstallCommandPrompts/>
+
+1. Access the Admin Console on port 8800. If the port forward is active, go to [http://localhost:8800](http://localhost:8800) to access the Admin Console.
+
+    If you need to reopen the port forward to the Admin Console, run the following command:
+
+    ```shell
+    kubectl kots admin-console -n NAMESPACE
+    ```
+    Replace `NAMESPACE` with the namespace where KOTS is installed.
+
+1. Log in with the password that you created during installation.
+
+1. Upload your license file.
+
+1. Upload the `.airgap` application air gap bundle.
+
+1. On the config screen, complete the fields for the application configuration options and then click **Continue**.
+
+1. On the **Preflight checks** page, the application-specific preflight checks run automatically. Preflight checks  are conformance tests that run against the target namespace and cluster to ensure that the environment meets the minimum requirements to support the application. Click **Deploy**.
+
+    :::note
+    Replicated recommends that you address any warnings or failures, rather than dismissing them. Preflight checks help ensure that your environment meets the requirements for application deployment.
+    :::
+    
+1. (Minimal RBAC Only) If you are installing with minimal role-based access control (RBAC), KOTS recognizes if the preflight checks failed due to insufficient privileges. When this occurs, a kubectl CLI preflight command displays that lets you manually run the preflight checks. The Admin Console then automatically displays the results of the preflight checks. Click **Deploy**.
+
+    ![kubectl CLI preflight command](/images/kubectl-preflight-command.png)
+
+    [View a larger version of this image](/images/kubectl-preflight-command.png)
+
+The Admin Console dashboard opens.
+
+On the Admin Console dashboard, the application status changes from Missing to Unavailable while the Deployment is being created. When the installation is complete, the status changes to Ready. For example:
+
+![Admin Console dashboard](/images/kotsadm-dashboard-graph.png)
+
+[View a larger version of this image](/images/kotsadm-dashboard-graph.png)

@@ -1,0 +1,27 @@
+For KOTS installations, you can generate a support bundle using the default KOTS spec. This is useful if the application does not have a support bundle spec included.
+
+#### Online Environments
+
+In an online environment, run the following command to generate a support bundle using the default KOTS spec:
+
+```
+kubectl support-bundle https://kots.io
+```
+
+#### Air Gap Environments
+
+For air gap environments, perform the following steps to generate a support bundle using the default KOTS spec:
+
+1. Run the following command from a computer with internet access to download the default KOTS spec:
+ 
+   ```
+   curl -o spec.yaml https://kots.io -H 'User-agent:Replicated_Troubleshoot/v1beta1'
+   ```
+
+1. Upload the `spec.yaml` file to your air gap server.
+
+1. Run the following command to create a support bundle using the uploaded `spec.yaml` file:
+
+    ```
+    kubectl support-bundle /path/to/spec.yaml
+    ```
