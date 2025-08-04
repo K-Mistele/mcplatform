@@ -20,10 +20,7 @@ export function registerWalkthroughTools({
     mcpServerUserId: string
     serverSessionId: string
 }) {
-    // Register list_walkthroughs tool
-    registerListWalkthroughsTool({ server, serverConfig, mcpServerUserId, serverSessionId })
-
-    // Register start_walkthrough tool
+    // Register smart start_walkthrough tool (replaces list_walkthroughs)
     registerStartWalkthroughTool({ server, serverConfig, mcpServerUserId, serverSessionId })
 
     // Register get_next_step tool
@@ -31,91 +28,104 @@ export function registerWalkthroughTools({
 }
 
 /**
- * Tool: list_walkthroughs
- * Lists all available walkthroughs with basic info and progress
+ * Helper function to format walkthroughs list for display
  */
-function registerListWalkthroughsTool({
-    server,
-    serverConfig,
-    mcpServerUserId,
-    serverSessionId
-}: {
-    server: McpServer
-    serverConfig: McpServerConfig
-    mcpServerUserId: string
-    serverSessionId: string
-}) {
-    // Empty schema for list_walkthroughs
-    const inputSchema = z.object({})
-
-    server.registerTool(
-        'list_walkthroughs',
+function formatWalkthroughsList(walkthroughs: Awaited<ReturnType<typeof getServerWalkthroughs>>) {
+    return JSON.stringify(
         {
-            title: 'List Available Walkthroughs',
-            description: 'Lists all available walkthroughs with name, type, description, progress and ID',
-            inputSchema: inputSchema.shape
-        },
-        async (args) => {
-            try {
-                inputSchema.parse(args)
-
-                const walkthroughs = await getServerWalkthroughs(serverConfig.id, mcpServerUserId)
-
-                // Track the tool call
-                await db.insert(schema.toolCalls).values({
-                    mcpServerId: serverConfig.id,
-                    toolName: 'list_walkthroughs',
-                    mcpServerUserId: mcpServerUserId,
-                    mcpServerSessionId: serverSessionId,
-                    input: args,
-                    output: { walkthroughs: walkthroughs.length }
+            walkthroughs: walkthroughs.map(
+                ({ walkthrough, progress, totalSteps, progressPercent }) => ({
+                    title: walkthrough.title,
+                    description: walkthrough.description,
+                    type: walkthrough.type,
+                    totalSteps,
+                    progressPercent,
+                    isStarted: progress != null && progress.startedAt != null,
+                    isCompleted: progress?.completedAt != null,
+                    estimatedDurationMinutes: walkthrough.estimatedDurationMinutes,
+                    tags: walkthrough.tags || []
                 })
-
-                return {
-                    content: [
-                        {
-                            type: 'text',
-                            text: JSON.stringify(
-                                {
-                                    walkthroughs: walkthroughs.map(
-                                        ({ walkthrough, progress, totalSteps, progressPercent }) => ({
-                                            id: walkthrough.id,
-                                            title: walkthrough.title,
-                                            description: walkthrough.description,
-                                            type: walkthrough.type,
-                                            totalSteps,
-                                            progressPercent,
-                                            isStarted: progress != null && progress.startedAt != null,
-                                            isCompleted: progress?.completedAt != null,
-                                            estimatedDurationMinutes: walkthrough.estimatedDurationMinutes,
-                                            tags: walkthrough.tags || []
-                                        })
-                                    )
-                                },
-                                null,
-                                2
-                            )
-                        }
-                    ]
-                }
-            } catch (error) {
-                console.error('Error in list_walkthroughs:', error)
-                return {
-                    content: [
-                        {
-                            type: 'text',
-                            text: `Error listing walkthroughs: ${error instanceof Error ? error.message : 'Unknown error'}`
-                        }
-                    ]
-                }
-            }
-        }
+            )
+        },
+        null,
+        2
     )
 }
 
 /**
+ * Helper function to start a walkthrough
+ */
+async function startWalkthrough(
+    selectedWalkthrough: Awaited<ReturnType<typeof getServerWalkthroughs>>[0],
+    restart: boolean,
+    mcpServerUserId: string
+) {
+    // If restart is requested, clear existing progress
+    if (restart && selectedWalkthrough.progress) {
+        await db
+            .delete(schema.walkthroughProgress)
+            .where(
+                and(
+                    eq(schema.walkthroughProgress.mcpServerUserId, mcpServerUserId),
+                    eq(schema.walkthroughProgress.walkthroughId, selectedWalkthrough.walkthrough.id)
+                )
+            )
+    }
+
+    // Initialize or get progress
+    const progress = await getOrInitializeProgress(mcpServerUserId, selectedWalkthrough.walkthrough.id)
+
+    // Get the first/next step
+    const nextStepResult = await calculateNextStep(selectedWalkthrough.walkthrough.id, progress)
+
+    if (!nextStepResult) {
+        return {
+            content: [
+                {
+                    type: 'text',
+                    text: 'Walkthrough has no steps or could not calculate next step'
+                }
+            ]
+        }
+    }
+
+    // If there's no step, show error
+    if (!nextStepResult.step) {
+        return {
+            content: [
+                {
+                    type: 'text',
+                    text: 'No steps found in this walkthrough'
+                }
+            ]
+        }
+    }
+
+    // Return the same format as get_next_step
+    return {
+        content: [
+            {
+                type: 'text',
+                text: renderWalkthroughStepOutput(
+                    renderWalkthroughStep(selectedWalkthrough.walkthrough.title, nextStepResult.step),
+                    {
+                        progressPercent: nextStepResult.progressPercent,
+                        completed: nextStepResult.isCompleted,
+                        stepId: nextStepResult.step.id,
+                        totalSteps: nextStepResult.totalSteps,
+                        completedSteps: nextStepResult.completedCount,
+                        walkthroughId: selectedWalkthrough.walkthrough.id
+                    }
+                )
+            }
+        ]
+    }
+}
+
+/**
  * Tool: start_walkthrough
- * Starts or resumes a walkthrough by name
+ * Smart walkthrough tool that lists walkthroughs when called without parameters,
+ * auto-starts single walkthroughs, or starts named walkthroughs
  */
 function registerStartWalkthroughTool({
     server,
@@ -129,7 +139,7 @@ function registerStartWalkthroughTool({
     serverSessionId: string
 }) {
     const inputSchema = z.object({
-        name: z.string().describe('The name/title of the walkthrough to start'),
+        name: z.string().optional().describe('Optional: The name/title of the walkthrough to start. If not provided, will list available walkthroughs or auto-start if only one exists.'),
         restart: z
             .boolean()
             .default(false)
@@ -141,9 +151,9 @@ function registerStartWalkthroughTool({
     server.registerTool(
         'start_walkthrough',
         {
-            title: 'Start or Resume a Walkthrough',
+            title: 'Start Walkthrough or List Available Walkthroughs',
             description:
-                'Starts or resumes a walkthrough by name. By default resumes existing progress, but can be forced to restart.',
+                'Smart walkthrough tool: Call without parameters to list walkthroughs (or auto-start if only one exists). Call with "name" parameter to start a specific walkthrough.',
             inputSchema: inputSchema.shape
         },
         async (args) => {
@@ -153,50 +163,82 @@ function registerStartWalkthroughTool({
                 // Get available walkthroughs
                 const walkthroughs = await getServerWalkthroughs(serverConfig.id, mcpServerUserId)
 
+                if (walkthroughs.length === 0) {
+                    return {
+                        content: [
+                            {
+                                type: 'text',
+                                text: 'No walkthroughs are available for this server.'
+                            }
+                        ]
+                    }
+                }
+
+                // If no name provided, either list walkthroughs or auto-start single walkthrough
+                if (!name) {
+                    // Track the tool call for listing
+                    await db.insert(schema.toolCalls).values({
+                        mcpServerId: serverConfig.id,
+                        toolName: 'start_walkthrough',
+                        mcpServerUserId: mcpServerUserId,
+                        mcpServerSessionId: serverSessionId,
+                        input: args,
+                        output: { action: 'list', walkthroughs: walkthroughs.length }
+                    })
+
+                    if (walkthroughs.length === 1) {
+                        // Auto-start the single walkthrough
+                        const selectedWalkthrough = walkthroughs[0]
+                        
+                        // Track that we're auto-starting
+                        await db.insert(schema.toolCalls).values({
+                            mcpServerId: serverConfig.id,
+                            toolName: 'start_walkthrough',
+                            mcpServerUserId: mcpServerUserId,
+                            mcpServerSessionId: serverSessionId,
+                            input: { ...args, name: selectedWalkthrough.walkthrough.title },
+                            output: { action: 'auto_start', walkthroughId: selectedWalkthrough.walkthrough.id }
+                        })
+
+                        return await startWalkthrough(selectedWalkthrough, restart, mcpServerUserId)
+                    } else {
+                        // Multiple walkthroughs - list them
+                        return {
+                            content: [
+                                {
+                                    type: 'text',
+                                    text: `Multiple walkthroughs available. Please call start_walkthrough again with the "name" parameter set to one of the following walkthrough titles:\n\n${formatWalkthroughsList(walkthroughs)}\n\nExample: Call start_walkthrough with name="${walkthroughs[0].walkthrough.title}"`
+                                }
+                            ]
+                        }
+                    }
+                }
+
                 // Find by exact name match
                 const selectedWalkthrough = walkthroughs.find((w) => w.walkthrough.title === name)
 
                 if (!selectedWalkthrough) {
+                    // Track the invalid name attempt
+                    await db.insert(schema.toolCalls).values({
+                        mcpServerId: serverConfig.id,
+                        toolName: 'start_walkthrough',
+                        mcpServerUserId: mcpServerUserId,
+                        mcpServerSessionId: serverSessionId,
+                        input: args,
+                        output: { action: 'invalid_name', requestedName: name, walkthroughs: walkthroughs.length }
+                    })
+
                     return {
                         content: [
                             {
                                 type: 'text',
-                                text: `Walkthrough '${name}' not found. Use list_walkthroughs to see available walkthroughs.`
+                                text: `Walkthrough '${name}' not found. Available walkthroughs:\n\n${formatWalkthroughsList(walkthroughs)}\n\nPlease call start_walkthrough again with one of the above walkthrough titles.`
                             }
                         ]
                     }
                 }
 
-                // If restart is requested, clear existing progress
-                if (restart && selectedWalkthrough.progress) {
-                    await db
-                        .delete(schema.walkthroughProgress)
-                        .where(
-                            and(
-                                eq(schema.walkthroughProgress.mcpServerUserId, mcpServerUserId),
-                                eq(schema.walkthroughProgress.walkthroughId, selectedWalkthrough.walkthrough.id)
-                            )
-                        )
-                }
-
-                // Initialize or get progress
-                const progress = await getOrInitializeProgress(mcpServerUserId, selectedWalkthrough.walkthrough.id)
-
-                // Get the first/next step
-                const nextStepResult = await calculateNextStep(selectedWalkthrough.walkthrough.id, progress)
-
-                if (!nextStepResult) {
-                    return {
-                        content: [
-                            {
-                                type: 'text',
-                                text: 'Walkthrough has no steps or could not calculate next step'
-                            }
-                        ]
-                    }
-                }
-
-                // Track the tool call
+                // Track the tool call for starting named walkthrough
                 await db.insert(schema.toolCalls).values({
                     mcpServerId: serverConfig.id,
                     toolName: 'start_walkthrough',
@@ -204,43 +246,13 @@ function registerStartWalkthroughTool({
                     mcpServerSessionId: serverSessionId,
                     input: args,
                     output: {
+                        action: 'start_named',
                         walkthroughId: selectedWalkthrough.walkthrough.id,
-                        nextStepId: nextStepResult.step?.id || null,
                         wasRestarted: restart
                     }
                 })
 
-                // If there's no step, show error
-                if (!nextStepResult.step) {
-                    return {
-                        content: [
-                            {
-                                type: 'text',
-                                text: 'No steps found in this walkthrough'
-                            }
-                        ]
-                    }
-                }
-
-                // Return the same format as get_next_step
-                return {
-                    content: [
-                        {
-                            type: 'text',
-                            text: renderWalkthroughStepOutput(
-                                renderWalkthroughStep(selectedWalkthrough.walkthrough.title, nextStepResult.step),
-                                {
-                                    progressPercent: nextStepResult.progressPercent,
-                                    completed: nextStepResult.isCompleted,
-                                    stepId: nextStepResult.step.id,
-                                    totalSteps: nextStepResult.totalSteps,
-                                    completedSteps: nextStepResult.completedCount,
-                                    walkthroughId: selectedWalkthrough.walkthrough.id
-                                }
-                            )
-                        }
-                    ]
-                }
+                return await startWalkthrough(selectedWalkthrough, restart, mcpServerUserId)
             } catch (error) {
                 console.error('Error in start_walkthrough:', error)
                 return {
