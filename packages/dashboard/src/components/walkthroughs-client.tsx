@@ -27,7 +27,7 @@ import {
 import { Input } from '@/components/ui/input'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
-import { EyeIcon } from 'lucide-react'
+import { PencilIcon } from 'lucide-react'
 import Link from 'next/link'
 import type { Walkthrough } from 'database'
 
@@ -175,7 +175,7 @@ const columns: ColumnDef<WalkthroughTableData>[] = [
                 <div className="flex items-center gap-2">
                     <Button variant="outline" size="sm" asChild>
                         <Link href={`/dashboard/walkthroughs/${walkthrough.id}/edit`}>
-                            <EyeIcon className="h-4 w-4 mr-1" />
+                            <PencilIcon className="h-4 w-4 mr-1" />
                             Edit
                         </Link>
                     </Button>
