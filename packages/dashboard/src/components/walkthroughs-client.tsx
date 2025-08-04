@@ -26,6 +26,7 @@ import {
 } from '@/components/ui/dropdown-menu'
 import { Input } from '@/components/ui/input'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 import { EyeIcon } from 'lucide-react'
 import Link from 'next/link'
 import type { Walkthrough } from 'database'
@@ -75,19 +76,32 @@ const columns: ColumnDef<WalkthroughTableData>[] = [
         cell: ({ row }) => {
             const walkthrough = row.original.walkthrough
             return (
-                <div className="flex items-center gap-3">
-                    <BookOpenIcon className="size-4 text-muted-foreground" />
-                    <div>
+                <div className="flex items-center gap-3 min-w-0 max-w-lg">
+                    <BookOpenIcon className="size-4 text-muted-foreground flex-shrink-0" />
+                    <div className="min-w-0 flex-1">
                         <Link 
                             href={`/dashboard/walkthroughs/${walkthrough.id}/edit`}
-                            className="font-medium hover:underline"
+                            className="font-medium hover:underline block truncate"
                         >
                             {walkthrough.title}
                         </Link>
                         {walkthrough.description && (
-                            <p className="text-sm text-muted-foreground mt-1 line-clamp-2">
-                                {walkthrough.description}
-                            </p>
+                            walkthrough.description.length > 50 ? (
+                                <Tooltip>
+                                    <TooltipTrigger asChild>
+                                        <p className="text-sm text-muted-foreground mt-1 cursor-help">
+                                            {walkthrough.description.slice(0, 50)}…
+                                        </p>
+                                    </TooltipTrigger>
+                                    <TooltipContent className="max-w-sm">
+                                        <p>{walkthrough.description}</p>
+                                    </TooltipContent>
+                                </Tooltip>
+                            ) : (
+                                <p className="text-sm text-muted-foreground mt-1">
+                                    {walkthrough.description}
+                                </p>
+                            )
                         )}
                     </div>
                 </div>
@@ -293,14 +307,24 @@ export function WalkthroughsClient({ walkthroughsPromise }: WalkthroughsClientPr
                 </DropdownMenu>
             </div>
 
-            <div className="rounded-md border">
-                <Table>
+            <div className="rounded-md border overflow-x-auto">
+                <Table className="w-full">
                     <TableHeader>
                         {table.getHeaderGroups().map((headerGroup) => (
                             <TableRow key={headerGroup.id}>
                                 {headerGroup.headers.map((header) => {
                                     return (
-                                        <TableHead key={header.id}>
+                                        <TableHead 
+                                            key={header.id}
+                                            className={
+                                                header.id === 'title' ? 'w-1/2 max-w-2xl' :
+                                                header.id === 'type' ? 'w-40' :
+                                                header.id === 'stepCount' ? 'w-24' :
+                                                header.id === 'status' ? 'w-28' :
+                                                header.id === 'createdAt' ? 'w-36' :
+                                                header.id === 'actions' ? 'w-48' : ''
+                                            }
+                                        >
                                             {header.isPlaceholder
                                                 ? null
                                                 : flexRender(header.column.columnDef.header, header.getContext())}
