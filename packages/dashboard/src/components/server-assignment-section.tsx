@@ -140,15 +140,15 @@ export function ServerAssignmentSection({
     }))
 
     return (
-        <Card>
+        <Card className="h-full">
             <CardHeader>
                 <CardTitle className="flex items-center gap-2">
-                    <ServerIcon className="h-5 w-5" />
+                    <ServerIcon className="h-5 w-5 text-primary" />
                     Server Assignments
                 </CardTitle>
                 <CardDescription>Choose which servers should offer this walkthrough</CardDescription>
             </CardHeader>
-            <CardContent className="space-y-4">
+            <CardContent className="space-y-6">
                 <div>
                     <label className="text-sm font-medium mb-2 block">Select Servers</label>
                     <MultiSelect
@@ -160,18 +160,18 @@ export function ServerAssignmentSection({
                     />
                 </div>
 
-                {assignedServers.length > 0 && (
-                    <div className="space-y-2">
+                {assignedServers.length > 0 ? (
+                    <div className="space-y-3">
                         <p className="text-sm text-muted-foreground">Toggle to enable/disable on specific servers</p>
                         <div className="space-y-2">
                             {assignedServers.map((server) => (
                                 <div
                                     key={server.id}
-                                    className="flex items-center justify-between p-3 bg-card border rounded-lg"
+                                    className="flex items-center justify-between p-3 bg-muted/30 rounded-lg border border-muted hover:bg-muted/50 transition-colors"
                                 >
-                                    <div>
+                                    <div className="space-y-1">
                                         <h4 className="font-medium">{server.name}</h4>
-                                        <Badge variant="outline" className="text-xs mt-1">
+                                        <Badge variant="secondary" className="text-xs">
                                             {server.slug}
                                         </Badge>
                                     </div>
@@ -179,17 +179,29 @@ export function ServerAssignmentSection({
                                         variant="ghost"
                                         size="sm"
                                         onClick={() => handleToggle(server.id)}
-                                        className="h-8 w-8 p-0"
+                                        className="h-9 px-3"
                                     >
                                         {server.isEnabled === 'true' ? (
-                                            <ToggleRight className="h-4 w-4 text-green-600" />
+                                            <>
+                                                <ToggleRight className="h-4 w-4 mr-1.5 text-green-600" />
+                                                <span className="text-xs text-green-600 font-medium">Enabled</span>
+                                            </>
                                         ) : (
-                                            <ToggleLeft className="h-4 w-4 text-muted-foreground" />
+                                            <>
+                                                <ToggleLeft className="h-4 w-4 mr-1.5 text-muted-foreground" />
+                                                <span className="text-xs text-muted-foreground">Disabled</span>
+                                            </>
                                         )}
                                     </Button>
                                 </div>
                             ))}
                         </div>
+                    </div>
+                ) : (
+                    <div className="text-center py-6 text-muted-foreground">
+                        <ServerIcon className="h-12 w-12 mx-auto mb-3 opacity-20" />
+                        <p className="text-sm">No servers selected yet</p>
+                        <p className="text-xs mt-1">Use the dropdown above to assign this walkthrough to servers</p>
                     </div>
                 )}
             </CardContent>

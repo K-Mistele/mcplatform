@@ -2,7 +2,7 @@
 
 import { isDefinedError, onError, onSuccess } from '@orpc/client'
 import { useServerAction } from '@orpc/react/hooks'
-import { FileText, Globe } from 'lucide-react'
+import { Globe2Icon, EyeOffIcon } from 'lucide-react'
 import { useState } from 'react'
 import { toast } from 'sonner'
 import { updateWalkthroughAction } from '../lib/orpc/actions/walkthroughs'
@@ -52,47 +52,46 @@ export function PublicationStatusCard({ walkthrough }: PublicationStatusCardProp
     }
 
     return (
-        <Card>
+        <Card className="h-full">
             <CardHeader>
-                <CardTitle>Publication Status</CardTitle>
+                <CardTitle className="flex items-center gap-2">
+                    {isPublished ? (
+                        <Globe2Icon className="h-5 w-5 text-green-600" />
+                    ) : (
+                        <EyeOffIcon className="h-5 w-5 text-muted-foreground" />
+                    )}
+                    Publication Status
+                </CardTitle>
                 <CardDescription>
                     Control whether this walkthrough is visible to end users
                 </CardDescription>
             </CardHeader>
-            <CardContent>
-                <div className="space-y-4">
-                    <div className="flex items-center justify-between">
-                        <div className="flex items-center space-x-3">
-                            {isPublished ? (
-                                <Globe className="h-5 w-5 text-green-600" />
-                            ) : (
-                                <FileText className="h-5 w-5 text-muted-foreground" />
-                            )}
-                            <div>
-                                <p className="font-medium">
-                                    {isPublished ? 'Published' : 'Draft'}
-                                </p>
-                                <p className="text-sm text-muted-foreground">
-                                    {isPublished 
-                                        ? 'This walkthrough is visible to end users through MCP servers' 
-                                        : 'This walkthrough is only visible to your team'}
-                                </p>
-                            </div>
-                        </div>
-                        <Switch
-                            checked={isPublished}
-                            onCheckedChange={handleToggle}
-                            disabled={status === 'pending'}
-                            aria-label="Toggle publication status"
-                        />
-                    </div>
-                    
-                    <div className="rounded-lg bg-muted p-3">
+            <CardContent className="space-y-6">
+                <div className="flex items-center justify-between py-4 px-4 bg-muted/50 rounded-lg">
+                    <div>
+                        <p className="font-medium">
+                            {isPublished ? 'Published' : 'Draft'}
+                        </p>
                         <p className="text-sm text-muted-foreground">
-                            <strong>Note:</strong> Only published walkthroughs will be available to end users 
-                            through your MCP servers. Draft walkthroughs remain private to your organization.
+                            {isPublished 
+                                ? 'This walkthrough is visible to end users through MCP servers' 
+                                : 'This walkthrough is only visible to your team'}
                         </p>
                     </div>
+                    <Switch
+                        checked={isPublished}
+                        onCheckedChange={handleToggle}
+                        disabled={status === 'pending'}
+                        aria-label="Toggle publication status"
+                        className="data-[state=checked]:bg-green-600"
+                    />
+                </div>
+                
+                <div className="p-4 bg-muted/30 rounded-lg border border-muted">
+                    <p className="text-sm text-muted-foreground">
+                        <span className="font-medium">Note:</span> Only published walkthroughs will be available to end users 
+                        through your MCP servers. Draft walkthroughs remain private to your organization.
+                    </p>
                 </div>
             </CardContent>
         </Card>
