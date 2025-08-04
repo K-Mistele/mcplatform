@@ -10,6 +10,7 @@ import { Card, CardContent } from '@/components/ui/card'
 import { CardSkeleton } from '@/components/card-skeleton'
 import { ServerAssignmentSection } from '@/components/server-assignment-section'
 import { PublicationStatusCard } from '@/components/publication-status-card'
+import { WalkthroughDeletionCard } from '@/components/walkthrough-deletion-card'
 import { requireSession } from '@/lib/auth/auth'
 
 interface WalkthroughSettingsPageProps {
@@ -85,32 +86,37 @@ export default async function WalkthroughSettingsPage(props: WalkthroughSettings
             </div>
 
             <div className="px-4 lg:px-6">
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 max-w-6xl">
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 max-w-7xl mx-auto">
                     {/* Publication Status Card */}
-                    <div>
-                        <PublicationStatusCard walkthrough={walkthrough} />
-                    </div>
+                    <PublicationStatusCard walkthrough={walkthrough} />
                     
                     {/* Server Assignment Section */}
-                    <div>
-                        <ErrorBoundary
-                            fallback={
-                                <Card>
-                                    <CardContent className="text-center py-8">
-                                        <p className="text-destructive">Failed to load server assignments</p>
-                                    </CardContent>
-                                </Card>
-                            }
-                        >
-                            <Suspense fallback={<CardSkeleton />}>
-                                <ServerAssignmentSection
-                                    walkthroughId={params.walkthroughId}
-                                    availableServersPromise={availableServersPromise}
-                                    assignedServersPromise={assignedServersPromise}
-                                />
-                            </Suspense>
-                        </ErrorBoundary>
-                    </div>
+                    <ErrorBoundary
+                        fallback={
+                            <Card>
+                                <CardContent className="text-center py-8">
+                                    <p className="text-destructive">Failed to load server assignments</p>
+                                </CardContent>
+                            </Card>
+                        }
+                    >
+                        <Suspense fallback={<CardSkeleton />}>
+                            <ServerAssignmentSection
+                                walkthroughId={params.walkthroughId}
+                                availableServersPromise={availableServersPromise}
+                                assignedServersPromise={assignedServersPromise}
+                            />
+                        </Suspense>
+                    </ErrorBoundary>
+                </div>
+                
+                {/* Danger Zone Section */}
+                <div className="max-w-7xl mx-auto mt-8">
+                    <h2 className="text-lg font-semibold text-destructive mb-4">Danger Zone</h2>
+                    <WalkthroughDeletionCard 
+                        walkthroughId={params.walkthroughId}
+                        walkthroughTitle={walkthrough.title}
+                    />
                 </div>
             </div>
         </div>
