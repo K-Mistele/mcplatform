@@ -82,7 +82,7 @@ async function startWalkthrough(
         return {
             content: [
                 {
-                    type: 'text',
+                    type: 'text' as const,
                     text: 'Walkthrough has no steps or could not calculate next step'
                 }
             ]
@@ -94,7 +94,7 @@ async function startWalkthrough(
         return {
             content: [
                 {
-                    type: 'text',
+                    type: 'text' as const,
                     text: 'No steps found in this walkthrough'
                 }
             ]
@@ -105,7 +105,7 @@ async function startWalkthrough(
     return {
         content: [
             {
-                type: 'text',
+                type: 'text' as const,
                 text: renderWalkthroughStepOutput(
                     renderWalkthroughStep(selectedWalkthrough.walkthrough.title, nextStepResult.step),
                     {
@@ -167,7 +167,7 @@ function registerStartWalkthroughTool({
                     return {
                         content: [
                             {
-                                type: 'text',
+                                type: 'text' as const,
                                 text: 'No walkthroughs are available for this server.'
                             }
                         ]
@@ -206,7 +206,7 @@ function registerStartWalkthroughTool({
                         return {
                             content: [
                                 {
-                                    type: 'text',
+                                    type: 'text' as const,
                                     text: `Multiple walkthroughs available. Please call start_walkthrough again with the "name" parameter set to one of the following walkthrough titles:\n\n${formatWalkthroughsList(walkthroughs)}\n\nExample: Call start_walkthrough with name="${walkthroughs[0].walkthrough.title}"`
                                 }
                             ]
@@ -231,7 +231,7 @@ function registerStartWalkthroughTool({
                     return {
                         content: [
                             {
-                                type: 'text',
+                                type: 'text' as const,
                                 text: `Walkthrough '${name}' not found. Available walkthroughs:\n\n${formatWalkthroughsList(walkthroughs)}\n\nPlease call start_walkthrough again with one of the above walkthrough titles.`
                             }
                         ]
@@ -258,7 +258,7 @@ function registerStartWalkthroughTool({
                 return {
                     content: [
                         {
-                            type: 'text',
+                            type: 'text' as const,
                             text: `Error starting walkthrough: ${error instanceof Error ? error.message : 'Unknown error'}`
                         }
                     ]
@@ -315,7 +315,7 @@ function registerGetNextStepTool({
                     return {
                         content: [
                             {
-                                type: 'text',
+                                type: 'text' as const,
                                 text: 'No active walkthrough found. Use start_walkthrough to begin a walkthrough first.'
                             }
                         ]
@@ -348,7 +348,7 @@ function registerGetNextStepTool({
                     return {
                         content: [
                             {
-                                type: 'text',
+                                type: 'text' as const,
                                 text: 'Could not calculate next step for active walkthrough'
                             }
                         ]
@@ -374,7 +374,7 @@ function registerGetNextStepTool({
                     return {
                         content: [
                             {
-                                type: 'text',
+                                type: 'text' as const,
                                 text: renderWalkthroughStepOutput(
                                     `# Walkthrough Complete!\n\nCongratulations! You have completed the "${nextStepResult.walkthrough.title}" walkthrough.`,
                                     {
@@ -394,7 +394,7 @@ function registerGetNextStepTool({
                 return {
                     content: [
                         {
-                            type: 'text',
+                            type: 'text' as const,
                             text: renderWalkthroughStepOutput(
                                 renderWalkthroughStep(nextStepResult.walkthrough.title, nextStepResult.step),
                                 {
@@ -414,7 +414,7 @@ function registerGetNextStepTool({
                 return {
                     content: [
                         {
-                            type: 'text',
+                            type: 'text' as const,
                             text: `Error getting next step: ${error instanceof Error ? error.message : 'Unknown error'}`
                         }
                     ]
