@@ -145,3 +145,4 @@ vite.config.ts.timestamp-*
 # sst
 .sst
 .mcp.json
+*.open-next*
