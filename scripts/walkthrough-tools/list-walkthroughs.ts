@@ -1,6 +1,7 @@
 #!/usr/bin/env bun
 
-import { mcpServerWalkthroughs, organizations, walkthroughSteps, walkthroughs } from 'database/src/schema'
+import { mcpServerWalkthroughs, walkthroughSteps, walkthroughs } from 'database/src/schema'
+import { organization } from 'database/src/auth-schema'
 import 'dotenv/config'
 import { eq, sql } from 'drizzle-orm'
 import { drizzle } from 'drizzle-orm/node-postgres'
@@ -33,13 +34,13 @@ async function listWalkthroughs() {
                 type: walkthroughs.type,
                 status: walkthroughs.status,
                 organizationId: walkthroughs.organizationId,
-                organizationName: organizations.name,
+                organizationName: organization.name,
                 stepCount: sql<number>`COUNT(DISTINCT ${walkthroughSteps.id})`,
                 serverCount: sql<number>`COUNT(DISTINCT ${mcpServerWalkthroughs.id})`,
                 createdAt: walkthroughs.createdAt
             })
             .from(walkthroughs)
-            .leftJoin(organizations, eq(walkthroughs.organizationId, organizations.id))
+            .leftJoin(organization, eq(walkthroughs.organizationId, organization.id))
             .leftJoin(walkthroughSteps, eq(walkthroughSteps.walkthroughId, walkthroughs.id))
             .leftJoin(mcpServerWalkthroughs, eq(mcpServerWalkthroughs.walkthroughId, walkthroughs.id))
             .groupBy(
@@ -49,7 +50,7 @@ async function listWalkthroughs() {
                 walkthroughs.type,
                 walkthroughs.status,
                 walkthroughs.organizationId,
-                organizations.name,
+                organization.name,
                 walkthroughs.createdAt
             )
 

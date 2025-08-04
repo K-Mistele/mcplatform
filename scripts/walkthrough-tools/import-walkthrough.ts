@@ -1,6 +1,7 @@
 #!/usr/bin/env bun
 
-import { organizations, walkthroughSteps, walkthroughs } from 'database/src/schema'
+import { walkthroughSteps, walkthroughs } from 'database/src/schema'
+import { organization } from 'database/src/auth-schema'
 import 'dotenv/config'
 import { eq } from 'drizzle-orm'
 import { drizzle } from 'drizzle-orm/node-postgres'
@@ -44,7 +45,7 @@ async function importWalkthrough() {
         }
 
         // Verify organization exists
-        const [org] = await db.select().from(organizations).where(eq(organizations.id, organizationId))
+        const [org] = await db.select().from(organization).where(eq(organization.id, organizationId))
 
         if (!org) {
             console.error(`Organization ${organizationId} not found`)
