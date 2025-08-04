@@ -26,8 +26,9 @@ const walkthroughTemplate = ({
 # Walkthrough: ${walkthroughTitle}
 
 ## Step ${displayOrder}: ${stepTitle}
-*This is step ${displayOrder} in the "${walkthroughTitle}" walkthrough. 
-Use the step navigation tools to guide the user through the process.*
+- *This is step ${displayOrder} in the "${walkthroughTitle}" walkthrough. 
+- Use the step navigation tools to guide the user through the process.*
+- Before you move on to the next step, you should ask the user if they are ready to move on.
 
 
 ${
