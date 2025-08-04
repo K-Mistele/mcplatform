@@ -116,3 +116,57 @@ Based on the requirements in `specifications/03-interactive-walkthrough/01-core-
 The simplified tool interface (requirement #5) is fully working and provides a much better UX. The remaining work focuses on making the backend track user progress automatically rather than requiring the client to pass step IDs. This will enable richer analytics and a more seamless user experience.
 
 The analytics foundation is in place with the `action` field tracking, but needs expansion to cover all user interactions as specified in requirement #4.
+
+## Implementation Checklist
+
+### Core Requirements from update.md
+- [x] **Requirement #5**: Remove `list_walkthroughs` and create smart `start_walkthrough` tool
+  - [x] Auto-start single walkthrough when called without parameters
+  - [x] List multiple walkthroughs with instruction to call again with name
+  - [x] Handle invalid walkthrough names with helpful error message
+  - [x] Add comprehensive analytics tracking with action types
+
+- [ ] **Requirement #1**: Backend user progress tracking
+  - [ ] Add `current_step_id` field to `walkthrough_progress` table
+  - [ ] Update `start_walkthrough` to set user's current step to first step
+  - [ ] Remove `current_step_id` parameter requirement from `get_next_step`
+
+- [ ] **Requirement #2**: Automatic step advancement
+  - [ ] Update `get_next_step` to automatically advance user's current step in database
+  - [ ] Return next step without requiring current step ID input
+
+- [ ] **Requirement #3**: Dynamic step reordering support  
+  - [ ] Design system to handle steps being reordered/added/removed in UI
+  - [ ] Implement step sequence or versioning system
+  - [ ] Ensure progress tracking remains consistent with step structure changes
+
+- [ ] **Requirement #4**: Enhanced progress analytics
+  - [x] Basic walkthrough start analytics (with action tracking)
+  - [ ] Track each `get_next_step` call with current/next step details
+  - [ ] Track progress resets with analytics
+  - [ ] Track walkthrough listings (now handled by smart start_walkthrough)
+  - [ ] Integrate with existing progress system for comprehensive analytics
+  - [ ] Support sankey diagram data generation
+
+### Supporting Work
+- [ ] **Database Schema Updates**
+  - [ ] Add `current_step_id` to `walkthrough_progress` table
+  - [ ] Consider step sequence/order tracking fields
+  - [ ] Enhance analytics tracking tables
+
+- [ ] **Testing & Quality**
+  - [ ] Fix broken test imports in `walkthrough-mcp-tools.test.ts`
+  - [ ] Update tests to match new registration-based architecture  
+  - [ ] Add tests for new backend progress tracking
+  - [ ] End-to-end testing of complete walkthrough flow
+
+- [ ] **Code Updates**
+  - [ ] Modify `get_next_step` tool implementation
+  - [ ] Update `walkthrough-utils.ts` for automatic progress tracking
+  - [ ] Add step reordering resilience logic
+  - [ ] Enhance analytics integration
+
+### Progress Summary
+**Completed**: 1/5 core requirements (20%)  
+**In Progress**: Smart tool interface with analytics foundation  
+**Next Priority**: Backend progress tracking implementation
