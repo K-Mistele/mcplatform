@@ -4,8 +4,8 @@ You are tasked with writing a handoff document to hand off your work to another 
 
 ## Process
 1. **Filepath & Metadata**
-    - create your file under `specification/[feature]/handoffs/handoff-N.md` where `N` is an integer incremented from the previous handoff if there is one, e.g. `handoff-0.md`, `handoff-1.md`, etc. -- look for existing handoff documents in that folder if it exists before writing a new one to avoid mis-numbering the file.
-    - if you are working on a subfeature, use `specification/[feature]/[subfeature]/handoffs/handoff-N.md` using the same convention.
+    - create your file under `specification/[feature]/handoffs/handoff_YYYY-MM-DD_HH-MM-SS_topic.md`, where `topic` is the subject you're working on.
+    - if you are working on a subfeature, use `specification/[feature]/[subfeature]/handoffs/handoff_YYYY-MM-DD_HH-MM-SS_topic.md` using the same convention.
     - Run the `scripts/spec_metadata.sh` script to generate all relevant metadata
 
 2. **Create your document**

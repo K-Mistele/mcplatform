@@ -16,16 +16,9 @@ When this command is invoked:
 ```
 I'll help you resume work from a handoff document. Let me find the available handoffs.
 
-[Search for handoffs using Glob tool]
-
-I found the following handoff documents:
-- specification/[feature]/handoffs/handoff-N.md
-- specification/[feature]/[subfeature]/handoffs/handoff-M.md
-- ...
-
 Which handoff would you like to resume from?
 
-Tip: You can invoke this command directly with a handoff path: `/resume_from_handoff specification/feature/handoffs/handoff-0.md`
+Tip: You can invoke this command directly with a handoff path: `/resume_from_handoff specification/feature/handoffs/handoff_YYYY-MM-DD_HH-MM-SS_topic.md`
 ```
 
 Then wait for the user's input.
