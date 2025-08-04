@@ -499,7 +499,7 @@ export const renderWalkthroughStepRPC = base
         })
     )
     .handler(async ({ input }) => {
-        return renderWalkthroughStep(input.walkthrough as any, input.step as any)
+        return renderWalkthroughStep(input.walkthrough.title, input.step as any)
     })
 
 export const router = {
