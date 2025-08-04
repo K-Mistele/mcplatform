@@ -286,6 +286,46 @@ export const walkthroughProgress = pgTable(
     ]
 )
 
+export const walkthroughStepCompletions = pgTable(
+    'walkthrough_step_completions',
+    {
+        id: text('id')
+            .primaryKey()
+            .$defaultFn(() => `wtsc_${nanoid(8)}`),
+        mcpServerUserId: text('mcp_server_user_id')
+            .references(() => mcpServerUser.id, { onDelete: 'cascade' })
+            .notNull(),
+        walkthroughId: text('walkthrough_id')
+            .references(() => walkthroughs.id, { onDelete: 'cascade' })
+            .notNull(),
+        stepId: text('step_id')
+            .references(() => walkthroughSteps.id, { onDelete: 'cascade' })
+            .notNull(),
+        mcpServerId: text('mcp_server_id')
+            .references(() => mcpServers.id, { onDelete: 'cascade' })
+            .notNull(),
+        mcpServerSessionId: text('mcp_server_session_id')
+            .references(() => mcpServerSession.mcpServerSessionId, { onDelete: 'cascade' })
+            .notNull(),
+        completedAt: bigint('completed_at', { mode: 'number' }).$defaultFn(() => Date.now()),
+        metadata: jsonb('metadata')
+    },
+    (t) => [
+        // Primary analytics query pattern: organization-wide time series via server JOIN
+        index('wtsc_server_time_idx').on(t.mcpServerId, t.completedAt),
+        // Sankey diagram queries: flow analysis within walkthrough
+        index('wtsc_walkthrough_step_time_idx').on(t.walkthroughId, t.stepId, t.completedAt),
+        // User progress queries: what has this user completed
+        index('wtsc_user_walkthrough_idx').on(t.mcpServerUserId, t.walkthroughId),
+        // Session analysis: completions within a session
+        index('wtsc_session_idx').on(t.mcpServerSessionId),
+        // Organization-wide walkthrough analytics
+        index('wtsc_server_walkthrough_idx').on(t.mcpServerId, t.walkthroughId),
+        // Prevent duplicate completions
+        unique('wtsc_user_step_unique').on(t.mcpServerUserId, t.walkthroughId, t.stepId)
+    ]
+)
+
 export type McpServerSession = typeof mcpServerSession.$inferSelect
 export type McpServerUser = typeof mcpServerUser.$inferSelect
 export type SupportRequest = typeof supportRequests.$inferSelect
@@ -295,6 +335,7 @@ export type Walkthrough = typeof walkthroughs.$inferSelect
 export type McpServerWalkthrough = typeof mcpServerWalkthroughs.$inferSelect
 export type WalkthroughStep = typeof walkthroughSteps.$inferSelect
 export type WalkthroughProgress = typeof walkthroughProgress.$inferSelect
+export type WalkthroughStepCompletion = typeof walkthroughStepCompletions.$inferSelect
 
 export const retrievalNamespace = pgTable(
     'retrieval_namespace',
