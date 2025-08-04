@@ -73,12 +73,8 @@ export function UsersClient({
     const userMap = new Map<string, any>()
 
     for (const row of mcpUsersWithConnections) {
-        const userId = row.distinctId
-
-        // Skip rows where distinctId is null
-        if (!userId) {
-            continue
-        }
+        // Use distinctId if available, otherwise create a fallback ID
+        const userId = row.distinctId || `anonymous_${row.connectionCreatedAt || Date.now()}_${Math.random().toString(36).substring(7)}`
 
         if (!userMap.has(userId)) {
             const supportTickets = supportTicketMap.get(row.email || '') || { lifetime: 0, open: 0 }

@@ -13,7 +13,7 @@ export default async function UsersPage() {
     // Create promises without awaiting them - run concurrently
     const mcpUsersPromise = db
         .select({
-            distinctId: schema.mcpServerUser.trackingId,
+            distinctId: schema.mcpServerSession.mcpServerUserId,
             email: schema.mcpServerUser.email,
             firstSeenAt: schema.mcpServerUser.firstSeenAt,
             connectionCreatedAt: sql<
@@ -29,7 +29,7 @@ export default async function UsersPage() {
             oauthImage: mcpOAuthUser.image
         })
         .from(schema.mcpServerSession)
-        .innerJoin(schema.mcpServerUser, eq(schema.mcpServerSession.mcpServerUserId, schema.mcpServerUser.id))
+        .leftJoin(schema.mcpServerUser, eq(schema.mcpServerSession.mcpServerUserId, schema.mcpServerUser.id))
         .innerJoin(schema.mcpServers, eq(schema.mcpServerSession.mcpServerSlug, schema.mcpServers.slug))
         .leftJoin(mcpOAuthUser, eq(schema.mcpServerUser.email, mcpOAuthUser.email))
         .where(eq(schema.mcpServers.organizationId, session.session.activeOrganizationId))
