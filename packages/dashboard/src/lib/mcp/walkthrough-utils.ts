@@ -4,6 +4,7 @@ import {
     walkthroughProgress,
     walkthroughSteps,
     walkthroughs,
+    walkthroughStepCompletions,
     type Walkthrough,
     type WalkthroughProgress,
     type WalkthroughStep
@@ -138,16 +139,29 @@ export async function getOrInitializeProgress(
 /**
  * Mark a step as completed and update progress
  */
-export async function completeStep(mcpServerUserId: string, walkthroughId: string, stepId: string): Promise<void> {
+export async function completeStep(
+    mcpServerUserId: string,
+    walkthroughId: string,
+    stepId: string,
+    mcpServerId: string,
+    mcpServerSessionId: string
+): Promise<void> {
     const progress = await getOrInitializeProgress(mcpServerUserId, walkthroughId)
 
-    // Ensure step exists and belongs to walkthrough
-    const step = await db
-        .select()
-        .from(walkthroughSteps)
-        .where(and(eq(walkthroughSteps.id, stepId), eq(walkthroughSteps.walkthroughId, walkthroughId)))
-        .limit(1)
+    // Parallelize validation queries - both are independent after we have progress
+    const [stepResult, totalStepsResult] = await Promise.all([
+        db
+            .select()
+            .from(walkthroughSteps)
+            .where(and(eq(walkthroughSteps.id, stepId), eq(walkthroughSteps.walkthroughId, walkthroughId)))
+            .limit(1),
+        db
+            .select({ count: sql<number>`count(*)` })
+            .from(walkthroughSteps)
+            .where(eq(walkthroughSteps.walkthroughId, walkthroughId))
+    ])
 
+    const step = stepResult
     if (!step[0]) {
         throw new Error('Step not found or does not belong to this walkthrough')
     }
@@ -156,15 +170,9 @@ export async function completeStep(mcpServerUserId: string, walkthroughId: strin
     const completedSteps = progress.completedSteps || []
     if (!completedSteps.includes(stepId)) {
         const updatedCompletedSteps = [...completedSteps, stepId]
+        const isCompleted = updatedCompletedSteps.length >= totalStepsResult[0].count
 
-        // Check if all steps are now completed
-        const totalSteps = await db
-            .select({ count: sql<number>`count(*)` })
-            .from(walkthroughSteps)
-            .where(eq(walkthroughSteps.walkthroughId, walkthroughId))
-
-        const isCompleted = updatedCompletedSteps.length >= totalSteps[0].count
-
+        // Update progress
         await db
             .update(walkthroughProgress)
             .set({
@@ -173,6 +181,29 @@ export async function completeStep(mcpServerUserId: string, walkthroughId: strin
                 completedAt: isCompleted ? Date.now() : null
             })
             .where(eq(walkthroughProgress.id, progress.id))
+
+        // Insert step completion record for analytics
+        try {
+            await db.insert(walkthroughStepCompletions).values({
+                mcpServerUserId,
+                walkthroughId,
+                stepId,
+                mcpServerId,
+                mcpServerSessionId,
+                completedAt: Date.now(),
+                metadata: {
+                    stepOrder: step[0].displayOrder,
+                    isLastStep: isCompleted
+                }
+            })
+        } catch (error) {
+            // Ignore duplicate key errors (user already completed this step)
+            if (error instanceof Error && error.message.includes('duplicate key')) {
+                console.log(`Step ${stepId} already completed by user ${mcpServerUserId}`)
+            } else {
+                throw error
+            }
+        }
     }
 }
 
@@ -183,6 +214,7 @@ export async function getServerWalkthroughs(
     mcpServerId: string,
     mcpServerUserId?: string
 ): Promise<WalkthroughListItem[]> {
+    // First, we need to get the walkthrough data to know which IDs to query for progress
     const walkthroughsQuery = db
         .select({
             walkthrough: walkthroughs,
@@ -201,18 +233,19 @@ export async function getServerWalkthroughs(
         return walkthroughsData.map(({ walkthrough, totalSteps }) => ({
             walkthrough,
             progress: null,
-            totalSteps,
+            totalSteps: Number(totalSteps),
             progressPercent: 0
         }))
     }
 
-    // Get progress data for user
+    // Get walkthrough IDs for progress query
     const walkthroughIds = walkthroughsData.map((w) => w.walkthrough.id)
 
     if (walkthroughIds.length === 0) {
         return []
     }
 
+    // Query for progress data
     const progressData = await db
         .select()
         .from(walkthroughProgress)
@@ -223,6 +256,7 @@ export async function getServerWalkthroughs(
             )
         )
 
+    // Create map for efficient lookups
     const progressMap = new Map(progressData.map((p) => [p.walkthroughId, p]))
 
     return walkthroughsData.map(({ walkthrough, totalSteps }) => {

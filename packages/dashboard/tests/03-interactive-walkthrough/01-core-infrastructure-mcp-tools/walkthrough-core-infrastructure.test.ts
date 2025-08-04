@@ -2,6 +2,7 @@ import { afterEach, beforeEach, describe, expect, test } from 'bun:test'
 import { nanoid } from 'common/nanoid'
 import {
     db,
+    mcpServerSession,
     mcpServerUser,
     mcpServerWalkthroughs,
     mcpServers,
@@ -25,6 +26,7 @@ describe('Walkthrough Core Infrastructure', () => {
     let testMcpServerId: string
     let testWalkthroughId: string
     let testMcpServerUserId: string
+    let testMcpServerSessionId: string
     let testStepIds: string[]
 
     // Track created resources for cleanup
@@ -32,6 +34,7 @@ describe('Walkthrough Core Infrastructure', () => {
     const createdMcpServers: string[] = []
     const createdWalkthroughs: string[] = []
     const createdMcpServerUsers: string[] = []
+    const createdMcpServerSessions: string[] = []
     const createdWalkthroughSteps: string[] = []
     const createdMcpServerWalkthroughs: Array<{ mcpServerId: string; walkthroughId: string }> = []
     const createdWalkthroughProgress: Array<{ mcpServerUserId: string; walkthroughId: string }> = []
@@ -66,6 +69,15 @@ describe('Walkthrough Core Infrastructure', () => {
             email: 'test@example.com'
         })
         createdMcpServerUsers.push(testMcpServerUserId)
+
+        // Create test MCP server session
+        testMcpServerSessionId = `mcps_${nanoid(12)}`
+        await db.insert(mcpServerSession).values({
+            mcpServerSessionId: testMcpServerSessionId,
+            mcpServerId: testMcpServerId,
+            mcpServerUserId: testMcpServerUserId
+        })
+        createdMcpServerSessions.push(testMcpServerSessionId)
 
         // Create test walkthrough
         testWalkthroughId = `wt_${nanoid(8)}`
@@ -147,6 +159,10 @@ describe('Walkthrough Core Infrastructure', () => {
             await db.delete(walkthroughs).where(eq(walkthroughs.id, id))
         }
 
+        for (const id of createdMcpServerSessions) {
+            await db.delete(mcpServerSession).where(eq(mcpServerSession.mcpServerSessionId, id))
+        }
+
         for (const id of createdMcpServerUsers) {
             await db.delete(mcpServerUser).where(eq(mcpServerUser.id, id))
         }
@@ -164,6 +180,7 @@ describe('Walkthrough Core Infrastructure', () => {
         createdMcpServers.length = 0
         createdWalkthroughs.length = 0
         createdMcpServerUsers.length = 0
+        createdMcpServerSessions.length = 0
         createdWalkthroughSteps.length = 0
         createdMcpServerWalkthroughs.length = 0
         createdWalkthroughProgress.length = 0
@@ -186,7 +203,7 @@ describe('Walkthrough Core Infrastructure', () => {
 
         test('should return second step after completing first step', async () => {
             // Complete first step
-            await completeStep(testMcpServerUserId, testWalkthroughId, testStepIds[0])
+            await completeStep(testMcpServerUserId, testWalkthroughId, testStepIds[0], testMcpServerId, testMcpServerSessionId)
             
             // Get updated progress
             const progress = await db
@@ -215,7 +232,7 @@ describe('Walkthrough Core Infrastructure', () => {
         test('should return last step as completed when all steps done', async () => {
             // Complete all steps
             for (const stepId of testStepIds) {
-                await completeStep(testMcpServerUserId, testWalkthroughId, stepId)
+                await completeStep(testMcpServerUserId, testWalkthroughId, stepId, testMcpServerId, testMcpServerSessionId)
             }
             
             // Get updated progress
@@ -257,7 +274,7 @@ describe('Walkthrough Core Infrastructure', () => {
 
     describe('completeStep', () => {
         test('should mark step as completed and update progress', async () => {
-            await completeStep(testMcpServerUserId, testWalkthroughId, testStepIds[0])
+            await completeStep(testMcpServerUserId, testWalkthroughId, testStepIds[0], testMcpServerId, testMcpServerSessionId)
 
             const progress = await db
                 .select()
@@ -278,7 +295,7 @@ describe('Walkthrough Core Infrastructure', () => {
         test('should set completedAt when all steps are done', async () => {
             // Complete all steps
             for (const stepId of testStepIds) {
-                await completeStep(testMcpServerUserId, testWalkthroughId, stepId)
+                await completeStep(testMcpServerUserId, testWalkthroughId, stepId, testMcpServerId, testMcpServerSessionId)
             }
 
             const progress = await db
@@ -299,8 +316,8 @@ describe('Walkthrough Core Infrastructure', () => {
 
         test('should not duplicate completed steps', async () => {
             // Complete same step twice
-            await completeStep(testMcpServerUserId, testWalkthroughId, testStepIds[0])
-            await completeStep(testMcpServerUserId, testWalkthroughId, testStepIds[0])
+            await completeStep(testMcpServerUserId, testWalkthroughId, testStepIds[0], testMcpServerId, testMcpServerSessionId)
+            await completeStep(testMcpServerUserId, testWalkthroughId, testStepIds[0], testMcpServerId, testMcpServerSessionId)
 
             const progress = await db
                 .select()
@@ -360,7 +377,7 @@ describe('Walkthrough Core Infrastructure', () => {
 
         test('should show progress for user with existing progress', async () => {
             // Complete one step
-            await completeStep(testMcpServerUserId, testWalkthroughId, testStepIds[0])
+            await completeStep(testMcpServerUserId, testWalkthroughId, testStepIds[0], testMcpServerId, testMcpServerSessionId)
 
             const walkthroughs = await getServerWalkthroughs(testMcpServerId, testMcpServerUserId)
 
@@ -416,7 +433,7 @@ describe('Walkthrough Core Infrastructure', () => {
     describe('getWalkthroughStepsWithProgress', () => {
         test('should return all steps with completion status', async () => {
             // Complete first step
-            await completeStep(testMcpServerUserId, testWalkthroughId, testStepIds[0])
+            await completeStep(testMcpServerUserId, testWalkthroughId, testStepIds[0], testMcpServerId, testMcpServerSessionId)
 
             const steps = await getWalkthroughStepsWithProgress(testWalkthroughId, testMcpServerUserId)
 
@@ -441,8 +458,8 @@ describe('Walkthrough Core Infrastructure', () => {
     describe('Progress Algorithm Resilience', () => {
         test('should handle step reordering without losing progress', async () => {
             // Complete first two steps
-            await completeStep(testMcpServerUserId, testWalkthroughId, testStepIds[0])
-            await completeStep(testMcpServerUserId, testWalkthroughId, testStepIds[1])
+            await completeStep(testMcpServerUserId, testWalkthroughId, testStepIds[0], testMcpServerId, testMcpServerSessionId)
+            await completeStep(testMcpServerUserId, testWalkthroughId, testStepIds[1], testMcpServerId, testMcpServerSessionId)
 
             // Simulate reordering by changing display order
             await db.update(walkthroughSteps).set({ displayOrder: 3 }).where(eq(walkthroughSteps.id, testStepIds[0]))
@@ -472,7 +489,7 @@ describe('Walkthrough Core Infrastructure', () => {
 
         test('should handle new steps being added without affecting progress', async () => {
             // Complete first step
-            await completeStep(testMcpServerUserId, testWalkthroughId, testStepIds[0])
+            await completeStep(testMcpServerUserId, testWalkthroughId, testStepIds[0], testMcpServerId, testMcpServerSessionId)
 
             // Update existing steps to make room for insertion
             await db.update(walkthroughSteps).set({ displayOrder: 3 }).where(eq(walkthroughSteps.id, testStepIds[1]))

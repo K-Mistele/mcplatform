@@ -176,33 +176,35 @@ function registerStartWalkthroughTool({
 
                 // If no name provided, either list walkthroughs or auto-start single walkthrough
                 if (!name) {
-                    // Track the tool call for listing
-                    await db.insert(schema.toolCalls).values({
-                        mcpServerId: serverConfig.id,
-                        toolName: 'start_walkthrough',
-                        mcpServerUserId: mcpServerUserId,
-                        mcpServerSessionId: serverSessionId,
-                        input: args,
-                        output: { action: 'list', walkthroughs: walkthroughs.length }
-                    })
-
                     if (walkthroughs.length === 1) {
                         // Auto-start the single walkthrough
                         const selectedWalkthrough = walkthroughs[0]
                         
-                        // Track that we're auto-starting
+                        const result = await startWalkthrough(selectedWalkthrough, restart, mcpServerUserId)
+                        
+                        // Track after successful auto-start
                         await db.insert(schema.toolCalls).values({
                             mcpServerId: serverConfig.id,
                             toolName: 'start_walkthrough',
                             mcpServerUserId: mcpServerUserId,
                             mcpServerSessionId: serverSessionId,
                             input: { ...args, name: selectedWalkthrough.walkthrough.title },
-                            output: { action: 'auto_start', walkthroughId: selectedWalkthrough.walkthrough.id }
+                            output: { action: 'auto_start', walkthroughId: selectedWalkthrough.walkthrough.id, success: true }
                         })
 
-                        return await startWalkthrough(selectedWalkthrough, restart, mcpServerUserId)
+                        return result
                     } else {
                         // Multiple walkthroughs - list them
+                        // Track the listing action
+                        await db.insert(schema.toolCalls).values({
+                            mcpServerId: serverConfig.id,
+                            toolName: 'start_walkthrough',
+                            mcpServerUserId: mcpServerUserId,
+                            mcpServerSessionId: serverSessionId,
+                            input: args,
+                            output: { action: 'list', walkthroughs: walkthroughs.length }
+                        })
+                        
                         return {
                             content: [
                                 {
@@ -238,7 +240,10 @@ function registerStartWalkthroughTool({
                     }
                 }
 
-                // Track the tool call for starting named walkthrough
+                // Start the walkthrough first
+                const result = await startWalkthrough(selectedWalkthrough, restart, mcpServerUserId)
+                
+                // Track after successful start
                 await db.insert(schema.toolCalls).values({
                     mcpServerId: serverConfig.id,
                     toolName: 'start_walkthrough',
@@ -248,11 +253,12 @@ function registerStartWalkthroughTool({
                     output: {
                         action: 'start_named',
                         walkthroughId: selectedWalkthrough.walkthrough.id,
-                        wasRestarted: restart
+                        wasRestarted: restart,
+                        success: true
                     }
                 })
 
-                return await startWalkthrough(selectedWalkthrough, restart, mcpServerUserId)
+                return result
             } catch (error) {
                 console.error('Error in start_walkthrough:', error)
                 return {
@@ -326,7 +332,7 @@ function registerGetNextStepTool({
 
                 // If currentStepId is provided, mark it as completed first
                 if (currentStepId) {
-                    await completeStep(mcpServerUserId, walkthroughId, currentStepId)
+                    await completeStep(mcpServerUserId, walkthroughId, currentStepId, serverConfig.id, serverSessionId)
                 }
 
                 // Get updated progress after potential completion
