@@ -180,7 +180,6 @@ export default function App({ Component, pageProps }) {
 Finally, add a `_document.tsx` file inside `pages/` to control the initial response from the server. Learn more about the [custom Document file](/docs/pages/building-your-application/routing/custom-document).
 
 ```tsx filename="pages/_document.tsx" switcher
-import { Html, Head, Main, NextScript } from 'next/document'
 
 export default function Document() {
   return (
@@ -196,9 +195,7 @@ export default function Document() {
 ```
 
 ```jsx filename="pages/_document.js" switcher
-import { Html, Head, Main, NextScript } from 'next/document'
-
-export default function Document() {
+tion Document() {
   return (
     <Html>
       <Head />
