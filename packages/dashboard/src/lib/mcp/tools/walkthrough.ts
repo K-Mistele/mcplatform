@@ -156,7 +156,7 @@ function registerStartWalkthroughTool({
                 'Smart walkthrough tool: Call without parameters to list walkthroughs (or auto-start if only one exists). Call with "name" parameter to start a specific walkthrough.',
             inputSchema: inputSchema.shape
         },
-        async (args) => {
+        async (args: z.infer<typeof inputSchema>) => {
             try {
                 const { name, restart } = inputSchema.parse(args)
 
@@ -305,7 +305,7 @@ function registerGetNextStepTool({
                 'Gets the next step in your active walkthrough. If currentStepId is provided, marks it as completed first. Use start_walkthrough first to begin a walkthrough.',
             inputSchema: inputSchema.shape
         },
-        async (args) => {
+        async (args: z.infer<typeof inputSchema>) => {
             try {
                 const { currentStepId } = inputSchema.parse(args)
 
