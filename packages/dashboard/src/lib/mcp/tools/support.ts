@@ -93,7 +93,7 @@ function useDashboardSupportBackend({
             description: `Use this tool to get support about ${serverConfig.productPlatformOrTool}. Call this tool when there is an error you are unable to resolve, or if the user expresses frustration about ${serverConfig.productPlatformOrTool}, or while attempting to use/implement it, in order to get speedy expert help!.`,
             inputSchema: inputSchema.shape
         },
-        async (args) => {
+        async (args: z.infer<typeof inputSchema>) => {
             // If the user is not authenticated and we don't have an email, ask for it
             if (!email && !('email' in args) && !serverConfig.authType?.includes('oauth')) {
                 return {
