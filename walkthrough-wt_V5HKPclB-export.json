@@ -1,0 +1,208 @@
+{
+  "version": "1.0",
+  "exportedAt": "2025-08-05T22:05:58.265Z",
+  "walkthrough": {
+    "title": "Next.js Getting Started",
+    "description": "A comprehensive guide to setting up a new Next.js application from scratch",
+    "type": "quickstart",
+    "status": "published",
+    "createdAt": 1754174470560,
+    "updatedAt": 1754247954255,
+    "estimatedDurationMinutes": 30,
+    "tags": [
+      "nextjs",
+      "react",
+      "setup",
+      "installation"
+    ],
+    "metadata": null
+  },
+  "steps": [
+    {
+      "title": "System Compatibility Check",
+      "contentFields": {
+        "version": "v1",
+        "contentForUser": "# System Requirements\\n\\nBefore we begin creating your Next.js application, let's make sure your system meets the requirements:\\n\\n- **Node.js 18.18** or later\\n- **Operating System**: macOS, Windows (including WSL), or Linux\\n\\nLet's check if you have Node.js installed and what version you're running.",
+        "contextForAgent": "Node.js is required to run Next.js applications. You can check the Node.js version using 'node --version' command. If Node.js is not installed or outdated, guide the user to https://nodejs.org/ for installation. Compatible operating systems include macOS, Windows (including WSL), and Linux.",
+        "operationsForAgent": "1. Run the command: node --version\\n2. Check if the version is 18.18 or higher\\n3. If Node.js is not installed or outdated, provide the link to https://nodejs.org/ and guide through installation\\n4. Verify the operating system is compatible",
+        "introductionForAgent": "This step ensures the user has the necessary system requirements before starting with Next.js. The user must have Node.js 18.18 or later and a compatible operating system. Help them verify their setup and install Node.js if needed."
+      },
+      "displayOrder": 1,
+      "createdAt": 1754247954424,
+      "updatedAt": 1754262042220,
+      "metadata": {
+        "imported": true,
+        "importedAt": "2025-08-03T19:05:54.423Z"
+      },
+      "nextStepReference": 1
+    },
+    {
+      "title": "Create Next.js App with create-next-app",
+      "contentFields": {
+        "version": "v1",
+        "contentForUser": "# Creating Your Next.js Application\n\nThe quickest way to create a new Next.js app is using `create-next-app`, which sets up everything automatically for you.\n\nLet's create your project by running the following command: `npx create-next-app`.\n\nFor this walkthrough, we'll automatically pick the default options (typescript, eslint, tailwind, `src/` directory to separate app routing from configuration, turbopach which is a faster bundler, and cleaner import aliases), and then move it into the top-level of your repository.\n\nIf you see any interactive prompts, please make sure to fill them out!",
+        "contextForAgent": "create-next-app is the official CLI tool for bootstrapping Next.js projects. It sets up the project structure, installs dependencies, and configures the development environment. The prompts allow customization of TypeScript, ESLint, Tailwind CSS, src directory structure, App Router vs Pages Router, Turbopack, and import aliases.",
+        "operationsForAgent": "1. Run the command: `npx create-next-app@latest --yes my-first-next-app`\n2. Guide the user through each prompt:\n   - Project name (suggest 'my-nextjs-app' if they're unsure)\n   - TypeScript (recommend Yes for better type safety)\n   - ESLint (recommend Yes for code quality)\n   - Tailwind CSS (explain it's a utility-first CSS framework)\n   - src/ directory (explain it separates app code from config)\n   - App Router (recommend Yes as it's the latest routing system)\n   - Turbopack (explain it's a faster bundler, still in beta)\n   - Import alias (explain @ alias for cleaner imports)\n3. Wait for installation to complete\n4. Move the project folder to the current working directory and clean up the empty directory: `mv my-first-next-app/{.,}* . && rm -r my-first-next-app`",
+        "introductionForAgent": "This step guides the user through the automatic installation process using create-next-app. The user will run the CLI command and answer configuration prompts. Help them understand each prompt and make appropriate choices based on their needs."
+      },
+      "displayOrder": 2,
+      "createdAt": 1754247954511,
+      "updatedAt": 1754262192933,
+      "metadata": {
+        "imported": true,
+        "importedAt": "2025-08-03T19:05:54.510Z"
+      },
+      "nextStepReference": 2
+    },
+    {
+      "title": "Understanding Project Structure",
+      "contentFields": {
+        "version": "v1",
+        "contentForUser": "# Exploring Your Project Structure\n\nGreat! Your Next.js project has been created. Let's explore the structure of your new application and understand what each file and folder does.\n\nLet's navigate to your project directory and examine the key files.",
+        "contextForAgent": "The project structure depends on whether they chose App Router or Pages Router, and whether they chose to use a src/ directory. Key files include package.json (scripts and dependencies), app/layout.tsx and app/page.tsx (for App Router), or pages/index.tsx (for Pages Router). The public folder stores static assets.",
+        "operationsForAgent": "1. Change to the project directory: cd [project-name]\n2. List the project contents: ls -la\n3. Show and explain package.json structure\n4. If using App Router:\n   - Show app/layout.tsx and explain root layout\n   - Show app/page.tsx and explain home page\n5. If using Pages Router:\n   - Show pages/index.tsx\n   - Explain pages/_app.tsx if present\n6. Explain the public folder for static assets\n7. Show tsconfig.json if TypeScript was chosen\n8. Show .eslintrc.json if ESLint was chosen",
+        "introductionForAgent": "This step helps the user understand the project structure created by create-next-app. Show them the key files and folders, explaining the purpose of each. This builds their mental model of a Next.js application."
+      },
+      "displayOrder": 3,
+      "createdAt": 1754247954598,
+      "updatedAt": 1754247954598,
+      "metadata": {
+        "imported": true,
+        "importedAt": "2025-08-03T19:05:54.597Z"
+      },
+      "nextStepReference": 3
+    },
+    {
+      "title": "Running the Development Server",
+      "contentFields": {
+        "version": "v1",
+        "contentForUser": "# Starting Your Development Server\n\nNow let's start the development server and see your Next.js application running in the browser!\n\nThe development server provides features like:\n- Hot module replacement (instant updates when you save files)\n- Error reporting\n- Development-optimized builds\n\nI'll run `npm run dev` whichwill start your next.js server with HMR enabled. It will start on port 3000, by default, but may pick another port if 3000 is already in-use.",
+        "contextForAgent": "The development server runs on http://localhost:3000 by default. It includes features like hot module replacement (HMR) for instant updates when code changes. The npm run dev command starts the server. Common issues include port 3000 being in use (can use PORT=3001 npm run dev) or permission errors.\n\nIf port 3000 is already in use, incrementing port numbers will be tried until a free one is found. ",
+        "operationsForAgent": "1. Ensure you're in the project directory\n2. Run: `npm run dev` (in the background, if you can - it's a long-running process)\n3. Wait for the server to start (look for 'Ready' message), and the URL / port that the server is running on -- it may use a port like 3001 or 3005 or similar if 3000 is already in use. \n4. Guide user to open http://localhost:<port> (e.g. http://localhost:3000) in their browser\n5. Explain the user can stop the server with Ctrl+C\n6. Ask the user to confirm they see the Next.js welcome page; and wait for their feedback.\n\n\nIMPORTANT: once you start the dev server, as the user to visit it and confirm that it's running (step 4) before proceeding.",
+        "introductionForAgent": "This step gets the user to run their first Next.js development server and see their app in the browser. This is often an exciting moment for developers. Ensure the server starts successfully and guide them to view it in their browser."
+      },
+      "displayOrder": 4,
+      "createdAt": 1754247954681,
+      "updatedAt": 1754280532220,
+      "metadata": {
+        "imported": true,
+        "importedAt": "2025-08-03T19:05:54.681Z"
+      },
+      "nextStepReference": 4
+    },
+    {
+      "title": "Making Your First Edit",
+      "contentFields": {
+        "version": "v1",
+        "contentForUser": "# Making Your First Edit\n\nLet's make your first change to see how Next.js automatically updates your application!\n\nWe'll edit the home page to display a custom message. Keep your browser open to see the magic of hot reloading!",
+        "contextForAgent": "The file to edit depends on the router choice: app/page.tsx for App Router, or maybe `src/app/page.tsx` if the `src/` directory is in use. The user should see changes reflected immediately in the browser thanks to hot module replacement. This is a key Next.js developer experience feature.",
+        "operationsForAgent": "1. Open the appropriate file in their code editor:\n   - with typescript: `app/page.tsx`\n   - with typescript and the src directory: `src/app/page.tsx`\n   - with javascript: `app/page.js`\n   - with javascript and the src directory: `src/app/page.js`\n2. Replace the existing content with a simple component:\n   ```tsx\n   export default function Page() {\n     return (\n       <div>\n         <h1>Welcome to My Next.js App!</h1>\n         <p>This is my first edit.</p>\n       </div>\n     )\n   }\n   ```\n3. Save the file\n4. Guide them to check their browser - it should update automatically\n5. Encourage them to make another change to see hot reload again",
+        "introductionForAgent": "This step demonstrates the hot reload feature by having the user make their first edit to the application. They'll modify the home page and see the changes instantly in the browser. This reinforces the development workflow."
+      },
+      "displayOrder": 5,
+      "createdAt": 1754247954765,
+      "updatedAt": 1754262765501,
+      "metadata": {
+        "imported": true,
+        "importedAt": "2025-08-03T19:05:54.765Z"
+      },
+      "nextStepReference": 5
+    },
+    {
+      "title": "Understanding Next.js Scripts",
+      "contentFields": {
+        "version": "v1",
+        "contentForUser": "# Understanding Next.js Scripts\n\nYour Next.js project comes with several important scripts that you'll use throughout development and deployment. Let's explore what each one does.\n\nThese scripts are defined in your package.json file and can be run using npm run [script-name]:\nThese scripts refer to the different stages of developing an application:\n\n- `next dev`: Starts the development server.\n- `next build`: Builds the application for production.\n- `next start`: Starts the production server.\n- `next lint`: Runs ESLint.",
+        "contextForAgent": "The package.json file contains four main scripts: dev (development server), build (production build), start (production server), and lint (code linting). Each serves a specific purpose in the development lifecycle. The build script creates an optimized production build, while start serves that build.",
+        "operationsForAgent": "1. Open package.json and show the scripts section\n2. Explain each script:\n   - dev: Starts development server with hot reloading\n   - build: Creates optimized production build\n   - start: Runs the production server (requires build first)\n   - lint: Runs ESLint to check code quality\n3. Demonstrate the build process: npm run build\n4. Show the .next folder that was created\n5. Demonstrate the production server: npm run start (make sure to stop and ask the user to stop the dev server first!\n6. Visit http://localhost:<port> to see production build (remember that port 3000 is used by default, but another one may be used if 3000 is already in use - make sure to pay attention to the command output; ask the user if you need help\n\nREMEMBER: the port may not start on 3000. Ask the user to confirm the port that the server is running on if you are uncertain. \n\nIMPORTANT: each time you run a command (e.g. `npm run build`, `npm run start`) stop and ask the user if they're able to see that it completed successfully. ",
+        "introductionForAgent": "This step explains the different npm scripts available in a Next.js project. Understanding these scripts is crucial for development, building, and deployment. Make sure the user understands when to use each script."
+      },
+      "displayOrder": 6,
+      "createdAt": 1754247954848,
+      "updatedAt": 1754281350902,
+      "metadata": {
+        "imported": true,
+        "importedAt": "2025-08-03T19:05:54.848Z"
+      },
+      "nextStepReference": 6
+    },
+    {
+      "title": "Setting Up TypeScript (Optional)",
+      "contentFields": {
+        "version": "v1",
+        "contentForUser": "# TypeScript Setup\n\nTypeScript adds static type checking to JavaScript, helping you catch errors early and improve your development experience with better IDE support.\n\nNext.js has excellent built-in TypeScript support. Let's check if you have TypeScript set up and configure it if needed.",
+        "contextForAgent": "Next.js has built-in TypeScript support. If the user didn't choose TypeScript during create-next-app, they can add it by renaming a .js file to .ts or .tsx and running the dev server. Next.js will automatically install TypeScript dependencies and create tsconfig.json. Minimum TypeScript version is 4.5.2.",
+        "operationsForAgent": "1. Check if tsconfig.json exists\n2. If TypeScript is already set up:\n   - Show the tsconfig.json file\n   - Explain key configurations\n   - Show how to enable the Next.js TypeScript plugin in VS Code\n3. If TypeScript is not set up and user wants it:\n   - Rename app/page.js to app/page.tsx (or pages/index.js to pages/index.tsx)\n   - Run npm run dev\n   - Next.js will detect TypeScript usage and install dependencies\n   - Show the auto-generated tsconfig.json\n4. For VS Code users, guide through enabling workspace TypeScript version:\n   - Open command palette (Cmd/Ctrl + Shift + P)\n   - Search 'TypeScript: Select TypeScript Version'\n   - Choose 'Use Workspace Version'",
+        "introductionForAgent": "This optional step shows users how to add TypeScript to their project if they didn't choose it during setup, or explains TypeScript benefits if they did. TypeScript provides type safety and better IDE support. Only proceed with setup if they don't already have TypeScript."
+      },
+      "displayOrder": 7,
+      "createdAt": 1754247954932,
+      "updatedAt": 1754247954932,
+      "metadata": {
+        "imported": true,
+        "importedAt": "2025-08-03T19:05:54.932Z"
+      },
+      "nextStepReference": 7
+    },
+    {
+      "title": "Configuring ESLint",
+      "contentFields": {
+        "version": "v1",
+        "contentForUser": "# Setting Up ESLint\n\nESLint helps you maintain code quality by identifying problematic patterns in your JavaScript/TypeScript code.\n\nNext.js comes with a built-in ESLint configuration that includes rules specific to Next.js best practices.",
+        "contextForAgent": "Next.js includes a custom ESLint configuration. The 'next lint' command runs ESLint with Next.js-specific rules. Users can choose between Strict (recommended, includes Core Web Vitals rules) or Base configuration. ESLint runs automatically during builds.",
+        "operationsForAgent": "1. Check if .eslintrc.json exists\n2. If ESLint is already configured:\n   - Run: npm run lint\n   - Show any linting errors/warnings\n   - Explain how to fix common issues\n3. If ESLint is not configured:\n   - Run: npm run lint\n   - Guide through the configuration prompts\n   - Recommend 'Strict' for best practices\n   - Show the generated .eslintrc.json\n4. Create a simple linting error to demonstrate:\n   - Add an unused variable to a component\n   - Run npm run lint again\n   - Show how ESLint catches it\n   - Fix the error and run lint again",
+        "introductionForAgent": "This step ensures ESLint is properly configured for code quality. If they chose ESLint during setup, verify it's working. If not, guide them through adding it. ESLint helps maintain consistent code style and catch potential errors."
+      },
+      "displayOrder": 8,
+      "createdAt": 1754247955018,
+      "updatedAt": 1754247955018,
+      "metadata": {
+        "imported": true,
+        "importedAt": "2025-08-03T19:05:55.017Z"
+      },
+      "nextStepReference": 8
+    },
+    {
+      "title": "Setting Up Import Aliases",
+      "contentFields": {
+        "version": "v1",
+        "contentForUser": "# Configuring Import Aliases\n\nImport aliases make your import statements cleaner and easier to maintain. Instead of using relative paths like `../../../components/Button`, you can use `@/components/Button`.\n\nLet's set up or verify your import alias configuration.",
+        "contextForAgent": "Import aliases use the TypeScript/JavaScript 'paths' configuration. The @ symbol is commonly used as an alias prefix. This configuration goes in tsconfig.json or jsconfig.json. The 'baseUrl' sets the root for path resolution, and 'paths' defines the aliases.",
+        "operationsForAgent": "1. Open tsconfig.json or jsconfig.json\n2. Check if paths configuration exists\n3. If not configured, add to compilerOptions:\n   ```json\n   {\n     \"compilerOptions\": {\n       \"baseUrl\": \".\",\n       \"paths\": {\n         \"@/*\": [\"./src/*\"]\n       }\n     }\n   }\n   ```\n   (Adjust based on whether they use src/ directory)\n4. Create a simple component to test:\n   - Create components/Button.tsx in the appropriate directory\n   - Add a basic Button component\n5. Import it using the alias in app/page.tsx:\n   - import { Button } from '@/components/Button'\n6. Verify the import works and the dev server has no errors\n7. Explain they can add more aliases for specific folders like @/styles, @/lib, etc.",
+        "introductionForAgent": "This step shows how to configure import aliases for cleaner import statements. This is especially useful in larger projects to avoid relative import paths like '../../../components'. Check if they already have this configured from the create-next-app prompts."
+      },
+      "displayOrder": 9,
+      "createdAt": 1754247955101,
+      "updatedAt": 1754247955101,
+      "metadata": {
+        "imported": true,
+        "importedAt": "2025-08-03T19:05:55.101Z"
+      },
+      "nextStepReference": 9
+    },
+    {
+      "title": "Next Steps and Resources",
+      "contentFields": {
+        "version": "v1",
+        "contentForUser": "# Congratulations! 🎉\n\nYou've successfully set up your Next.js application! You now have:\n\n- A running Next.js development environment\n- Understanding of the project structure\n- Knowledge of key npm scripts\n- Optional TypeScript and ESLint configuration\n- Clean import aliases\n\nLet's explore what you can learn next to build amazing applications with Next.js.",
+        "contextForAgent": "Important Next.js concepts to explore next include: routing (file-based routing, dynamic routes), data fetching (server components, client components), styling options (CSS Modules, Tailwind CSS), image optimization, API routes, and deployment (Vercel, other platforms). The Next.js documentation at nextjs.org/docs is the primary resource.",
+        "operationsForAgent": "1. Congratulate the user on completing the setup\n2. Suggest next learning topics based on their interests:\n   - Routing: Creating new pages and navigation\n   - Styling: CSS Modules, Tailwind CSS, or styled-components\n   - Data Fetching: Server and Client Components\n   - API Routes: Building backend endpoints\n   - Image Optimization: Using next/image\n   - SEO: Metadata and next/head\n   - Deployment: Vercel or other platforms\n3. Provide key documentation links:\n   - Next.js Docs: https://nextjs.org/docs\n   - Next.js Learn Course: https://nextjs.org/learn\n   - Examples: https://github.com/vercel/next.js/tree/canary/examples\n4. Ask if they'd like to explore any specific topic\n5. Encourage them to build something small to practice\n\n6. **Important** - ask the user if they have any feedback! indicate the feedback is very valued, whether it's positive or negative, and that it will help improve the experience. If the user provides feedback, go ahead and submit it via the support tool with the title [FEEDBACK]: <brief summary of feedback>.",
+        "introductionForAgent": "This final step congratulates the user on setting up their Next.js project and provides guidance on what to learn next. Point them to relevant documentation and suggest next topics based on their interests (e.g., routing, data fetching, styling, deployment)."
+      },
+      "displayOrder": 10,
+      "createdAt": 1754247955185,
+      "updatedAt": 1754419673415,
+      "metadata": {
+        "imported": true,
+        "importedAt": "2025-08-03T19:05:55.184Z"
+      },
+      "nextStepReference": null
+    }
+  ],
+  "metadata": {
+    "originalId": "wt_V5HKPclB",
+    "originalOrganizationId": "1HBRrQgQ2oBucPpcNY8K08T0QC2QTW5F",
+    "stepCount": 10,
+    "serverAssociationCount": 1
+  }
+}
