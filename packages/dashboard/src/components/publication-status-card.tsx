@@ -14,7 +14,7 @@ import { Switch } from './ui/switch'
 interface WalkthroughData {
     id: string
     title: string
-    status: 'draft' | 'published' | 'archived'
+    status: 'draft' | 'published' | 'archived' | null
 }
 
 interface PublicationStatusCardProps {
