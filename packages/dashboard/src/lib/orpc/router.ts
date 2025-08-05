@@ -452,18 +452,21 @@ export const getSupportTicketWithMcpUser = base
                 title: schema.supportRequests.title,
                 status: schema.supportRequests.status,
                 createdAt: schema.supportRequests.createdAt,
-                
+
                 // MCP Server User fields (the end user who submitted the ticket)
                 mcpUserTrackingId: schema.mcpServerUser.trackingId,
                 mcpUserEmail: schema.mcpServerUser.email,
                 mcpUserFirstSeen: schema.mcpServerUser.firstSeenAt,
-                
+
                 // MCP Server info
                 mcpServerName: schema.mcpServers.name,
                 mcpServerSlug: schema.mcpServers.slug
             })
             .from(schema.supportRequests)
-            .leftJoin(schema.mcpServerSession, eq(schema.supportRequests.mcpServerSessionId, schema.mcpServerSession.mcpServerSessionId))
+            .leftJoin(
+                schema.mcpServerSession,
+                eq(schema.supportRequests.mcpServerSessionId, schema.mcpServerSession.mcpServerSessionId)
+            )
             .leftJoin(schema.mcpServerUser, eq(schema.mcpServerSession.mcpServerUserId, schema.mcpServerUser.id))
             .leftJoin(schema.mcpServers, eq(schema.supportRequests.mcpServerId, schema.mcpServers.id))
             .where(

@@ -32,25 +32,26 @@ I can investigate logs, database state, and recent changes to help identify the 
 
 You have access to these key locations and tools:
 
-**Logs** (automatically created by `make daemon` and `make wui`):
-- Daemon logs: `~/.humanlayer/logs/daemon-YYYY-MM-DD-HH-MM-SS.log`
-- WUI logs: `~/.humanlayer/logs/wui-YYYY-MM-DD-HH-MM-SS.log`
-- MCP logs: `~/.humanlayer/logs/mcp-claude-approvals-*.log`
-- First line shows: `[timestamp] starting [service] in [directory]`
+**Logs** (Next.js application logs):
+- Next.js dev server output (running on port 3000)
+- SST logs (when deployed): `sst logs`
+- Browser console logs for client-side errors
 
 **Database**:
-- Location: `~/.humanlayer/daemon.db`
-- SQLite database with sessions, events, approvals, etc.
-- Can query directly with `sqlite3`
+- Development: Local PostgreSQL or SQLite database
+- Production: PostgreSQL via Drizzle ORM
+- Tables: `organization`, `user`, `session`, `mcp_servers`, `mcp_oauth_application`, `mcp_oauth_user`, `support_requests`
+- Query with: Drizzle queries in the codebase or direct SQL
 
 **Git State**:
 - Check current branch, recent commits, uncommitted changes
-- Similar to how `commit` and `describe_pr` commands work
+- Main branch: `master`
 
 **Service Status**:
-- Check if daemon is running: `ps aux | grep hld`
-- Check if WUI is running: `ps aux | grep wui`
-- Socket exists: `~/.humanlayer/daemon.sock`
+- Check if Next.js dev server is running: `ps aux | grep "next dev"`
+- Dev server URL: `http://localhost:3000`
+- Check if database is accessible
+- For production: SST deployment status
 
 ## Process Steps
 
@@ -73,25 +74,26 @@ After the user describes the issue:
 Spawn parallel Task agents for efficient investigation:
 
 ```
-Task 1 - Check Recent Logs:
-Find and analyze the most recent logs for errors:
-1. Find latest daemon log: ls -t ~/.humanlayer/logs/daemon-*.log | head -1
-2. Find latest WUI log: ls -t ~/.humanlayer/logs/wui-*.log | head -1
-3. Search for errors, warnings, or issues around the problem timeframe
-4. Note the working directory (first line of log)
-5. Look for stack traces or repeated errors
-Return: Key errors/warnings with timestamps
+Task 1 - Check Application State:
+Analyze the running application and logs:
+1. Use Puppeteer to check UI state at http://localhost:3000
+2. Check Next.js console output for errors
+3. Look for API route errors in terminal
+4. Check browser console for client-side errors
+5. Look for hydration mismatches or React errors
+Return: Key errors/warnings with context
 ```
 
 ```
 Task 2 - Database State:
 Check the current database state:
-1. Connect to database: sqlite3 ~/.humanlayer/daemon.db
-2. Check schema: .tables and .schema for relevant tables
-3. Query recent data:
-   - SELECT * FROM sessions ORDER BY created_at DESC LIMIT 5;
-   - SELECT * FROM conversation_events WHERE created_at > datetime('now', '-1 hour');
-   - Other queries based on the issue
+1. Query relevant tables based on the issue:
+   - Organizations: SELECT * FROM organization;
+   - MCP Servers: SELECT * FROM mcp_servers;
+   - Auth sessions: SELECT * FROM session ORDER BY created_at DESC LIMIT 5;
+   - Support requests: SELECT * FROM support_requests ORDER BY created_at DESC;
+2. Check for data integrity issues
+3. Verify foreign key relationships
 4. Look for stuck states or anomalies
 Return: Relevant database findings
 ```
@@ -102,8 +104,8 @@ Understand what changed recently:
 1. Check git status and current branch
 2. Look at recent commits: git log --oneline -10
 3. Check uncommitted changes: git diff
-4. Verify expected files exist
-5. Look for any file permission issues
+4. Verify Next.js route files exist in src/app/
+5. Check for TypeScript errors: bun run typecheck (if available)
 Return: Git state and any file issues
 ```
 
@@ -119,9 +121,10 @@ Based on the investigation, present a focused debug report:
 
 ### Evidence Found
 
-**From Logs** (`~/.humanlayer/logs/`):
-- [Error/warning with timestamp]
-- [Pattern or repeated issue]
+**From Application State**:
+- [Error/warning from Next.js console]
+- [Client-side errors or hydration issues]
+- [API route failures]
 
 **From Database**:
 ```sql
@@ -131,7 +134,7 @@ Based on the investigation, present a focused debug report:
 
 **From Git/Files**:
 - [Recent changes that might be related]
-- [File state issues]
+- [TypeScript or build errors]
 
 ### Root Cause
 [Most likely explanation based on evidence]
@@ -144,15 +147,17 @@ Based on the investigation, present a focused debug report:
    ```
 
 2. **If That Doesn't Work**:
-   - Restart services: `make daemon` and `make wui`
-   - Check browser console for WUI errors
-   - Run with debug: `HUMANLAYER_DEBUG=true make daemon`
+   - Check the dev server is running on port 3000
+   - Clear Next.js cache: `rm -rf .next`
+   - Check for TypeScript errors: `bun run typecheck`
+   - Verify database migrations are up to date
+   - Try logging in at `/login-for-claude` if auth issues
 
 ### Can't Access?
 Some issues might be outside my reach:
 - Browser console errors (F12 in browser)
-- MCP server internal state
-- System-level issues
+- SST deployment logs (production)
+- External service integrations
 
 Would you like me to investigate something specific further?
 ```
@@ -162,29 +167,38 @@ Would you like me to investigate something specific further?
 - **Focus on manual testing scenarios** - This is for debugging during implementation
 - **Always require problem description** - Can't debug without knowing what's wrong
 - **Read files completely** - No limit/offset when reading context
-- **Think like `commit` or `describe_pr`** - Understand git state and changes
-- **Guide back to user** - Some issues (browser console, MCP internals) are outside reach
+- **Understand the dual auth system** - Platform auth vs sub-tenant auth
+- **Check vhost routing** - MCP servers use subdomain-based routing
 - **No file editing** - Pure investigation only
+- **Dev server is always running** - Never run `bun run dev` or `bun run build`
 
 ## Quick Reference
 
-**Find Latest Logs**:
+**Check Application State**:
 ```bash
-ls -t ~/.humanlayer/logs/daemon-*.log | head -1
-ls -t ~/.humanlayer/logs/wui-*.log | head -1
+# Use Puppeteer to check UI at http://localhost:3000
+# Navigate to /login-for-claude if auth needed
 ```
 
-**Database Queries**:
-```bash
-sqlite3 ~/.humanlayer/daemon.db ".tables"
-sqlite3 ~/.humanlayer/daemon.db ".schema sessions"
-sqlite3 ~/.humanlayer/daemon.db "SELECT * FROM sessions ORDER BY created_at DESC LIMIT 5;"
+**Database Queries** (adjust for your DB setup):
+```sql
+-- Check organizations
+SELECT * FROM organization;
+
+-- Check MCP servers and routing
+SELECT slug, domain FROM mcp_servers;
+
+-- Check auth sessions
+SELECT * FROM session ORDER BY created_at DESC LIMIT 5;
+
+-- Check sub-tenant users
+SELECT * FROM mcp_oauth_user ORDER BY created_at DESC LIMIT 5;
 ```
 
 **Service Check**:
 ```bash
-ps aux | grep hld     # Is daemon running?
-ps aux | grep wui     # Is WUI running?
+ps aux | grep "next dev"     # Is Next.js running?
+lsof -i :3000               # What's on port 3000?
 ```
 
 **Git State**:
@@ -194,4 +208,10 @@ git log --oneline -10
 git diff
 ```
 
-Remember: This command helps you investigate without burning the primary window's context. Perfect for when you hit an issue during manual testing and need to dig into logs, database, or git state.
+**Common Issues**:
+- Auth problems: Check both auth systems (platform vs sub-tenant)
+- Routing issues: Verify vhost subdomain matches MCP server slug
+- Hydration errors: Check for server/client data mismatches
+- TypeScript errors: Run `bun run typecheck` if available
+
+Remember: This command helps you investigate without burning the primary window's context. Perfect for when you hit an issue during manual testing and need to dig into logs, database, or application state.

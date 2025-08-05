@@ -9,16 +9,15 @@ declare module "sst" {
       "name": string
       "type": "sst.aws.Bucket"
     }
+    "Dashboard": {
+      "type": "sst.aws.Nextjs"
+      "url": string
+    }
     "DatabaseMigrator": {
       "name": string
       "type": "sst.aws.Function"
     }
     "Inngest": {
-      "service": string
-      "type": "sst.aws.Service"
-      "url": string
-    }
-    "NextjsApp": {
       "service": string
       "type": "sst.aws.Service"
       "url": string

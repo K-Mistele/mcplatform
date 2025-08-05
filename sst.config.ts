@@ -16,7 +16,7 @@ const GOOGLE_CLIENT_ID = requireEnv('GOOGLE_CLIENT_ID')
 const GOOGLE_CLIENT_SECRET = requireEnv('GOOGLE_CLIENT_SECRET')
 
 const BETTER_AUTH_SECRET = requireEnv('BETTER_AUTH_SECRET')
-const NEXT_PUBLIC_BETTER_AUTH_URL = requireEnv('NEXT_PUBLIC_BETTER_AUTH_URL')
+//const NEXT_PUBLIC_BETTER_AUTH_URL = requireEnv('NEXT_PUBLIC_BETTER_AUTH_URL')
 const GOOGLE_API_KEY = requireEnv('GOOGLE_API_KEY')
 const TURBOPUFFER_API_KEY = requireEnv('TURBOPUFFER_API_KEY')
 
@@ -124,42 +124,6 @@ export default $config({
             dev: false // force it to deploy with SST dev since we need to test!
         })
 
-        const nextjsApp = new sst.aws.Service(`NextjsApp`, {
-            cluster,
-            link: [postgres, bucket, inngest, redis],
-            image: {
-                context: './packages/dashboard',
-                dockerfile: 'Dockerfile.dev'
-            },
-            environment: {
-                INNGEST_EVENT_KEY,
-                INNGEST_SIGNING_KEY,
-                INNGEST_BASE_URL: inngest.url,
-                DATABASE_URL: $interpolate`postgres://${postgres.username}:${urlEncodedPostgresPassword}@${postgres.host}:${postgres.port}/${postgres.database}`,
-                GITHUB_CLIENT_ID,
-                GITHUB_CLIENT_SECRET,
-                GOOGLE_CLIENT_ID,
-                GOOGLE_CLIENT_SECRET,
-                NEXT_PUBLIC_BETTER_AUTH_URL,
-                BETTER_AUTH_SECRET,
-                GOOGLE_API_KEY,
-                TURBOPUFFER_API_KEY
-            },
-            loadBalancer: {
-                ports: [{ listen: '3000/tcp' }]
-            },
-            serviceRegistry: {
-                port: 3000
-            },
-            dev: {
-                command: 'bun run dev'
-            }
-        })
-
-        $resolve([nextjsApp.url]).apply(([nextjsUrl]) => {
-            console.log(`Next.js app URL: ${nextjsUrl}`)
-        })
-
         new aws.lambda.Invocation('DatabaseMigratorInvocation', {
             input: Date.now().toString(),
             functionName: migrator.name
@@ -173,9 +137,36 @@ export default $config({
             }
         })
 
+        const domainName = $app.stage === 'production' ? 'naptha.gg' : `${$app.stage}.naptha.gg`
+
+        const nextApp = new sst.aws.Nextjs('Dashboard', {
+            path: './packages/dashboard',
+            regions: ['us-east-1'],
+            domain: { name: domainName, dns: sst.aws.dns(), redirects: [`www.${domainName}`] },
+            link: [postgres, bucket, inngest, redis],
+            vpc,
+            environment: {
+                INNGEST_EVENT_KEY,
+                INNGEST_SIGNING_KEY,
+                INNGEST_BASE_URL: inngest.url,
+                GITHUB_CLIENT_ID,
+                GITHUB_CLIENT_SECRET,
+                GOOGLE_CLIENT_ID,
+                GOOGLE_CLIENT_SECRET,
+                NEXT_PUBLIC_BETTER_AUTH_URL: `https://${domainName}`,
+                BETTER_AUTH_SECRET,
+                GOOGLE_API_KEY,
+                TURBOPUFFER_API_KEY
+            },
+            warm: 1,
+            dev: {
+                command: 'bun run dev'
+            }
+        })
+
         // Set up ngrok so that the inngest service can connect to the app
         new sst.x.DevCommand('Ngrok', {
-            link: [nextjsApp],
+            link: [nextApp],
             dev: {
                 command: 'bun run scripts/ngrok.ts'
             }
