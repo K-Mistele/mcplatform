@@ -62,6 +62,9 @@
             "correctness": {
                 "useExhaustiveDependencies": "off",
                 "noEmptyPattern": "off"
+            },
+            "performance": {
+                "noImgElement": "off"
             }
         }
     }

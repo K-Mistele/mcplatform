@@ -20,7 +20,7 @@ export function UserAvatar({ image, fallbackValue, name, size = '32px', classNam
     if (!image || imageError) {
         return (
             <div className={cn('overflow-hidden', className)}>
-                <Image
+                <img
                     src={`/api/identicon/${encodeURIComponent(fallbackValue)}`}
                     alt={name || 'User identicon'}
                     width={sizeNum}

@@ -16,7 +16,7 @@ const GOOGLE_CLIENT_ID = requireEnv('GOOGLE_CLIENT_ID')
 const GOOGLE_CLIENT_SECRET = requireEnv('GOOGLE_CLIENT_SECRET')
 
 const BETTER_AUTH_SECRET = requireEnv('BETTER_AUTH_SECRET')
-//const NEXT_PUBLIC_BETTER_AUTH_URL = requireEnv('NEXT_PUBLIC_BETTER_AUTH_URL')
+const NEXT_PUBLIC_BETTER_AUTH_URL = requireEnv('NEXT_PUBLIC_BETTER_AUTH_URL')
 const GOOGLE_API_KEY = requireEnv('GOOGLE_API_KEY')
 const TURBOPUFFER_API_KEY = requireEnv('TURBOPUFFER_API_KEY')
 
@@ -153,7 +153,7 @@ export default $config({
                 GITHUB_CLIENT_SECRET,
                 GOOGLE_CLIENT_ID,
                 GOOGLE_CLIENT_SECRET,
-                NEXT_PUBLIC_BETTER_AUTH_URL: `https://${domainName}`,
+                NEXT_PUBLIC_BETTER_AUTH_URL: $dev ? NEXT_PUBLIC_BETTER_AUTH_URL : `https://${domainName}`,
                 BETTER_AUTH_SECRET,
                 GOOGLE_API_KEY,
                 TURBOPUFFER_API_KEY
