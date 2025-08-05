@@ -85,7 +85,7 @@ Then wait for the user's research query.
 
 5. **Gather metadata for the research document:**
    - Run the `scripts/spec_metadata.sh` script to generate all relevant metadata
-   - Filename: should be under the `specification` directory for the feature that you're currently working on, e.g. `specification/01-better-session-support/`, or under `specification/general` if you don't hav einformation about which feature you're working on. Name the file `research_YYYY-MM-DD_HH-MM-SS_topic.md`
+   - Filename: should be under the `research` directory for the feature that you're currently working on, e.g. `specifications/01-better-session-support/research`, or under `specifications/general/research` if you don't hav einformation about which feature you're working on. Name the file `research_YYYY-MM-DD_HH-MM-SS_topic.md` - e.g. `specifications/05-installation-example/research/research_<date>_<topic>.md`
 
 6. **Generate research document:**
    - Use the metadata gathered in step 4

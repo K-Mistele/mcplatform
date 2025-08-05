@@ -115,6 +115,47 @@ export function ChartAreaInteractive() {
         )
     }
 
+    // Time range controls component to ensure they're always available
+    const TimeRangeControls = () => (
+        <CardAction>
+            <ToggleGroup
+                type="single"
+                value={timeRange}
+                onValueChange={(value) => value && setTimeRange(value as typeof timeRange)}
+                variant="outline"
+                className="hidden *:data-[slot=toggle-group-item]:!px-4 @[767px]/card:flex"
+            >
+                <ToggleGroupItem value="1h">Past hour</ToggleGroupItem>
+                <ToggleGroupItem value="1d">Past day</ToggleGroupItem>
+                <ToggleGroupItem value="1w">Past week</ToggleGroupItem>
+                <ToggleGroupItem value="1m">Past month</ToggleGroupItem>
+            </ToggleGroup>
+            <Select value={timeRange} onValueChange={(value) => setTimeRange(value as typeof timeRange)}>
+                <SelectTrigger
+                    className="flex w-40 **:data-[slot=select-value]:block **:data-[slot=select-value]:truncate @[767px]/card:hidden"
+                    size="sm"
+                    aria-label="Select a value"
+                >
+                    <SelectValue placeholder="Past day" />
+                </SelectTrigger>
+                <SelectContent className="rounded-xl">
+                    <SelectItem value="1h" className="rounded-lg">
+                        Past hour
+                    </SelectItem>
+                    <SelectItem value="1d" className="rounded-lg">
+                        Past day
+                    </SelectItem>
+                    <SelectItem value="1w" className="rounded-lg">
+                        Past week
+                    </SelectItem>
+                    <SelectItem value="1m" className="rounded-lg">
+                        Past month
+                    </SelectItem>
+                </SelectContent>
+            </Select>
+        </CardAction>
+    )
+
     if (allChartKeys.length === 0) {
         return (
             <Card className="@container/card">
@@ -124,6 +165,7 @@ export function ChartAreaInteractive() {
                         <span className="hidden @[540px]/card:block">No MCP activity data available</span>
                         <span className="@[540px]/card:hidden">No data available</span>
                     </CardDescription>
+                    <TimeRangeControls />
                 </CardHeader>
                 <CardContent className="px-2 pt-4 sm:px-6 sm:pt-6">
                     <div className="h-[250px] flex items-center justify-center">
@@ -142,43 +184,7 @@ export function ChartAreaInteractive() {
                     <span className="hidden @[540px]/card:block">Tool calls and connections over time</span>
                     <span className="@[540px]/card:hidden">Activity over time</span>
                 </CardDescription>
-                <CardAction>
-                    <ToggleGroup
-                        type="single"
-                        value={timeRange}
-                        onValueChange={(value) => value && setTimeRange(value as typeof timeRange)}
-                        variant="outline"
-                        className="hidden *:data-[slot=toggle-group-item]:!px-4 @[767px]/card:flex"
-                    >
-                        <ToggleGroupItem value="1h">Past hour</ToggleGroupItem>
-                        <ToggleGroupItem value="1d">Past day</ToggleGroupItem>
-                        <ToggleGroupItem value="1w">Past week</ToggleGroupItem>
-                        <ToggleGroupItem value="1m">Past month</ToggleGroupItem>
-                    </ToggleGroup>
-                    <Select value={timeRange} onValueChange={(value) => setTimeRange(value as typeof timeRange)}>
-                        <SelectTrigger
-                            className="flex w-40 **:data-[slot=select-value]:block **:data-[slot=select-value]:truncate @[767px]/card:hidden"
-                            size="sm"
-                            aria-label="Select a value"
-                        >
-                            <SelectValue placeholder="Past day" />
-                        </SelectTrigger>
-                        <SelectContent className="rounded-xl">
-                            <SelectItem value="1h" className="rounded-lg">
-                                Past hour
-                            </SelectItem>
-                            <SelectItem value="1d" className="rounded-lg">
-                                Past day
-                            </SelectItem>
-                            <SelectItem value="1w" className="rounded-lg">
-                                Past week
-                            </SelectItem>
-                            <SelectItem value="1m" className="rounded-lg">
-                                Past month
-                            </SelectItem>
-                        </SelectContent>
-                    </Select>
-                </CardAction>
+                <TimeRangeControls />
             </CardHeader>
             <CardContent className="px-2 pt-4 sm:px-6 sm:pt-6">
                 <ChartContainer config={chartConfig} className="aspect-auto h-[250px] w-full">
