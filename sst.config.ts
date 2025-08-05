@@ -142,7 +142,12 @@ export default $config({
         const nextApp = new sst.aws.Nextjs('Dashboard', {
             path: './packages/dashboard',
             regions: ['us-east-1'],
-            domain: { name: domainName, dns: sst.aws.dns(), redirects: [`www.${domainName}`] },
+            domain: {
+                name: domainName,
+                dns: sst.aws.dns(),
+                redirects: [`www.${domainName}`],
+                aliases: [`*.${domainName}`]
+            },
             link: [postgres, bucket, inngest, redis],
             vpc,
             environment: {
