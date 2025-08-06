@@ -145,7 +145,7 @@ export const deleteMcpUsersAction = base
             .delete(schema.mcpServerUser)
             .where(
                 and(
-                    inArray(schema.mcpServerUser.trackingId, input.userIds),
+                    inArray(schema.mcpServerUser.id, input.userIds),
                     inArray(schema.mcpServerUser.id, userIdsInOrganization)
                 )
             )
