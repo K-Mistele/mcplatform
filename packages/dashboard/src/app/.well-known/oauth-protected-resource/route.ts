@@ -1,6 +1,9 @@
 import { db, schema } from 'database'
 import { eq } from 'drizzle-orm'
+import { headers } from 'next/headers'
 import { protectedResourceHandler } from '../../../lib/mcp'
+
+export const dynamic = 'force-dynamic'
 
 /**
  * This function builds the handler on the fly based on the host.
@@ -8,6 +11,7 @@ import { protectedResourceHandler } from '../../../lib/mcp'
  * @returns
  */
 async function handler(request: Request) {
+    await headers()
     const host = request.headers.get('host')
     if (!host) {
         return new Response('Invalid host', { status: 404 })

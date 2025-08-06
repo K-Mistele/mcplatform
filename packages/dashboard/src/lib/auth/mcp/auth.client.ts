@@ -7,7 +7,6 @@ export const authClient = createAuthClient({
 })
 
 /**
- * @deprecated use useAuthClient instead
  * @returns
  */
 export function useAuthClient() {
@@ -16,8 +15,7 @@ export function useAuthClient() {
     const getClient = () => {
         if (!clientRef.current) {
             clientRef.current = createAuthClient({
-                //baseURL: `${window.location.protocol}//${window.location.host}/mcp-oidc/auth`
-                baseURL: `${process.env.NEXT_PUBLIC_BETTER_AUTH_URL!}/mcp-oidc/auth`
+                baseURL: `${window.location.protocol}//${window.location.host}/mcp-oidc/auth`
             })
         }
         return clientRef.current

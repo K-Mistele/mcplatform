@@ -1,8 +1,12 @@
 import { db, schema } from 'database'
 import { eq } from 'drizzle-orm'
+import { headers } from 'next/headers'
 import type { NextRequest } from 'next/server'
 
+export const dynamic = 'force-dynamic'
+
 export async function GET(request: NextRequest) {
+    await headers()
     const host = request.headers.get('host')
     if (!host) {
         return new Response('Invalid host; host not found', { status: 404 })
@@ -51,12 +55,12 @@ export async function GET(request: NextRequest) {
 }
 
 const oauthDiscoveryMetadata = (origin: string) => ({
-    issuer: origin,
-    authorization_endpoint: `${origin}/mcp-oidc/auth/mcp/authorize`,
-    token_endpoint: `${origin}/mcp-oidc/auth/mcp/token`,
-    userinfo_endpoint: `${origin}/mcp-oidc/auth/mcp/userinfo`,
-    jwks_uri: `${origin}/mcp-oidc/auth/mcp/jwks`,
-    registration_endpoint: `${origin}/mcp-oidc/auth/mcp/register`,
+    issuer: process.env.NEXT_PUBLIC_BETTER_AUTH_URL!,
+    authorization_endpoint: `${process.env.NEXT_PUBLIC_BETTER_AUTH_URL}/mcp-oidc/auth/mcp/authorize`,
+    token_endpoint: `${process.env.NEXT_PUBLIC_BETTER_AUTH_URL}/mcp-oidc/auth/mcp/token`,
+    userinfo_endpoint: `${process.env.NEXT_PUBLIC_BETTER_AUTH_URL}/mcp-oidc/auth/mcp/userinfo`,
+    jwks_uri: `${process.env.NEXT_PUBLIC_BETTER_AUTH_URL}/mcp-oidc/auth/mcp/jwks`,
+    registration_endpoint: `${process.env.NEXT_PUBLIC_BETTER_AUTH_URL}/mcp-oidc/auth/mcp/register`,
     scopes_supported: ['openid', 'profile', 'email', 'offline_access'],
     response_types_supported: ['code'],
     response_modes_supported: ['query'],

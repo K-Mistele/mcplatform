@@ -3,7 +3,7 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { authClient } from '@/lib/auth/mcp/auth.client'
+import { useAuthClient } from '@/lib/auth/mcp/auth.client'
 import { cn } from '@/lib/utils'
 import { LoaderCircle } from 'lucide-react'
 import { useRouter, useSearchParams } from 'next/navigation'
@@ -13,6 +13,8 @@ import { toast } from 'sonner'
 
 export function OidcLoginForm({ className, ...props }: React.ComponentProps<'div'>) {
     const searchParams = useSearchParams()
+    const ac = useAuthClient()
+
     const router = useRouter()
 
     const [username, setUsername] = useState('')
@@ -26,10 +28,10 @@ export function OidcLoginForm({ className, ...props }: React.ComponentProps<'div
             return
         }
         setIsLoading(true)
-        const { data, error } = await authClient.signIn.email({
+        const { data, error } = await ac().signIn.email({
             email: username,
-            password: password
-            //callbackURL: '/mcp-oidc/auth/mcp/authorize'
+            password: password,
+            callbackURL: `/mcp-oidc/auth/mcp/authorize?${searchParams?.toString()}`
         })
         if (error) {
             toast.error('Invalid username or password')
@@ -48,10 +50,10 @@ export function OidcLoginForm({ className, ...props }: React.ComponentProps<'div
     })
 
     const socialLogin = async (provider: 'google') => {
-        const { data, error } = await authClient.signIn.social({
+        const { data, error } = await ac().signIn.social({
             provider,
-            callbackURL: `/mcp-oidc/auth/mcp/authorize?${searchParams?.toString()}`
-            //disableRedirect: true
+            callbackURL: `/mcp-oidc/auth/mcp/authorize?${searchParams?.toString()}`,
+            disableRedirect: true
         })
         console.log('error', error)
 
