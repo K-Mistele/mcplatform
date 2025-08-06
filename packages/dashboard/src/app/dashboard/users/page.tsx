@@ -7,6 +7,8 @@ import { Suspense } from 'react'
 import { ErrorBoundary } from 'react-error-boundary'
 import { UsersClient } from './users-client'
 
+export const dynamic = 'force-dynamic'
+
 export default async function UsersPage() {
     const session = await requireSession()
 
