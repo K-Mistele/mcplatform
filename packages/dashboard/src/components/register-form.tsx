@@ -7,12 +7,15 @@ import { authClient } from '@/lib/auth/auth.client'
 import { cn } from '@/lib/utils'
 import { GithubIcon, LoaderCircle } from 'lucide-react'
 import Image from 'next/image'
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 import { useState } from 'react'
 import { useKey } from 'react-use'
 import { toast } from 'sonner'
 
 export function RegisterForm({ className, ...props }: React.ComponentProps<'div'>) {
+    const searchParams = useSearchParams()
+    const redirectUrl = searchParams.get('redirect') || '/dashboard'
+    
     const [email, setEmail] = useState('')
     const [password, setPassword] = useState('')
     const [name, setName] = useState('')
@@ -27,7 +30,7 @@ export function RegisterForm({ className, ...props }: React.ComponentProps<'div'
             password, // user password -> min 8 characters by default
             name, // user display name
             image: `https://img.logo.dev/${domain}?token=pk_TFdOakUKSHuYLhmUlWaSbQ`, // User image URL (optional)
-            callbackURL: '/dashboard' // A URL to redirect to after the user verifies their email (optional)
+            callbackURL: redirectUrl // A URL to redirect to after the user verifies their email (optional)
         })
         if (error) {
             toast.error(error.message)
@@ -35,12 +38,13 @@ export function RegisterForm({ className, ...props }: React.ComponentProps<'div'
         }
         toast.success('Account created successfully')
         setIsLoading(false)
-        router.push('/dashboard')
+        // Wait briefly for auth state to settle before redirecting
+        setTimeout(() => router.push(redirectUrl), 100)
     }
     const socialLogin = async (provider: 'google' | 'github') => {
         const { data, error } = await authClient.signIn.social({
             provider,
-            callbackURL: '/dashboard'
+            callbackURL: redirectUrl
         })
         if (error) {
             toast.error(`Unable to sign in with ${provider}`)
@@ -143,6 +147,12 @@ export function RegisterForm({ className, ...props }: React.ComponentProps<'div'
             <div className="text-muted-foreground *:[a]:hover:text-primary text-center text-xs text-balance *:[a]:underline *:[a]:underline-offset-4">
                 By clicking continue, you agree to our <a href="/#">Terms of Service</a> and{' '}
                 <a href="/#">Privacy Policy</a>.
+            </div>
+            <div className="text-center text-sm">
+                Already have an account?{' '}
+                <a href={`/login${redirectUrl !== '/dashboard' ? `?redirect=${encodeURIComponent(redirectUrl)}` : ''}`} className="underline underline-offset-4">
+                    Sign in
+                </a>
             </div>
         </div>
     )

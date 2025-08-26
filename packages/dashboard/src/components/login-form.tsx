@@ -8,9 +8,13 @@ import { cn } from '@/lib/utils'
 import { GithubIcon, LoaderCircle } from 'lucide-react'
 import { useState } from 'react'
 import { useKey } from 'react-use'
+import { useSearchParams } from 'next/navigation'
 import { toast } from 'sonner'
 
 export function LoginForm({ className, ...props }: React.ComponentProps<'div'>) {
+    const searchParams = useSearchParams()
+    const redirectUrl = searchParams.get('redirect') || '/dashboard'
+    
     const {
         data: session,
         isPending, //loading state
@@ -39,7 +43,7 @@ export function LoginForm({ className, ...props }: React.ComponentProps<'div'>) 
         const { data, error } = await authClient.signIn.email({
             email: username,
             password: password,
-            callbackURL: '/dashboard'
+            callbackURL: redirectUrl
         })
         if (error) {
             toast.error('Invalid username or password')
@@ -59,7 +63,7 @@ export function LoginForm({ className, ...props }: React.ComponentProps<'div'>) 
     const socialLogin = async (provider: 'google' | 'github') => {
         const { data, error } = await authClient.signIn.social({
             provider,
-            callbackURL: '/dashboard'
+            callbackURL: redirectUrl
         })
         if (error) {
             toast.error(`Unable to sign in with ${provider}`)
@@ -143,7 +147,7 @@ export function LoginForm({ className, ...props }: React.ComponentProps<'div'>) 
                             </div>
                             <div className="text-center text-sm">
                                 Don&apos;t have an account?{' '}
-                                <a href="/signup" className="underline underline-offset-4">
+                                <a href={`/signup${redirectUrl !== '/dashboard' ? `?redirect=${encodeURIComponent(redirectUrl)}` : ''}`} className="underline underline-offset-4">
                                     Sign up
                                 </a>
                             </div>
