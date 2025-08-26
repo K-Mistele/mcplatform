@@ -154,15 +154,15 @@ export function EditMemberRoleDialog({ member, open, onOpenChange, onRoleUpdated
                 )}
 
                 <DialogFooter>
-                    <Button variant="outline" onClick={handleCancel} disabled={updateStatus === 'executing'}>
+                    <Button variant="outline" onClick={handleCancel} disabled={updateStatus === 'pending'}>
                         Cancel
                     </Button>
                     <Button 
                         onClick={handleSubmit} 
-                        disabled={updateStatus === 'executing' || selectedRole === member.role}
+                        disabled={updateStatus === 'pending' || selectedRole === member.role}
                         className={showOwnerConfirmation ? 'bg-orange-600 hover:bg-orange-700' : ''}
                     >
-                        {updateStatus === 'executing' ? 'Updating...' : showOwnerConfirmation ? 'Confirm Promotion' : 'Update Role'}
+                        {updateStatus === 'pending' ? 'Updating...' : showOwnerConfirmation ? 'Confirm Promotion' : 'Update Role'}
                     </Button>
                 </DialogFooter>
             </DialogContent>

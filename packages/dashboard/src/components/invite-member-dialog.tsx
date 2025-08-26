@@ -158,7 +158,7 @@ export function InviteMemberDialog({ open, onOpenChange, onInviteSent }: InviteM
                                 value={email}
                                 onChange={(e) => setEmail(e.target.value)}
                                 className="mt-1"
-                                disabled={inviteStatus === 'executing'}
+                                disabled={inviteStatus === 'pending'}
                                 required
                             />
                         </div>
@@ -167,7 +167,7 @@ export function InviteMemberDialog({ open, onOpenChange, onInviteSent }: InviteM
                             <Label htmlFor="role" className="text-sm font-medium">
                                 Role
                             </Label>
-                            <Select value={role} onValueChange={(value: any) => setRole(value)} disabled={inviteStatus === 'executing'}>
+                            <Select value={role} onValueChange={(value: any) => setRole(value)} disabled={inviteStatus === 'pending'}>
                                 <SelectTrigger className="mt-1">
                                     <SelectValue />
                                 </SelectTrigger>
@@ -206,16 +206,16 @@ export function InviteMemberDialog({ open, onOpenChange, onInviteSent }: InviteM
                                 type="button" 
                                 variant="outline" 
                                 onClick={handleClose} 
-                                disabled={inviteStatus === 'executing'}
+                                disabled={inviteStatus === 'pending'}
                             >
                                 Cancel
                             </Button>
                             <Button 
                                 type="submit" 
                                 onClick={handleSubmit}
-                                disabled={inviteStatus === 'executing' || !email.trim()}
+                                disabled={inviteStatus === 'pending' || !email.trim()}
                             >
-                                {inviteStatus === 'executing' ? (
+                                {inviteStatus === 'pending' ? (
                                     'Sending...'
                                 ) : (
                                     <>

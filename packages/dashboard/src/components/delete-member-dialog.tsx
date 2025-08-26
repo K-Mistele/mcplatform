@@ -138,7 +138,7 @@ export function DeleteMemberDialog({ member, open, onOpenChange, onMemberRemoved
                                 value={confirmationEmail}
                                 onChange={(e) => setConfirmationEmail(e.target.value)}
                                 className="mt-1"
-                                disabled={removeStatus === 'executing'}
+                                disabled={removeStatus === 'pending'}
                                 autoComplete="off"
                             />
                             {confirmationEmail && !isConfirmationValid && (
@@ -154,16 +154,16 @@ export function DeleteMemberDialog({ member, open, onOpenChange, onMemberRemoved
                     <Button 
                         variant="outline" 
                         onClick={handleCancel} 
-                        disabled={removeStatus === 'executing'}
+                        disabled={removeStatus === 'pending'}
                     >
                         Cancel
                     </Button>
                     <Button 
                         variant="destructive"
                         onClick={handleSubmit}
-                        disabled={removeStatus === 'executing' || !isConfirmationValid}
+                        disabled={removeStatus === 'pending' || !isConfirmationValid}
                     >
-                        {removeStatus === 'executing' ? 'Removing...' : 'Remove Member'}
+                        {removeStatus === 'pending' ? 'Removing...' : 'Remove Member'}
                     </Button>
                 </DialogFooter>
             </DialogContent>
