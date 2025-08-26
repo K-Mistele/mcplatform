@@ -76,7 +76,7 @@ const puppeteer = require('puppeteer');
     if (!teamLink) {
       // Try to find any link with "team" in the text
       const allLinksElements = await page.$$('a');
-      for (let link of allLinksElements) {
+      for (const link of allLinksElements) {
         const text = await page.evaluate(el => el.textContent, link);
         if (text && text.toLowerCase().includes('team')) {
           console.log('Found team link by text content:', text);
@@ -112,7 +112,7 @@ const puppeteer = require('puppeteer');
     const buttons = await page.$$('button');
     let inviteButton = null;
     
-    for (let button of buttons) {
+    for (const button of buttons) {
       const text = await page.evaluate(el => el.textContent, button);
       if (text && text.toLowerCase().includes('invite')) {
         console.log('Found invite button with text:', text);
