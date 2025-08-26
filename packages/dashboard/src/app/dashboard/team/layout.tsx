@@ -1,3 +1,4 @@
+import { TeamTabs } from '@/components/team-tabs'
 import type { ReactNode } from 'react'
 
 export default function TeamLayout({ children }: { children: ReactNode }) {
@@ -11,6 +12,7 @@ export default function TeamLayout({ children }: { children: ReactNode }) {
                     </p>
                 </div>
             </div>
+            <TeamTabs />
             {children}
         </div>
     )
