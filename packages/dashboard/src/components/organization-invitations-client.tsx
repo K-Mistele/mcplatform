@@ -18,6 +18,7 @@ import { resendInvitationAction, cancelInvitationAction } from '@/lib/orpc/actio
 import { isDefinedError, onError, onSuccess } from '@orpc/client'
 import { useServerAction } from '@orpc/react/hooks'
 import { toast } from 'sonner'
+import { type VisibilityState } from '@tanstack/react-table'
 
 interface OrganizationInvitation {
     id: string
@@ -47,7 +48,7 @@ export function OrganizationInvitationsClient({ invitations: rawInvitations, cur
     const [searchValue, setSearchValue] = React.useState('')
     const [roleFilter, setRoleFilter] = React.useState('all') 
     const [statusFilter, setStatusFilter] = React.useState('pending')
-    const [columnVisibility, setColumnVisibility] = React.useState({})
+    const [columnVisibility, setColumnVisibility] = React.useState<VisibilityState>({})
     
     // Server actions
     const { execute: resendInvitation, status: resendStatus } = useServerAction(resendInvitationAction, {

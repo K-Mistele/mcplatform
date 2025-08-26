@@ -16,6 +16,7 @@ import { DeleteMemberDialog } from './delete-member-dialog'
 import { EditMemberRoleDialog } from './edit-member-role-dialog'
 import { InviteMemberDialog } from './invite-member-dialog'
 import { OrganizationMembersTable } from './organization-members-table'
+import { type VisibilityState } from '@tanstack/react-table'
 
 interface OrganizationMember {
     id: string
@@ -48,7 +49,7 @@ export function OrganizationMembersClient({ members: rawMembers, currentUserId }
     // Table state management
     const [searchValue, setSearchValue] = React.useState('')
     const [roleFilter, setRoleFilter] = React.useState('all')
-    const [columnVisibility, setColumnVisibility] = React.useState({})
+    const [columnVisibility, setColumnVisibility] = React.useState<VisibilityState>({})
     
     // Filter members based on search and role
     const filteredMembers = React.useMemo(() => {

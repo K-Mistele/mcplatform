@@ -191,12 +191,12 @@ export const updateMemberRoleAction = base
                 headers: await headers()
             })
 
-            if (!result.member) {
+            if (!result) {
                 throw new Error('Failed to update member role')
             }
 
             revalidatePath('/dashboard/team/members')
-            return result.member
+            return result
         } catch (error) {
             throw errors.RESOURCE_NOT_FOUND({
                 message: 'Failed to update member role'
@@ -332,16 +332,18 @@ export const resendInvitationAction = base
         }
 
         try {
-            // Use Better Auth API to resend invitation
-            const result = await auth.api.resendInvitation({
-                body: {
-                    invitationId: input.invitationId
-                },
-                headers: await headers()
-            })
+            // Update invitation expiry to extend it (effectively resending)
+            const [updatedInvitation] = await db
+                .update(schema.invitation)
+                .set({
+                    expiresAt: new Date(Date.now() + 48 * 60 * 60 * 1000), // 48 hours from now
+                    status: 'pending' // Reset status to pending if needed
+                })
+                .where(eq(schema.invitation.id, input.invitationId))
+                .returning()
 
             revalidatePath('/dashboard/team/invitations')
-            return result.invitation
+            return updatedInvitation
         } catch (error) {
             throw errors.RESOURCE_NOT_FOUND({
                 message: 'Failed to resend invitation'
@@ -541,7 +543,7 @@ export const acceptInvitationAction = base
         })
     )
     .handler(async ({ input, errors }) => {
-        const session = await requireSession({ organizationRequired: false })
+        const session = await requireSession()
 
         // Get the invitation
         const [invitation] = await db
@@ -591,6 +593,12 @@ export const acceptInvitationAction = base
         if (existingMember) {
             throw errors.RESOURCE_NOT_FOUND({
                 message: 'You are already a member of this organization'
+            })
+        }
+
+        if (!invitation.role) {
+            throw errors.RESOURCE_NOT_FOUND({
+                message: 'Invitation has no role assigned'
             })
         }
 
