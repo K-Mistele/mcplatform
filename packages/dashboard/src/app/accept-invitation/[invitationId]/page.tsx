@@ -10,9 +10,9 @@ import { IconCheck, IconAlertTriangle, IconUsersGroup } from '@tabler/icons-reac
 import Link from 'next/link'
 
 interface AcceptInvitationPageProps {
-    params: {
+    params: Promise<{
         invitationId: string
-    }
+    }>
 }
 
 export default async function AcceptInvitationPage({ params }: AcceptInvitationPageProps) {
@@ -115,13 +115,13 @@ export default async function AcceptInvitationPage({ params }: AcceptInvitationP
                         <CardTitle>Join {invitation.organizationName}</CardTitle>
                         <CardDescription>
                             {invitation.inviterName} has invited you to join their organization as a{' '}
-                            <strong>{invitation.role}</strong>.
+                            <strong>{invitation.role || 'member'}</strong>.
                         </CardDescription>
                     </CardHeader>
                     <CardContent className="space-y-4">
                         <div className="text-sm text-muted-foreground space-y-2">
                             <p><strong>Organization:</strong> {invitation.organizationName}</p>
-                            <p><strong>Role:</strong> {invitation.role.charAt(0).toUpperCase() + invitation.role.slice(1)}</p>
+                            <p><strong>Role:</strong> {invitation.role ? invitation.role.charAt(0).toUpperCase() + invitation.role.slice(1) : 'Member'}</p>
                             <p><strong>Invited by:</strong> {invitation.inviterName}</p>
                             <p><strong>Email:</strong> {invitation.email}</p>
                             <p><strong>Expires:</strong> {expiryDate.toLocaleDateString()}</p>
@@ -195,7 +195,7 @@ export default async function AcceptInvitationPage({ params }: AcceptInvitationP
                         <CardTitle>Welcome to {invitation.organizationName}!</CardTitle>
                         <CardDescription>
                             You have successfully joined the organization as a{' '}
-                            <strong>{invitation.role}</strong>.
+                            <strong>{invitation.role || 'member'}</strong>.
                         </CardDescription>
                     </CardHeader>
                     <CardContent className="text-center space-y-4">
