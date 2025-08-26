@@ -40,7 +40,6 @@ interface OrganizationInvitation {
     role: 'owner' | 'admin' | 'member'
     status: string
     expiresAt: Date
-    createdAt: Date
     inviterName: string
     inviterEmail: string
 }
@@ -162,14 +161,6 @@ const columns: ColumnDef<OrganizationInvitation>[] = [
         }
     },
     {
-        accessorKey: 'createdAt',
-        header: 'Invited',
-        cell: ({ row }) => {
-            const date = row.getValue('createdAt') as Date
-            return <span className="text-muted-foreground text-sm">{formatDate(date)}</span>
-        }
-    },
-    {
         accessorKey: 'expiresAt',
         header: 'Expires',
         cell: ({ row }) => {
@@ -272,7 +263,7 @@ export function OrganizationInvitationsTable({
                                             disabled={!canCancel}
                                         >
                                             <IconX className="mr-2 h-4 w-4" />
-                                            Cancel
+                                            Delete
                                         </DropdownMenuItem>
                                     )}
                                     {!canResend && !canCancel && (

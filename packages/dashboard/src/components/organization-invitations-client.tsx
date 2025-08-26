@@ -25,7 +25,6 @@ interface OrganizationInvitation {
     role: 'owner' | 'admin' | 'member'
     status: string
     expiresAt: Date
-    createdAt: Date
     inviterName: string
     inviterEmail: string
 }
@@ -39,16 +38,15 @@ export function OrganizationInvitationsClient({ invitations: rawInvitations, cur
     // Convert timestamps to Date objects
     const invitations = rawInvitations.map(invitation => ({
         ...invitation,
-        createdAt: new Date(invitation.createdAt),
         expiresAt: new Date(invitation.expiresAt)
     }))
     
     const [inviteDialogOpen, setInviteDialogOpen] = React.useState(false)
     
-    // Table state management
+    // Table state management - state persists across revalidatePath
     const [searchValue, setSearchValue] = React.useState('')
-    const [roleFilter, setRoleFilter] = React.useState('all')
-    const [statusFilter, setStatusFilter] = React.useState('all')
+    const [roleFilter, setRoleFilter] = React.useState('all') 
+    const [statusFilter, setStatusFilter] = React.useState('pending')
     const [columnVisibility, setColumnVisibility] = React.useState({})
     
     // Server actions
@@ -56,7 +54,6 @@ export function OrganizationInvitationsClient({ invitations: rawInvitations, cur
         interceptors: [
             onSuccess(() => {
                 toast.success('Invitation resent successfully')
-                window.location.reload()
             }),
             onError((error) => {
                 if (isDefinedError(error)) {
@@ -71,14 +68,13 @@ export function OrganizationInvitationsClient({ invitations: rawInvitations, cur
     const { execute: cancelInvitation, status: cancelStatus } = useServerAction(cancelInvitationAction, {
         interceptors: [
             onSuccess(() => {
-                toast.success('Invitation cancelled successfully')
-                window.location.reload()
+                toast.success('Invitation deleted successfully')
             }),
             onError((error) => {
                 if (isDefinedError(error)) {
                     toast.error(error.message)
                 } else {
-                    toast.error('Failed to cancel invitation')
+                    toast.error('Failed to delete invitation')
                 }
             })
         ]
@@ -116,9 +112,7 @@ export function OrganizationInvitationsClient({ invitations: rawInvitations, cur
     }
 
     const handleInviteSent = () => {
-        // For server actions, the page will automatically revalidate
-        // This could trigger a router refresh if needed
-        window.location.reload()
+        // revalidatePath will handle the UI update automatically
     }
 
     // Calculate status counts for display
@@ -213,14 +207,6 @@ export function OrganizationInvitationsClient({ invitations: rawInvitations, cur
                                 }
                             >
                                 Status
-                            </DropdownMenuCheckboxItem>
-                            <DropdownMenuCheckboxItem
-                                checked={columnVisibility['createdAt'] !== false}
-                                onCheckedChange={(checked) => 
-                                    setColumnVisibility(prev => ({ ...prev, createdAt: checked }))
-                                }
-                            >
-                                Invited Date
                             </DropdownMenuCheckboxItem>
                             <DropdownMenuCheckboxItem
                                 checked={columnVisibility['expiresAt'] !== false}

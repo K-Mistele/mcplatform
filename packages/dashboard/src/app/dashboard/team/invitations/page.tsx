@@ -15,14 +15,13 @@ export default async function InvitationsPage() {
             role: schema.invitation.role,
             status: schema.invitation.status,
             expiresAt: schema.invitation.expiresAt,
-            createdAt: schema.invitation.createdAt,
             inviterName: schema.user.name,
             inviterEmail: schema.user.email
         })
         .from(schema.invitation)
         .innerJoin(schema.user, eq(schema.invitation.inviterId, schema.user.id))
         .where(eq(schema.invitation.organizationId, session.session.activeOrganizationId))
-        .orderBy(desc(schema.invitation.createdAt))
+        .orderBy(desc(schema.invitation.expiresAt))
     
     const invitations = rawInvitations.map(invitation => ({
         ...invitation,
