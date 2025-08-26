@@ -26,7 +26,8 @@ export default async function MembersPage() {
     const members = rawMembers.map(member => ({
         ...member,
         name: member.name || 'Unknown User',
-        email: member.email || 'no-email@example.com'
+        email: member.email || 'no-email@example.com',
+        role: member.role as 'owner' | 'admin' | 'member'
     }))
     
     return (
