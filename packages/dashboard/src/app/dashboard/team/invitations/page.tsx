@@ -25,6 +25,7 @@ export default async function InvitationsPage() {
     
     const invitations = rawInvitations.map(invitation => ({
         ...invitation,
+        role: (invitation.role || 'member') as 'owner' | 'admin' | 'member',
         inviterName: invitation.inviterName || 'Unknown User',
         inviterEmail: invitation.inviterEmail || 'no-email@example.com'
     }))
