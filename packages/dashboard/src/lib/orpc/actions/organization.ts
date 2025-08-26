@@ -188,7 +188,7 @@ export const updateMemberRoleAction = base
                     memberId: input.memberId,
                     role: input.role
                 },
-                headers: new Headers()
+                headers: await headers()
             })
 
             if (!result.member) {
@@ -337,7 +337,7 @@ export const resendInvitationAction = base
                 body: {
                     invitationId: input.invitationId
                 },
-                headers: new Headers()
+                headers: await headers()
             })
 
             revalidatePath('/dashboard/team/invitations')
@@ -405,7 +405,7 @@ export const cancelInvitationAction = base
                 body: {
                     invitationId: input.invitationId
                 },
-                headers: new Headers()
+                headers: await headers()
             })
 
             revalidatePath('/dashboard/team/invitations')
@@ -452,8 +452,16 @@ export const removeMemberFromOrganizationAction = base
 
         // Get the member being removed
         const [targetMember] = await db
-            .select()
+            .select({
+                id: schema.member.id,
+                userId: schema.member.userId,
+                organizationId: schema.member.organizationId,
+                role: schema.member.role,
+                createdAt: schema.member.createdAt,
+                email: schema.user.email
+            })
             .from(schema.member)
+            .innerJoin(schema.user, eq(schema.member.userId, schema.user.id))
             .where(
                 and(
                     eq(schema.member.id, input.memberId),
@@ -494,12 +502,20 @@ export const removeMemberFromOrganizationAction = base
         }
 
         try {
+            console.log('Attempting to remove member:', {
+                memberId: input.memberId,
+                targetMember: targetMember,
+                userId: targetMember.userId,
+                organizationId: session.session.activeOrganizationId
+            })
+
             // Use Better Auth API to remove member
             await auth.api.removeMember({
                 body: {
-                    memberId: input.memberId
+                    memberIdOrEmail: targetMember.email,
+                    organizationId: session.session.activeOrganizationId
                 },
-                headers: new Headers()
+                headers: await headers()
             })
 
             // Revoke all active sessions for removed user
@@ -510,6 +526,7 @@ export const removeMemberFromOrganizationAction = base
             revalidatePath('/dashboard/team/members')
             return { success: true }
         } catch (error) {
+            console.error('Error removing member:', error)
             throw errors.RESOURCE_NOT_FOUND({
                 message: 'Failed to remove member'
             })
