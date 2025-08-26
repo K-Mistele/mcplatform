@@ -1,7 +1,0 @@
-{
-    "mcpServers": {
-        "nextjs_server3": {
-            "url": "http://vercel-nextjs-server.localhost:3000/api/mcpserver/mcp"
-        }
-    }
-}

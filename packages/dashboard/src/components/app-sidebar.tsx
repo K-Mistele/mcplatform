@@ -10,7 +10,8 @@ import {
     IconSearch,
     IconServer2,
     IconSettings,
-    IconUsers
+    IconUsers,
+    IconUsersGroup
 } from '@tabler/icons-react'
 import { BookOpenIcon } from 'lucide-react'
 import type * as React from 'react'
@@ -59,6 +60,12 @@ export const data = {
             url: '/dashboard/support-tickets',
             icon: IconHelpCircle,
             description: 'View and manage support tickets submitted through your MCP servers'
+        },
+        {
+            title: 'Team',
+            url: '/dashboard/team',
+            icon: IconUsersGroup,
+            description: 'Manage your organization members and invitations'
         }
     ],
 

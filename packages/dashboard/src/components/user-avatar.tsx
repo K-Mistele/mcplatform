@@ -1,7 +1,6 @@
 'use client'
 
 import { cn } from '@/lib/utils'
-import Image from 'next/image'
 import { useState } from 'react'
 
 interface UserAvatarProps {
@@ -33,7 +32,7 @@ export function UserAvatar({ image, fallbackValue, name, size = '32px', classNam
 
     return (
         <div className={cn('overflow-hidden', className)}>
-            <Image
+            <img
                 src={image}
                 alt={name || 'User avatar'}
                 width={sizeNum}

@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -112,13 +113,13 @@
             text-decoration: none;
             font-weight: 500;
             transition: all 0.2s;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
         }
 
         .cursor-install-btn:hover {
             background-color: #f8f9fa;
             transform: translateY(-1px);
-            box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
         }
 
         .cursor-icon {
@@ -191,7 +192,8 @@
             margin-bottom: 0.5rem;
         }
 
-        ul, ol {
+        ul,
+        ol {
             margin-bottom: 1rem;
             padding-left: 2rem;
         }
@@ -217,6 +219,7 @@
         }
     </style>
 </head>
+
 <body>
     <div class="container">
         <nav class="sidebar">
@@ -267,10 +270,12 @@
 
             <div class="install-banner">
                 <h3>🚀 Enhanced Development Experience</h3>
-                <p>Install the Next.js MCP server to get AI-powered assistance directly in your Cursor IDE while working with Next.js projects.</p>
-                <a href="cursor://anysphere.cursor-deeplink/mcp/install?name=nextjs&config=ewogICJuYW1lIjogIm5leHRqcyIsCiAgInVybCI6ICJodHRwczovL3ZlcmNlbC1uZXh0anMtc2VydmVyLmt5bGUubmFwdGhhLmdnL2FwaS9tY3BzZXJ2ZXIvYW5vbl9mNTgza2FwdmtrYWIzL21jcCIKfQ==&tracking_id=anon_f583kapvkkab3" class="cursor-install-btn">
+                <p>Install the Next.js MCP server to get AI-powered assistance directly in your Cursor IDE while working
+                    with Next.js projects.</p>
+                <a href="cursor://anysphere.cursor-deeplink/mcp/install?name=replicated&config=ewogICJuYW1lIjogIlJlcGxpY2F0ZWQiLAogICJ1cmwiOiAiaHR0cHM6Ly9yZXBsaWNhdGVkLWRlbW8uZGV2Lm5hcHRoYS5nZy9hcGkvbWNwc2VydmVyL21jcHVfcmVwbGljYXRlZF9leGFtcGxlL21jcCIKfQ=="
+                    class="cursor-install-btn">
                     <svg class="cursor-icon" viewBox="0 0 24 24" fill="currentColor">
-                        <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/>
+                        <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" />
                     </svg>
                     Install to Cursor
                 </a>
@@ -278,11 +283,15 @@
 
             <h1>Installation</h1>
 
-            <p>Next.js is a React framework for building full-stack web applications. You use React Components to build user interfaces, and Next.js for additional features and optimizations.</p>
+            <p>Next.js is a React framework for building full-stack web applications. You use React Components to build
+                user interfaces, and Next.js for additional features and optimizations.</p>
 
-            <p>Under the hood, Next.js also abstracts and automatically configures tooling needed for React, like bundling, compiling, and more. This allows you to focus on building your application instead of spending time with configuration.</p>
+            <p>Under the hood, Next.js also abstracts and automatically configures tooling needed for React, like
+                bundling, compiling, and more. This allows you to focus on building your application instead of spending
+                time with configuration.</p>
 
-            <p>Whether you're an individual developer or part of a larger team, Next.js can help you build interactive, dynamic, and fast React applications.</p>
+            <p>Whether you're an individual developer or part of a larger team, Next.js can help you build interactive,
+                dynamic, and fast React applications.</p>
 
             <h2>System Requirements</h2>
 
@@ -293,7 +302,8 @@
 
             <h2>Automatic Installation</h2>
 
-            <p>We recommend starting a new Next.js app using <code>create-next-app</code>, which sets up everything automatically for you. To create a project, run:</p>
+            <p>We recommend starting a new Next.js app using <code>create-next-app</code>, which sets up everything
+                automatically for you. To create a project, run:</p>
 
             <pre><code>npx create-next-app@latest</code></pre>
 
@@ -308,13 +318,15 @@ Would you like to use App Router? (recommended) No / Yes
 Would you like to customize the default import alias (@/*)? No / Yes
 What import alias would you like configured? @/*</code></pre>
 
-            <p>After the prompts, <code>create-next-app</code> will create a folder with your project name and install the required dependencies.</p>
+            <p>After the prompts, <code>create-next-app</code> will create a folder with your project name and install
+                the required dependencies.</p>
 
             <div class="highlight">
                 <h4>Good to know:</h4>
                 <ul>
                     <li>Next.js now ships with TypeScript, ESLint, and Tailwind CSS configuration by default.</li>
-                    <li>You can optionally use a <code>src</code> directory in the root of your project to separate your application's code from configuration files.</li>
+                    <li>You can optionally use a <code>src</code> directory in the root of your project to separate your
+                        application's code from configuration files.</li>
                 </ul>
             </div>
 
@@ -346,15 +358,20 @@ What import alias would you like configured? @/*</code></pre>
 
             <h3>Create the app directory</h3>
 
-            <p>Next.js uses file-system routing, which means the routes in your application are determined by how you structure your files.</p>
+            <p>Next.js uses file-system routing, which means the routes in your application are determined by how you
+                structure your files.</p>
 
             <h4>The app directory</h4>
 
-            <p>For new applications, we recommend using the <strong>App Router</strong>. This router allows you to use React's latest features and is an evolution of the Pages Router based on community feedback.</p>
+            <p>For new applications, we recommend using the <strong>App Router</strong>. This router allows you to use
+                React's latest features and is an evolution of the Pages Router based on community feedback.</p>
 
-            <p>Create an <code>app/</code> folder, then add a <code>layout.tsx</code> and <code>page.tsx</code> file. These will be rendered when the user visits the root of your application (<code>/</code>).</p>
+            <p>Create an <code>app/</code> folder, then add a <code>layout.tsx</code> and <code>page.tsx</code> file.
+                These will be rendered when the user visits the root of your application (<code>/</code>).</p>
 
-            <p>Create a root layout inside <code>app/layout.tsx</code> with the required <code>&lt;html&gt;</code> and <code>&lt;body&gt;</code> tags:</p>
+            <p>Create a root layout inside <code>app/layout.tsx</code> with the required <code>&lt;html&gt;</code> and
+                <code>&lt;body&gt;</code> tags:
+            </p>
 
             <pre><code>export default function RootLayout({
   children,
@@ -376,30 +393,36 @@ What import alias would you like configured? @/*</code></pre>
 
             <div class="highlight">
                 <h4>Good to know:</h4>
-                <p>If you forget to create <code>layout.tsx</code>, Next.js will automatically create this file when running the development server with <code>next dev</code>.</p>
+                <p>If you forget to create <code>layout.tsx</code>, Next.js will automatically create this file when
+                    running the development server with <code>next dev</code>.</p>
             </div>
 
             <h3>Create the public folder (optional)</h3>
 
-            <p>Create a <code>public</code> folder to store static assets such as images, fonts, etc. Files inside <code>public</code> directory can then be referenced by your code starting from the base URL (<code>/</code>).</p>
+            <p>Create a <code>public</code> folder to store static assets such as images, fonts, etc. Files inside
+                <code>public</code> directory can then be referenced by your code starting from the base URL
+                (<code>/</code>).
+            </p>
 
             <h2>Run the Development Server</h2>
 
             <ol>
                 <li>Run <code>npm run dev</code> to start the development server.</li>
                 <li>Visit <code>http://localhost:3000</code> to view your application.</li>
-                <li>Edit <code>app/page.tsx</code> (or <code>pages/index.tsx</code>) file and save it to see the updated result in your browser.</li>
+                <li>Edit <code>app/page.tsx</code> (or <code>pages/index.tsx</code>) file and save it to see the updated
+                    result in your browser.</li>
             </ol>
         </main>
     </div>
 
     <script>
         // Simple mobile menu toggle (if needed in future)
-        document.addEventListener('DOMContentLoaded', function() {
+        document.addEventListener('DOMContentLoaded', function () {
             // Generate a unique tracking ID
             const trackingId = 'anon_' + Math.random().toString(36).substr(2, 9);
             console.log('Demo page loaded with tracking ID:', trackingId);
         });
     </script>
 </body>
+
 </html>

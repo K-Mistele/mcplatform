@@ -1,11 +1,11 @@
-# create_handoff.md - Mcplatform handoff task 
+# create_handoff.md 
 
 You are tasked with writing a handoff document to hand off your work to another agent. You will create a handoff document that is thorough, but also **concise**. The goal is to compact and summarize your context without losing any of the key details of what you're working on.
 
 ## Process
 1. **Filepath & Metadata**
-    - create your file under `specification/[feature]/handoffs/handoff_YYYY-MM-DD_HH-MM-SS_topic.md`, where `topic` is the subject you're working on.
-    - if you are working on a subfeature, use `specification/[feature]/[subfeature]/handoffs/handoff_YYYY-MM-DD_HH-MM-SS_topic.md` using the same convention.
+    - create your file under `specifications/[feature]/handoffs/handoff_YYYY-MM-DD_HH-MM-SS_topic.md`, where `topic` is the subject you're working on.
+    - if you are working on a subfeature, use `specifications/[feature]/[subfeature]/handoffs/handoff_YYYY-MM-DD_HH-MM-SS_topic.md` using the same convention.
     - Run the `scripts/spec_metadata.sh` script to generate all relevant metadata
 
 2. **Create your document**

@@ -1,6 +1,7 @@
 import appIcon from '@/assets/appicon.png'
 import { LoginForm } from '@/components/login-form'
 import Image from 'next/image'
+import { Suspense } from 'react'
 
 export default function LoginPage() {
     return (
@@ -13,7 +14,9 @@ export default function LoginPage() {
                     </a>
                 </div>
 
-                <LoginForm />
+                <Suspense fallback={<div>Loading...</div>}>
+                    <LoginForm />
+                </Suspense>
             </div>
         </div>
     )
