@@ -543,7 +543,7 @@ export const acceptInvitationAction = base
         })
     )
     .handler(async ({ input, errors }) => {
-        const session = await requireSession()
+        const session = await requireSession({ data: { organizationRequired: false } })
 
         // Get the invitation
         const [invitation] = await db
