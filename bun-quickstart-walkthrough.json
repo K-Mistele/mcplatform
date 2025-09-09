@@ -1,0 +1,163 @@
+{
+  "version": "1.0",
+  "exportedAt": "2025-09-09T00:00:00.000Z",
+  "walkthrough": {
+    "title": "Bun Quick Start Guide",
+    "description": "A comprehensive quick start guide to get you up and running with Bun - the fast all-in-one JavaScript runtime, bundler, test runner, and package manager.",
+    "type": "quickstart",
+    "status": "published",
+    "estimatedDurationMinutes": 20,
+    "tags": ["bun", "quickstart", "javascript", "runtime", "bundler"],
+    "metadata": {
+      "createdFor": "Bun quickstart tutorial",
+      "importedFrom": "https://bun.com/docs/quickstart",
+      "version": "2025.09.09"
+    }
+  },
+  "steps": [
+    {
+      "title": "Introduction to Bun",
+      "contentFields": {
+        "version": "v1",
+        "introductionForAgent": "Welcome the user to Bun and explain what makes it special. Bun is an all-in-one toolkit that replaces Node.js, npm, webpack, and jest with a single fast tool. Set expectations that they'll be creating their first Bun project and running it within minutes.",
+        "contextForAgent": "Bun is a fast JavaScript runtime built from scratch to serve the modern JavaScript ecosystem. It's designed as a drop-in replacement for Node.js and includes a bundler, test runner, and package manager. Bun is significantly faster than Node.js for many operations. It natively supports TypeScript and JSX out of the box.",
+        "contentForUser": "# Welcome to Bun! 🥟\n\nBun is a fast all-in-one JavaScript runtime that can replace Node.js, npm, webpack, and Jest with a single tool. Here's what makes Bun special:\n\n- **4x faster** than Node.js startup time\n- **Built-in bundler** (no need for webpack or esbuild)\n- **Built-in test runner** (no need for Jest)\n- **Built-in package manager** (no need for npm)\n- **Native TypeScript support** (no configuration needed)\n- **Native JSX support**\n\nLet's get you set up with your first Bun project!",
+        "operationsForAgent": "1. Introduce Bun and its key benefits\n2. Explain that we'll be installing Bun, creating a project, and running it\n3. Set expectations for the tutorial duration (~20 minutes)\n4. Ask if they're ready to get started"
+      },
+      "displayOrder": 0,
+      "nextStepReference": 1
+    },
+    {
+      "title": "System Requirements and Installation",
+      "contentFields": {
+        "version": "v1",
+        "introductionForAgent": "Check the user's system compatibility and guide them through installing Bun. Different operating systems have different installation methods. Verify the installation was successful before proceeding.",
+        "contextForAgent": "Bun supports Linux (x64 & arm64), macOS (x64 & Apple Silicon) and Windows (x64). Linux users need Kernel version 5.6 or higher (minimum 5.1). The install script works for macOS, Linux, and WSL. Windows users need PowerShell. There's also npm, Homebrew, and Docker options available.",
+        "contentForUser": "# Installing Bun\n\n## System Requirements\n- **Linux**: x64 or arm64 (Kernel 5.6+ recommended, 5.1 minimum)\n- **macOS**: x64 or Apple Silicon\n- **Windows**: x64 (including WSL)\n\n## Installation Methods\n\nChoose the method that works best for your system:",
+        "operationsForAgent": "1. Check their operating system\n2. Guide them to the appropriate installation method:\n   **macOS/Linux/WSL**: Run `curl -fsSL https://bun.com/install | bash`\n   **Windows PowerShell**: Run `powershell -c \"irm bun.com/install.ps1 | iex\"`\n   **Alternative methods if preferred**:\n   - npm: `npm install -g bun`\n   - Homebrew: `brew tap oven-sh/bun && brew install bun`\n   - Docker: `docker pull oven/bun`\n3. Wait for installation to complete\n4. Verify installation: Run `bun --version`\n5. Confirm they see a version number\n6. If there are any issues, troubleshoot the installation"
+      },
+      "displayOrder": 1,
+      "nextStepReference": 2
+    },
+    {
+      "title": "Initialize Your First Project",
+      "contentFields": {
+        "version": "v1",
+        "introductionForAgent": "Guide the user through creating their first Bun project using 'bun init'. This command sets up a basic project structure with sensible defaults. Help them understand each prompt and make appropriate choices.",
+        "contextForAgent": "The 'bun init' command creates a new project with package.json, index.ts (entry point), .gitignore, tsconfig.json, and README.md. It asks for project name (defaults to current directory name) and entry point (defaults to index.ts). The generated files include basic TypeScript configuration and a simple 'Hello via Bun!' example.",
+        "contentForUser": "# Creating Your First Bun Project\n\nLet's create a new project using Bun's built-in initialization tool. This will set up everything you need to get started.\n\nThe `bun init` command will create:\n- `package.json` with scripts and dependencies\n- `index.ts` as your main entry point\n- `tsconfig.json` for TypeScript configuration\n- `.gitignore` for version control\n- `README.md` with basic information",
+        "operationsForAgent": "1. Create a new directory for the project: `mkdir my-bun-app && cd my-bun-app`\n2. Run the initialization command: `bun init`\n3. Guide them through the prompts:\n   - **Package name**: Accept default or suggest 'my-bun-app'\n   - **Entry point**: Accept default 'index.ts'\n4. Wait for the initialization to complete\n5. Show them the generated files: `ls -la`\n6. Explain what each file does:\n   - `package.json`: Project configuration and scripts\n   - `index.ts`: Main application file\n   - `tsconfig.json`: TypeScript configuration\n   - `.gitignore`: Files to ignore in version control\n   - `README.md`: Project documentation"
+      },
+      "displayOrder": 2,
+      "nextStepReference": 3
+    },
+    {
+      "title": "Understanding the Generated Project",
+      "contentFields": {
+        "version": "v1",
+        "introductionForAgent": "Walk through the generated project structure and files. Help the user understand what Bun created and how it differs from a typical Node.js project. Focus on the key files and their purposes.",
+        "contextForAgent": "The generated index.ts contains a simple console.log example. The package.json includes Bun-specific features and @types/bun for TypeScript support. The tsconfig.json is configured for Bun's runtime. Unlike Node.js projects, there's no need for separate bundling or TypeScript compilation setup.",
+        "contentForUser": "# Exploring Your Bun Project\n\nLet's examine what Bun created for you and understand the project structure.\n\nYour new project is ready to run TypeScript natively - no compilation step needed!",
+        "operationsForAgent": "1. Open and show the contents of `index.ts`:\n   ```typescript\n   console.log(\"Hello via Bun!\");\n   ```\n2. Open and explain `package.json`:\n   - Show the `\"type\": \"module\"` field\n   - Point out `\"module\": \"index.ts\"` as the entry point\n   - Show the `\"start\"` script: `\"bun run index.ts\"`\n   - Explain `\"@types/bun\": \"latest\"` dependency\n3. Show `tsconfig.json` and explain it's pre-configured for Bun\n4. Explain that unlike Node.js:\n   - No need to compile TypeScript\n   - No need for separate bundling step\n   - Native support for modern JavaScript features\n5. Point out that the project is immediately runnable"
+      },
+      "displayOrder": 3,
+      "nextStepReference": 4
+    },
+    {
+      "title": "Running Your First Bun Application",
+      "contentFields": {
+        "version": "v1",
+        "introductionForAgent": "Help the user run their first Bun application and see the immediate results. Show them both direct execution and using the npm script. Emphasize the speed and simplicity compared to Node.js.",
+        "contextForAgent": "Bun can run TypeScript files directly without compilation. The startup time is significantly faster than Node.js. Users can run files directly with 'bun filename.ts' or use package.json scripts with 'bun run scriptname'. The hot reload feature with '--hot' flag is useful for development.",
+        "contentForUser": "# Running Your Application\n\nNow for the exciting part - let's run your first Bun application and see the lightning-fast startup!\n\nBun can run TypeScript files directly without any compilation step.",
+        "operationsForAgent": "1. Run the application directly: `bun index.ts`\n2. Confirm they see \"Hello via Bun!\" output\n3. Point out how fast it started (compared to Node.js)\n4. Show alternative using npm script: `bun run start`\n5. Explain both methods work the same way\n6. Demonstrate hot reload mode: `bun --hot index.ts`\n7. Have them modify the message in index.ts while it's running\n8. Show how changes are immediately reflected\n9. Stop the hot reload with Ctrl+C\n10. Congratulate them on running their first Bun app!"
+      },
+      "displayOrder": 4,
+      "nextStepReference": 5
+    },
+    {
+      "title": "Creating Your First HTTP Server",
+      "contentFields": {
+        "version": "v1",
+        "introductionForAgent": "Guide the user to create a simple HTTP server using Bun.serve(). This showcases Bun's built-in web server capabilities without needing Express or other frameworks. Show them how easy it is to create a web server in Bun.",
+        "contextForAgent": "Bun.serve() is a built-in web server that's faster than Express and includes WebSocket support. It uses Web APIs (Request/Response) instead of Node.js http module. The server can serve static files, handle API routes, and includes built-in development features like hot reload.",
+        "contentForUser": "# Building Your First Web Server\n\nLet's create a simple HTTP server using Bun's built-in `Bun.serve()` function. No Express needed!\n\nBun's web server is:\n- **Faster** than Express\n- **Built-in** (no dependencies needed)\n- **WebSocket ready**\n- Uses modern **Web APIs**",
+        "operationsForAgent": "1. Replace the contents of `index.ts` with:\n   ```typescript\n   const server = Bun.serve({\n     port: 3000,\n     fetch(req) {\n       return new Response(\"Hello from Bun server! 🥟\");\n     },\n   });\n   \n   console.log(`Server running at http://localhost:${server.port}`);\n   ```\n2. Run the server: `bun index.ts`\n3. Guide them to open http://localhost:3000 in their browser\n4. Confirm they see the \"Hello from Bun server!\" message\n5. Show that the server starts almost instantly\n6. Explain the code:\n   - `Bun.serve()` creates the web server\n   - `fetch()` handles all HTTP requests\n   - Uses Web API Response (not Node.js response)\n   - Port defaults to 3000\n7. Stop the server with Ctrl+C"
+      },
+      "displayOrder": 5,
+      "nextStepReference": 6
+    },
+    {
+      "title": "Adding Package Dependencies",
+      "contentFields": {
+        "version": "v1",
+        "introductionForAgent": "Show the user how to install and use packages with Bun's built-in package manager. Demonstrate that it's compatible with npm packages but much faster. Install a popular package to show practical usage.",
+        "contextForAgent": "Bun has a built-in package manager that's compatible with npm packages but significantly faster. It reads package.json and node_modules like npm but uses a different installation algorithm. Bun also supports workspaces, peer dependencies, and all standard npm features. The 'bun add' command installs packages, 'bun remove' removes them.",
+        "contentForUser": "# Installing Dependencies with Bun\n\nBun includes a super-fast package manager that's compatible with npm packages. Let's install a package and use it in our server.\n\n**Bun's package manager is:**\n- **20-100x faster** than npm\n- **Fully compatible** with npm packages\n- **No separate tool** needed",
+        "operationsForAgent": "1. Install a popular package (let's use 'figlet' for ASCII art): `bun add figlet`\n2. Also install its types: `bun add -D @types/figlet`\n3. Show how fast the installation was compared to npm\n4. Update `index.ts` to use the package:\n   ```typescript\n   import figlet from 'figlet';\n   \n   const server = Bun.serve({\n     port: 3000,\n     fetch(req) {\n       const art = figlet.textSync('Bun Server!');\n       return new Response(`<pre>${art}</pre>`, {\n         headers: { 'Content-Type': 'text/html' }\n       });\n     },\n   });\n   \n   console.log(`Server running at http://localhost:${server.port}`);\n   ```\n5. Run the server: `bun index.ts`\n6. Show the ASCII art in the browser\n7. Explain how Bun installed and imported the package seamlessly\n8. Show the generated `bun.lockb` file (Bun's lock file)"
+      },
+      "displayOrder": 6,
+      "nextStepReference": 7
+    },
+    {
+      "title": "Writing and Running Tests",
+      "contentFields": {
+        "version": "v1",
+        "introductionForAgent": "Introduce Bun's built-in test runner. Create a simple test file and show how to run tests. Emphasize that no Jest or other test framework setup is needed - it's all built into Bun.",
+        "contextForAgent": "Bun includes a built-in test runner inspired by Jest but faster. Tests use the same expect API as Jest. Test files can end in .test.ts, .test.js, or .spec.ts. The 'bun test' command automatically finds and runs all test files. It includes features like mocking, snapshots, and watch mode.",
+        "contentForUser": "# Testing with Bun's Built-in Test Runner\n\nBun includes a fast test runner built-in - no Jest configuration needed!\n\nBun's test runner:\n- **Compatible** with Jest's expect API\n- **Much faster** than Jest\n- **Zero configuration** required\n- **Built-in** mocking and snapshots",
+        "operationsForAgent": "1. Create a simple utility function to test. Create `math.ts`:\n   ```typescript\n   export function add(a: number, b: number): number {\n     return a + b;\n   }\n   \n   export function multiply(a: number, b: number): number {\n     return a * b;\n   }\n   ```\n2. Create a test file `math.test.ts`:\n   ```typescript\n   import { expect, test, describe } from 'bun:test';\n   import { add, multiply } from './math';\n   \n   describe('Math functions', () => {\n     test('add function', () => {\n       expect(add(2, 3)).toBe(5);\n       expect(add(-1, 1)).toBe(0);\n     });\n   \n     test('multiply function', () => {\n       expect(multiply(3, 4)).toBe(12);\n       expect(multiply(0, 5)).toBe(0);\n     });\n   });\n   ```\n3. Run the tests: `bun test`\n4. Show the fast test results\n5. Try running in watch mode: `bun test --watch`\n6. Modify a test and show hot reload\n7. Stop watch mode with Ctrl+C\n8. Explain the familiar Jest-like syntax"
+      },
+      "displayOrder": 7,
+      "nextStepReference": 8
+    },
+    {
+      "title": "Working with TypeScript and JSX",
+      "contentFields": {
+        "version": "v1",
+        "introductionForAgent": "Demonstrate Bun's native TypeScript and JSX support. Show that no configuration or compilation step is needed - Bun handles it all automatically. Create a simple JSX example to showcase this capability.",
+        "contextForAgent": "Bun natively supports TypeScript and JSX without any configuration. It can execute .ts, .tsx, .js, and .jsx files directly. For JSX, Bun uses React's JSX transform by default, but this can be configured. The tsconfig.json can customize TypeScript settings if needed.",
+        "contentForUser": "# Native TypeScript and JSX Support\n\nOne of Bun's best features is native TypeScript and JSX support with zero configuration!\n\n**What this means:**\n- Run `.ts` files directly\n- Run `.tsx` files with JSX\n- No compilation step needed\n- No webpack or babel configuration\n- Instant execution",
+        "operationsForAgent": "1. Show that we've been using TypeScript all along (index.ts)\n2. Install React for JSX demo: `bun add react`\n3. Install React types: `bun add -D @types/react`\n4. Create a JSX component file `app.tsx`:\n   ```tsx\n   import React from 'react';\n   \n   interface Props {\n     name: string;\n     count: number;\n   }\n   \n   export function App({ name, count }: Props) {\n     return (\n       <div>\n         <h1>Hello {name}!</h1>\n         <p>Count: {count}</p>\n         <button onClick={() => console.log('Clicked!')}>Click me</button>\n       </div>\n     );\n   }\n   ```\n5. Create a simple test for the JSX: `bun app.tsx`\n6. Show that Bun executes JSX directly without compilation\n7. Explain TypeScript interfaces work out of the box\n8. Mention that for full React apps, they'd typically use a bundler, but Bun can handle that too"
+      },
+      "displayOrder": 8,
+      "nextStepReference": 9
+    },
+    {
+      "title": "Environment Variables and Configuration",
+      "contentFields": {
+        "version": "v1",
+        "introductionForAgent": "Show how Bun automatically loads environment variables from .env files without needing dotenv package. Create a .env file and demonstrate accessing environment variables in the application.",
+        "contextForAgent": "Bun automatically loads .env files without requiring the dotenv package. It loads .env, .env.local, .env.development, .env.production in that order. Environment variables are accessible via process.env or Bun.env. This is more convenient than Node.js which requires explicit dotenv configuration.",
+        "contentForUser": "# Environment Variables and Configuration\n\nBun automatically loads environment variables from `.env` files - no `dotenv` package needed!\n\n**Automatic .env loading:**\n- `.env` files loaded automatically\n- No additional packages required\n- Supports multiple env files (.env, .env.local, etc.)\n- Available via `process.env` or `Bun.env`",
+        "operationsForAgent": "1. Create a `.env` file with some variables:\n   ```\n   SERVER_PORT=8080\n   APP_NAME=\"My Bun App\"\n   DEBUG=true\n   SECRET_KEY=your-secret-key-here\n   ```\n2. Update `index.ts` to use environment variables:\n   ```typescript\n   const server = Bun.serve({\n     port: process.env.SERVER_PORT || 3000,\n     fetch(req) {\n       const appName = process.env.APP_NAME || 'Bun App';\n       const debug = process.env.DEBUG === 'true';\n       \n       return new Response(`\n         <h1>Welcome to ${appName}</h1>\n         <p>Server running on port ${server.port}</p>\n         ${debug ? '<p>Debug mode: ON</p>' : ''}\n       `, {\n         headers: { 'Content-Type': 'text/html' }\n       });\n     },\n   });\n   \n   console.log(`${process.env.APP_NAME} running at http://localhost:${server.port}`);\n   ```\n3. Run the server: `bun index.ts`\n4. Show that it runs on port 8080 and displays the app name\n5. Explain that .env was loaded automatically\n6. Add .env to .gitignore if not already there\n7. Show that Bun.env is also available as an alternative to process.env"
+      },
+      "displayOrder": 9,
+      "nextStepReference": 10
+    },
+    {
+      "title": "Building for Production",
+      "contentFields": {
+        "version": "v1",
+        "introductionForAgent": "Show the user how to build their application for production using Bun's built-in bundler. Explain the difference between development and production modes, and demonstrate the build process.",
+        "contextForAgent": "Bun includes a fast bundler that can create production builds. Unlike development mode where files are executed directly, production builds create optimized, minified bundles. The 'bun build' command handles bundling, minification, and optimization. The output can be a single file or multiple files depending on configuration.",
+        "contentForUser": "# Building for Production\n\nBun includes a fast bundler for creating optimized production builds. Let's build your application for deployment!\n\n**Bun's bundler:**\n- **Much faster** than webpack\n- **Built-in** minification and optimization\n- **Tree shaking** to remove unused code\n- **Single command** to bundle",
+        "operationsForAgent": "1. Add build scripts to `package.json`:\n   ```json\n   {\n     \"scripts\": {\n       \"start\": \"bun run index.ts\",\n       \"dev\": \"bun --hot index.ts\",\n       \"build\": \"bun build index.ts --outdir ./dist\",\n       \"preview\": \"bun ./dist/index.js\"\n     }\n   }\n   ```\n2. Run the build command: `bun run build`\n3. Show the generated `dist` folder: `ls dist/`\n4. Examine the built file: `head -n 20 dist/index.js`\n5. Show that it's minified and optimized\n6. Run the production build: `bun run preview`\n7. Test that it works the same as development\n8. Explain the benefits:\n   - Single optimized file\n   - Faster startup\n   - Smaller bundle size\n   - Ready for deployment\n9. Show bundle size: `ls -lh dist/index.js`"
+      },
+      "displayOrder": 10,
+      "nextStepReference": 11
+    },
+    {
+      "title": "Next Steps and Advanced Features",
+      "contentFields": {
+        "version": "v1",
+        "introductionForAgent": "Congratulate the user on completing the Bun quickstart and provide guidance on what to explore next. Give them resources and suggest advanced features they can learn about to build more complex applications.",
+        "contextForAgent": "Advanced Bun features include: WebSocket support in Bun.serve(), file I/O with Bun.file(), SQLite database with bun:sqlite, shell scripting with Bun.$`command`, HTTP client with fetch(), binary data handling, plugins, and macros. The Bun documentation has comprehensive guides for all these features.",
+        "contentForUser": "# Congratulations! 🎉\n\nYou've successfully completed the Bun quickstart! Here's what you've accomplished:\n\n✅ **Installed** Bun runtime  \n✅ **Created** a TypeScript project  \n✅ **Built** an HTTP server  \n✅ **Added** dependencies  \n✅ **Wrote** and ran tests  \n✅ **Used** JSX and TypeScript natively  \n✅ **Configured** environment variables  \n✅ **Built** for production  \n\n## What to Explore Next",
+        "operationsForAgent": "1. Congratulate them on completing the quickstart\n2. Suggest next topics to explore based on their interests:\n   **Web Development:**\n   - WebSocket support in Bun.serve()\n   - Building REST APIs with routing\n   - File uploads and static file serving\n   - Database integration with bun:sqlite\n   \n   **Advanced Features:**\n   - Shell scripting with Bun.$`command`\n   - Binary data handling with TypedArrays\n   - Bun plugins for custom file types\n   - Macros for compile-time code generation\n   \n   **DevOps & Deployment:**\n   - Docker containers with Bun\n   - Deployment to cloud platforms\n   - Performance monitoring\n   - Production optimization\n3. Provide key resources:\n   - Bun Documentation: https://bun.sh/docs\n   - Examples Repository: https://github.com/oven-sh/bun/tree/main/examples\n   - Discord Community: https://bun.sh/discord\n   - GitHub: https://github.com/oven-sh/bun\n4. Encourage them to build a small project to practice\n5. Ask if they have specific questions or want to explore any particular area"
+      },
+      "displayOrder": 11,
+      "nextStepReference": null
+    }
+  ]
+}
