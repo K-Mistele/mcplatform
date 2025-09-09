@@ -1,14 +1,14 @@
 ---
 date: 2025-09-05T11:54:27-05:00
 researcher: Kyle Mistele
-git_commit: e331e3d22c8c9d3da23e1ae092a91f4edad380e1
+git_commit: 622a5ca7a2d9054913b1d03f177636aca3a3c9ed
 branch: master
 repository: mcplatform
 topic: "Custom OAuth Support for MCP Servers Implementation Strategy"
 tags: [implementation, strategy, custom-oauth, authentication, oauth, mcp-servers]
 status: complete
-last_updated: 2025-09-05
-last_updated_by: Kyle Mistele
+last_updated: 2025-09-09
+last_updated_by: Claude
 type: implementation_strategy
 ---
 
@@ -30,7 +30,7 @@ MCPlatform provides a robust foundation for custom OAuth implementation:
 - **Organization-scoped CRUD**: Comprehensive patterns for configuration management following existing team/member management patterns
 
 ### Current Constraints:
-- **No Encryption**: Sensitive data stored in plain text; encryption layer needed for client secrets and tokens
+- **No Encryption**: Sensitive data stored in plain text; encryption layer needed for client secrets and tokens (_out of scope for now_)
 - **Incomplete Custom OAuth**: `custom_oauth` option exists in UI but has no backend implementation
 - **Missing Database Schema**: Custom OAuth configurations require new database tables separate from existing MCP auth schema
 
@@ -41,7 +41,7 @@ MCPlatform provides a robust foundation for custom OAuth implementation:
 - Refresh token automatic renewal (initial implementation returns 401 when expired)
 - Migration of existing platform OAuth users to custom OAuth
 - Multi-tenant OAuth server configurations per MCP server (organization-scoped only)
-- Client secret encryption at rest (added note in implementation for future consideration)
+- Client secret encryption at rest (added note in implementation for future consideration, _out of scope for now_)
 
 ## Implementation Approach
 
@@ -56,7 +56,7 @@ Each phase includes both automated validation (linting, type checking) and manua
 ## Phase 1: Core Infrastructure & Foundation
 
 ### Overview
-Establish database schema, encryption utilities, and OAuth server discovery validation to support all custom OAuth functionality.
+Establish database schema and OAuth server discovery validation to support all custom OAuth functionality.
 
 ### Changes Required:
 
@@ -65,26 +65,38 @@ Establish database schema, encryption utilities, and OAuth server discovery vali
 **Changes**: Add custom OAuth configuration tables
 
 **Implementation Requirements:**
-- Create `custom_oauth_configs` table with organization scoping, unique name constraints per organization
-- Create `upstream_oauth_tokens` table for encrypted upstream token storage with expiration tracking
-- Add `custom_oauth_config_id` foreign key to existing `mcp_servers` table for reusability
-- Include proper indexing on organization_id, expires_at, and lookup fields for performance
+- Create `custom_oauth_configs` table following the schema from research analysis:
+  ```sql
+  custom_oauth_configs (
+      id,                      -- Primary key with coac_ prefix
+      organization_id,         -- FK to organization (NOT NULL, CASCADE DELETE)
+      name,                    -- Human-readable identifier
+      authorization_url,       -- Direct OAuth authorization endpoint  
+      metadata_url,           -- .well-known/oauth-authorization-server endpoint
+      client_id,              -- Registered with upstream OAuth server
+      client_secret,          -- Encrypted client secret for token exchange
+      created_at              -- Timestamp
+  )
+  ```
+- Create `upstream_oauth_tokens` table for encrypted upstream token storage:
+  ```sql
+  upstream_oauth_tokens (
+      id,                     -- Primary key with uoat_ prefix
+      mcp_server_user_id,     -- FK to user who authorized
+      oauth_config_id,        -- FK to OAuth configuration used
+      proxy_token_id,         -- FK to MCPlatform-issued proxy token
+      access_token,           -- Encrypted upstream access token
+      refresh_token,          -- Encrypted upstream refresh token (nullable)
+      expires_at,             -- Computed: current_timestamp_ms + (expires_in * 1000)
+      created_at              -- Timestamp
+  )
+  ```
+- Add `custom_oauth_config_id` foreign key to existing `mcp_servers` table (nullable, SET NULL on delete)
+- Include proper indexing on organization_id, oauth_config_id, expires_at, and mcp_server_user_id for performance
 - Use nanoid-based IDs following existing patterns (`coac_` prefix for configs, `uoat_` prefix for tokens)
-- Store OAuth metadata as JSONB for flexibility and future extensibility
 
-#### 2. Encryption Utilities
-**File**: `packages/common/encryption.ts`
-**Changes**: Create new encryption utility module
 
-**Implementation Requirements:**
-- Implement AES-256-GCM encryption with authentication following crypto best practices
-- Use format `iv:authTag:encrypted` for database storage to prevent tampering
-- Include environment variable `ENCRYPTION_KEY` management following existing pattern
-- Add utility functions `encryptSensitiveData()` and `decryptSensitiveData()`
-- Include proper error handling for malformed encrypted data and missing keys
-- Note: Client secret encryption implementation serves as foundation but encryption at rest is not fully in scope for initial release
-
-#### 3. OAuth Server Discovery & Validation
+#### 2. OAuth Server Discovery & Validation
 **File**: `packages/dashboard/src/lib/orpc/actions/oauth-configs.ts`
 **Changes**: Create OAuth server validation server action
 
@@ -92,87 +104,205 @@ Establish database schema, encryption utilities, and OAuth server discovery vali
 - Create RFC 8414-compliant Zod schema for OAuth Authorization Server Metadata validation
 - Implement `validateOAuthServerAction` with automatic `.well-known/oauth-authorization-server` path handling
 - Include comprehensive validation against required OAuth endpoints (authorization_endpoint, token_endpoint, jwks_uri)
-- Cache OAuth metadata discovery results to avoid repeated network calls during validation
 - Handle network failures gracefully with clear error messages for users
 - Follow existing oRPC error patterns with typed error responses (INVALID_OAUTH_METADATA, OAUTH_SERVER_UNREACHABLE)
 
-#### 4. Database Migration Script
-**File**: `packages/database/drizzle/migrations/[timestamp]_add_custom_oauth_tables.sql`
-**Changes**: Create database migration
-
-**Implementation Requirements:**
-- Add new tables with proper constraints and indexes
-- Add foreign key column to mcp_servers table with SET NULL on delete
-- Preserve existing data and maintain backwards compatibility
-- Include proper rollback strategy for safe deployment
-- Follow existing migration patterns in drizzle directory structure
+#### 3. Database Migration Script
+**do not create this manually** - database migrations are created by drizzle ORM when the user runs the command to generate a migration. Once you are ready to do this, **ASK THE USER** to run the database migration generation command.
 
 ### Success Criteria:
 
 **Automated verification**
 - [ ] no linter errors when running `bun lint`
-- [ ] no TypeScript errors when running `bun run typecheck`
 - [ ] database migration runs successfully with `bun run db:migrate`
-- [ ] all new utility functions pass unit tests
 
 **Manual Verification**
-- [ ] OAuth server URL validation works with real OAuth servers (Google, GitHub, Microsoft)
-- [ ] Encryption/decryption round trip preserves data integrity 
+- [ ] OAuth server URL validation works with real OAuth servers
 - [ ] Database schema supports organization-scoped OAuth configurations
 - [ ] Migration completes without affecting existing MCP server functionality
 
-## Phase 2: OAuth Proxy Flow & Authentication
+## Phase 2: OAuth Proxy Server Implementation
 
 ### Overview
-Implement OAuth proxy flow with VHost detection, upstream token exchange, and enhanced authentication middleware for custom OAuth servers.
+Implement a complete OAuth proxy server that sits between MCP clients and upstream OAuth servers. This proxy handles the full OAuth flow / exchange while maintaining security boundaries - MCP clients never receive upstream access tokens, only MCPlatform proxy tokens.
+
+### OAuth Proxy Architecture
+
+MCPlatform acts as a full OAuth authorization server from the MCP client's perspective, but proxies all authentication to the customer's upstream OAuth server behind the scenes.
+
+**Reference Materials (VERY IMPORTANT READ BOTH OF THESE FILES):**
+- Complete sequence diagram: `oauth-proxy-sequence-diagram.md`
+- Visual flow diagram: `oauth-proxy-sequence-diagram.png`
+
+_ONLY when the MCP server is configured to use custom oauth instead of platform oauth_
+
+**Registration Phase:**
+1. MCP client performs dynamic client registration at our `/oauth/register` endpoint
+2. We store their redirect_uri and issue them proxy client credentials
+3. We return our proxy client_id/secret (NOT the upstream server's credentials)
+
+**Authorization Flow:**
+1. MCP client makes request to `/mcp` without auth token and receives a `401` with WWW-Authenticate header pointing to `/.well-known/oauth-authorization-server`
+2. MCP client fetches `/.well-known/oauth-authorization-server` using the MCP server's VHost. Based on the VHost, the endpoint looks up the MCP server configuration and OAuth configuration. **This is already implemented for platform OAuth**, we just need to add the section / logic to the existing route file for the custom oauth
+3. For MCP servers configured to use **custom OAuth**, we need to return metadata pointing to our proxy endpoints (authorization, token, registration, userinfo endpoints) that **do not exist yet**
+4. MCP client redirects user to our `/oauth/authorize` endpoint with their proxy client_id
+5. We do VHost lookup → find MCP server → get custom OAuth config
+6. We validate proxy client_id against registered clients
+7. We redirect user to upstream OAuth server's authorization_endpoint with:
+   - Our stored client_id (from custom_oauth_configs table)
+   - Our own callback URL (not the MCP client's redirect_uri)
+   - OAuth state parameter for security
+8. User authorizes against upstream server
+9. Upstream server callbacks to us with authorization code
+10. We exchange that code for upstream access token using our stored client_secret
+11. We store the upstream tokens in `upstream_oauth_tokens` table
+12. We generate our own authorization code and redirect to the MCP client's registered redirect_uri
+
+**Token Exchange:**
+1. MCP client exchanges our authorization code at our `/oauth/token` endpoint
+2. We validate and issue them a proxy access token (referencing the stored upstream tokens)
+
+**Resource Access:**
+1. MCP client makes authenticated requests to `/mcp` endpoints with proxy access token
+2. Our authentication middleware validates proxy token and looks up associated upstream tokens
+3. For user context, we call upstream OAuth server's userinfo endpoint with upstream token
+4. MCP request is processed with user context and response returned to client
 
 ### Changes Required:
 
-#### 1. OAuth Proxy Flow Implementation
-**File**: `packages/dashboard/src/app/mcp-oidc/custom-auth/[slug]/callback/route.ts`
-**Changes**: Create new OAuth callback route for custom OAuth
-
-**Implementation Requirements:**
-- Implement OAuth authorization code exchange using `application/x-www-form-urlencoded` per RFC 6749
-- Extract subdomain from callback URL to resolve MCP server configuration and associated OAuth config
-- Store upstream access/refresh tokens with computed expiration timestamps (expires_in in seconds → expires_at in milliseconds)
-- Create MCPlatform proxy token for user after successful upstream authentication
-- Handle OAuth state parameter validation and error responses from upstream servers
-- Integrate with existing user tracking system in `packages/dashboard/src/lib/mcp/tracking.ts`
-
-#### 2. Enhanced Authentication Middleware
-**File**: `packages/dashboard/src/lib/mcp/with-mcp-auth.ts`
-**Changes**: Extend existing middleware to support custom OAuth
-
-**Implementation Requirements:**
-- Detect custom OAuth configuration via server auth type and config ID
-- Validate tokens against upstream OAuth providers using discovery metadata
-- Implement fallback validation strategies (token introspection, userinfo endpoint, JWKs validation)
-- Return proper 401 responses with WWW-Authenticate headers when tokens are expired
-- Maintain session isolation between platform OAuth and custom OAuth users
-- Preserve existing platform OAuth functionality without regression
-
-#### 3. VHost Detection Enhancement
-**File**: `packages/dashboard/src/lib/mcp/index.ts`
-**Changes**: Extend `getMcpServerConfiguration` to load OAuth config
-
-**Implementation Requirements:**
-- Load associated custom OAuth configuration when `authType === 'custom_oauth'`
-- Cache OAuth configuration data to avoid database lookups on every request
-- Handle cases where OAuth configuration is deleted but MCP server still references it
-- Provide clear error handling when custom OAuth config is missing or invalid
-- Maintain backwards compatibility with existing VHost routing logic
-
-#### 4. OAuth Discovery Enhancement
+#### 1. OAuth Discovery Metadata (Proxy Server Endpoints)
 **File**: `packages/dashboard/src/app/.well-known/oauth-authorization-server/route.ts`
-**Changes**: Support custom OAuth metadata serving
+**Changes**: Serve complete OAuth proxy server metadata
 
 **Implementation Requirements:**
-- Detect custom OAuth servers via VHost and serve their OAuth metadata instead of platform metadata
-- Proxy essential OAuth endpoints and metadata from customer OAuth servers
-- Handle cases where upstream OAuth servers are temporarily unavailable
-- Maintain proper CORS headers and content types for OAuth discovery compliance
-- Include fallback to platform OAuth when custom OAuth is not configured
+- VHost-based detection of custom OAuth configurations
+- When custom OAuth is detected, serve metadata pointing entirely to our proxy endpoints:
+  - `issuer`: Our platform issuer URL
+  - `authorization_endpoint`: Our `/oauth/authorize` endpoint
+  - `token_endpoint`: Our `/oauth/token` endpoint  
+  - `userinfo_endpoint`: Our `/oauth/userinfo` endpoint
+  - `jwks_uri`: Our platform JWKs endpoint
+  - `registration_endpoint`: Our `/oauth/register` endpoint for dynamic client registration
+  - `scopes_supported`: Match what we're issuing in proxy tokens
+- Fallback to platform OAuth metadata when custom OAuth is not configured
+- Proper CORS headers and RFC 8414 compliance
+
+#### 2. Dynamic Client Registration Endpoint
+**File**: `packages/dashboard/src/app/oauth/register/route.ts`
+**Changes**: Create new dynamic client registration endpoint
+
+**Implementation Requirements:**
+- VHost-based lookup of MCP server and custom OAuth configuration
+- Store MCP client's redirect_uri and client metadata in new `mcp_client_registrations` table
+- Generate and return proxy client_id/client_secret (not upstream credentials)
+- RFC 7591 compliance for dynamic client registration
+- Validate redirect_uri and other client metadata per spec
+- Organization-scoped client registrations tied to MCP server
+
+#### 3. OAuth Authorization Endpoint (Proxy)
+**File**: `packages/dashboard/src/app/oauth/authorize/route.ts`
+**Changes**: Create OAuth authorization proxy endpoint
+
+**Implementation Requirements:**
+- VHost-based lookup of MCP server and custom OAuth configuration
+- Validate incoming proxy client_id against registered clients
+- Generate OAuth state parameter for security
+- Redirect user to upstream OAuth server's authorization_endpoint with:
+  - Our stored client_id from `custom_oauth_configs`
+  - Our callback URL (not MCP client's redirect_uri)
+  - Preserved state parameter for security
+- Handle OAuth error responses and invalid client scenarios
+
+#### 4. OAuth Callback Handler (Upstream → Platform)
+**File**: `packages/dashboard/src/app/oauth/callback/route.ts`
+**Changes**: Handle callbacks from upstream OAuth servers
+
+**Implementation Requirements:**
+- Receive authorization code from upstream OAuth server
+- State parameter validation for security
+- Exchange code for upstream access/refresh tokens using stored client_secret
+- Store upstream tokens in `upstream_oauth_tokens` table with computed expiration
+- Generate our own authorization code for the MCP client
+- Redirect to MCP client's registered redirect_uri with our authorization code
+- Error handling for upstream OAuth failures
+
+#### 5. OAuth Token Endpoint (Proxy)
+**File**: `packages/dashboard/src/app/oauth/token/route.ts`
+**Changes**: Create OAuth token exchange proxy endpoint
+
+**Implementation Requirements:**
+- Validate incoming authorization code that we issued to MCP client
+- Exchange our authorization code for MCPlatform proxy access token
+- Link proxy token to stored upstream tokens in database
+- Return proxy access token to MCP client (never upstream tokens)
+- Support refresh token flow for proxy tokens
+- RFC 6749 compliance for token exchange
+
+#### 6. OAuth UserInfo Endpoint (Proxy)
+**File**: `packages/dashboard/src/app/oauth/userinfo/route.ts`
+**Changes**: Create userinfo proxy endpoint
+
+**Implementation Requirements:**
+- Validate incoming proxy access token
+- Look up associated upstream tokens from `upstream_oauth_tokens` table
+- Call upstream OAuth server's userinfo endpoint with upstream token
+- Return user information to MCP client
+- Handle upstream token expiration and refresh
+- Proper error responses when upstream tokens are invalid
+
+#### 7. Enhanced Authentication Middleware
+**File**: `packages/dashboard/src/lib/mcp/with-mcp-auth.ts`
+**Changes**: Support proxy token validation
+
+**Implementation Requirements:**
+- Detect proxy tokens vs platform OAuth tokens
+- Validate proxy tokens against our token store
+- Look up upstream tokens when needed for resource access
+- Handle token expiration scenarios (both proxy and upstream)
+- Maintain session isolation between different OAuth flows
+- Preserve existing platform OAuth functionality
+
+#### 8. Database Schema Extensions
+**File**: `packages/database/src/schema.ts`
+**Changes**: Add tables for client registrations and proxy tokens
+
+**Implementation Requirements:**
+- `mcp_client_registrations` table for dynamic client registration:
+  ```sql
+  mcp_client_registrations (
+      id,                     -- Primary key with mcr_ prefix
+      mcp_server_id,          -- FK to mcp_servers
+      client_id,              -- Proxy client ID we issued
+      client_secret,          -- Encrypted proxy client secret
+      redirect_uris,          -- JSON array of registered redirect URIs
+      client_metadata,        -- JSON for additional client metadata
+      created_at              -- Timestamp
+  )
+  ```
+- `mcp_authorization_codes` table for temporary authorization codes we issue:
+  ```sql
+  mcp_authorization_codes (
+      id,                     -- Primary key with mac_ prefix
+      mcp_client_registration_id, -- FK to client registration
+      upstream_token_id,      -- FK to upstream_oauth_tokens
+      code,                   -- Authorization code we issued
+      expires_at,             -- Code expiration (short-lived, ~10 minutes)
+      used,                   -- Boolean, prevents replay
+      created_at              -- Timestamp
+  )
+  ```
+- `mcp_proxy_tokens` table for our issued proxy tokens:
+  ```sql
+  mcp_proxy_tokens (
+      id,                     -- Primary key with mpt_ prefix
+      mcp_client_registration_id, -- FK to client registration
+      upstream_token_id,      -- FK to upstream_oauth_tokens
+      access_token,           -- Our proxy access token
+      refresh_token,          -- Our proxy refresh token (nullable)
+      expires_at,             -- Token expiration
+      created_at              -- Timestamp
+  )
+  ```
 
 ### Success Criteria:
 
@@ -275,11 +405,6 @@ Build organization-scoped OAuth configuration management interface and integrate
 - **Token Validation**: Implement efficient token validation strategies with fallback mechanisms
 - **Configuration Loading**: Cache OAuth configuration data in VHost detection to avoid repeated database queries
 
-## Migration Notes
-
-- **Existing oauthIssuerUrl Field**: Phase 1 creates new tables without touching existing field; future migration can populate from existing data if needed
-- **Backwards Compatibility**: All existing MCP servers continue working with platform OAuth unchanged
-- **Gradual Adoption**: Customers can migrate servers to custom OAuth one at a time without disruption
 
 ## References 
 
@@ -289,3 +414,7 @@ Build organization-scoped OAuth configuration management interface and integrate
 * Current VHost routing: `packages/dashboard/src/lib/mcp/index.ts:117-159`
 * Validation patterns: `packages/dashboard/src/components/add-server-modal.tsx:97-128`
 * Organization-scoped CRUD: `packages/dashboard/src/components/organization-members-client.tsx:36-203`
+
+**IMPORTANT REFERENCE FILES READ THESE IF YOU HAVE NOT ALREADY TO CREATE MENTAL ALIGNMENT**
+* Complete sequence diagram: `oauth-proxy-sequence-diagram.md`
+* Visual flow diagram: `oauth-proxy-sequence-diagram.png`
