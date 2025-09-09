@@ -101,16 +101,6 @@ The database schema is managed with Drizzle ORM.
 *   **NEVER run bun run dev, bun run build yourself - the dev server is always running on port 3000 and building it will mess it up. If you think there's an issue with it make sure to ask me**
 *   **NEVER run bun run db:generate or bun run db:migrate or any database migration-related commands. always ask me to do it, and never do it without explicit, recent permission.**
 
-# UI Testing with Puppeteer
-You should use the connected Puppeteer tools to validate UI additions and changes you have made.
-
-* use 1920x1080 as the screen resolution.
-* Always use puppeteer for testing UIs that you have built
-* always launch in headless mode
-* the user data dir is "/Users/kyle/Library/Application Support/Google/Chrome/Default", make sure to always use this
-
-If you are prompted to login you can navigate to `/login-for-claude` to be automatically logged in
-
 ## Use Bun instead of npm/pnpm/yarn 
 
 Default to using Bun instead of Node.js.

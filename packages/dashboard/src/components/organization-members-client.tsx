@@ -16,7 +16,7 @@ import { DeleteMemberDialog } from './delete-member-dialog'
 import { EditMemberRoleDialog } from './edit-member-role-dialog'
 import { InviteMemberDialog } from './invite-member-dialog'
 import { OrganizationMembersTable } from './organization-members-table'
-import { type VisibilityState } from '@tanstack/react-table'
+import type { VisibilityState } from '@tanstack/react-table'
 
 interface OrganizationMember {
     id: string

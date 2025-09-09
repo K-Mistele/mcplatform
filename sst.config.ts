@@ -56,8 +56,6 @@ export default $config({
             proxy: false
         })
 
-        // TODO pgbouncer for postgres
-
         // Bucket for the app
         const bucket = new sst.aws.Bucket(`Bucket`, {
             enforceHttps: true

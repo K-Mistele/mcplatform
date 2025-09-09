@@ -18,7 +18,7 @@ import { resendInvitationAction, cancelInvitationAction } from '@/lib/orpc/actio
 import { isDefinedError, onError, onSuccess } from '@orpc/client'
 import { useServerAction } from '@orpc/react/hooks'
 import { toast } from 'sonner'
-import { type VisibilityState } from '@tanstack/react-table'
+import type { VisibilityState } from '@tanstack/react-table'
 
 interface OrganizationInvitation {
     id: string

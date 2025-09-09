@@ -8,10 +8,9 @@ export default async function DashboardPage() {
     console.log('DashboardPage')
     const session = await requireSession()
     const toolCallsPromise = new Promise<{ count: number }>((resolve) => {
-        db
-            .select({
-                count: count(schema.toolCalls.id)
-            })
+        db.select({
+            count: count(schema.toolCalls.id)
+        })
             .from(schema.toolCalls)
             .leftJoin(schema.mcpServers, eq(schema.toolCalls.mcpServerId, schema.mcpServers.id))
             .where(eq(schema.mcpServers.organizationId, session.session.activeOrganizationId))
@@ -23,10 +22,9 @@ export default async function DashboardPage() {
     })
 
     const supportTicketsPromise = new Promise<{ count: number }>((resolve) => {
-        db
-            .select({
-                count: count(schema.supportRequests.id)
-            })
+        db.select({
+            count: count(schema.supportRequests.id)
+        })
             .from(schema.supportRequests)
             .where(eq(schema.supportRequests.organizationId, session.session.activeOrganizationId))
             .then((result) => resolve(result[0] || { count: 0 }))
@@ -37,10 +35,9 @@ export default async function DashboardPage() {
     })
 
     const activeUsersPromise = new Promise<{ count: number }>((resolve) => {
-        db
-            .select({
-                count: count(schema.mcpServers.id)
-            })
+        db.select({
+            count: count(schema.mcpServers.id)
+        })
             .from(schema.mcpServers)
             .where(eq(schema.mcpServers.organizationId, session.session.activeOrganizationId))
             .then((result) => resolve(result[0] || { count: 0 }))

@@ -290,6 +290,7 @@ export const inviteUserToOrganizationAction = base
                 .returning()
 
             revalidatePath('/dashboard/team/invitations')
+            revalidatePath('/dashboard/team')
             return newInvitation
         } catch (error) {
             throw errors.RESOURCE_NOT_FOUND({
@@ -343,6 +344,7 @@ export const resendInvitationAction = base
                 .returning()
 
             revalidatePath('/dashboard/team/invitations')
+            revalidatePath('/dashboard/team')
             return updatedInvitation
         } catch (error) {
             throw errors.RESOURCE_NOT_FOUND({
@@ -411,6 +413,7 @@ export const cancelInvitationAction = base
             })
 
             revalidatePath('/dashboard/team/invitations')
+            revalidatePath('/dashboard/team')
             return { success: true }
         } catch (error) {
             throw errors.RESOURCE_NOT_FOUND({

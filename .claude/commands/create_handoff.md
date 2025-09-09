@@ -36,7 +36,7 @@ type: implementation_strategy
 {description of the task(s) that you were working on, along with the status of each (completed, work in progress, planned/discussed)}
 
 ## Recent changes
-{describe recent changes made to the codebase that you made}
+{describe recent changes made to the codebase that you mad in line:file syntax}
 
 ## Learnings
 {describe important things that you learned - e.g. patterns, root causes of bugs, or other important pieces of information someone that is picking up your work after you should know. consider listing explicit file paths.}
