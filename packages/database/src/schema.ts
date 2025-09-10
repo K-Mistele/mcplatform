@@ -105,6 +105,29 @@ export const supportTicketActivities = pgTable(
     ]
 )
 
+// Custom OAuth Configuration Tables - Defined before mcpServers to avoid circular dependency
+export const customOAuthConfigs = pgTable(
+    'custom_oauth_configs',
+    {
+        id: text('id')
+            .primaryKey()
+            .$defaultFn(() => `coac_${nanoid(8)}`),
+        organizationId: text('organization_id')
+            .references(() => organization.id, { onDelete: 'cascade' })
+            .notNull(),
+        name: text('name').notNull(),
+        authorizationUrl: text('authorization_url').notNull(),
+        metadataUrl: text('metadata_url').notNull(),
+        clientId: text('client_id').notNull(),
+        clientSecret: text('client_secret').notNull(), // Will be encrypted in future
+        createdAt: bigint('created_at', { mode: 'number' }).$defaultFn(() => Date.now())
+    },
+    (t) => [
+        index('custom_oauth_configs_organization_id_idx').on(t.organizationId),
+        unique('custom_oauth_configs_org_name_unique').on(t.organizationId, t.name)
+    ]
+)
+
 export const mcpServers = pgTable(
     'mcp_servers',
     {
@@ -121,7 +144,10 @@ export const mcpServers = pgTable(
         createdAt: bigint('created_at', { mode: 'number' }).$defaultFn(() => Date.now()),
         authType: mcpServerAuthType('auth_type').default('none'),
         supportTicketType: supportRequestMethod('support_ticket_type').default('dashboard'),
-        walkthroughToolsEnabled: text('walkthrough_tools_enabled').$type<'true' | 'false'>().default('true')
+        walkthroughToolsEnabled: text('walkthrough_tools_enabled').$type<'true' | 'false'>().default('true'),
+        customOAuthConfigId: text('custom_oauth_config_id').references(() => customOAuthConfigs.id, { 
+            onDelete: 'set null' 
+        })
     },
     (t) => [index('mcp_server_slug_idx').on(t.slug)]
 )
@@ -453,6 +479,108 @@ export type Image = typeof images.$inferSelect
 export type Chunk = typeof chunks.$inferSelect
 export type Document = typeof documents.$inferSelect
 export type Namespace = typeof retrievalNamespace.$inferSelect
+
+// Additional OAuth Tables for Proxy Implementation
+export const upstreamOAuthTokens = pgTable(
+    'upstream_oauth_tokens',
+    {
+        id: text('id')
+            .primaryKey()
+            .$defaultFn(() => `uoat_${nanoid(8)}`),
+        mcpServerUserId: text('mcp_server_user_id')
+            .references(() => mcpServerUser.id, { onDelete: 'cascade' })
+            .notNull(),
+        oauthConfigId: text('oauth_config_id')
+            .references(() => customOAuthConfigs.id, { onDelete: 'cascade' })
+            .notNull(),
+        accessToken: text('access_token').notNull(), // Will be encrypted in future
+        refreshToken: text('refresh_token'), // Will be encrypted in future
+        expiresAt: bigint('expires_at', { mode: 'number' }),
+        createdAt: bigint('created_at', { mode: 'number' }).$defaultFn(() => Date.now())
+    },
+    (t) => [
+        index('upstream_oauth_tokens_mcp_server_user_id_idx').on(t.mcpServerUserId),
+        index('upstream_oauth_tokens_oauth_config_id_idx').on(t.oauthConfigId),
+        index('upstream_oauth_tokens_expires_at_idx').on(t.expiresAt)
+    ]
+)
+
+// MCP Client Registration for Dynamic Client Registration
+export const mcpClientRegistrations = pgTable(
+    'mcp_client_registrations',
+    {
+        id: text('id')
+            .primaryKey()
+            .$defaultFn(() => `mcr_${nanoid(8)}`),
+        mcpServerId: text('mcp_server_id')
+            .references(() => mcpServers.id, { onDelete: 'cascade' })
+            .notNull(),
+        clientId: text('client_id').notNull().unique(),
+        clientSecret: text('client_secret').notNull(), // Will be encrypted in future
+        redirectUris: jsonb('redirect_uris').$type<string[]>().notNull(),
+        clientMetadata: jsonb('client_metadata'),
+        createdAt: bigint('created_at', { mode: 'number' }).$defaultFn(() => Date.now())
+    },
+    (t) => [
+        index('mcp_client_registrations_mcp_server_id_idx').on(t.mcpServerId),
+        index('mcp_client_registrations_client_id_idx').on(t.clientId)
+    ]
+)
+
+// Authorization Codes we issue
+export const mcpAuthorizationCodes = pgTable(
+    'mcp_authorization_codes',
+    {
+        id: text('id')
+            .primaryKey()
+            .$defaultFn(() => `mac_${nanoid(8)}`),
+        mcpClientRegistrationId: text('mcp_client_registration_id')
+            .references(() => mcpClientRegistrations.id, { onDelete: 'cascade' })
+            .notNull(),
+        upstreamTokenId: text('upstream_token_id')
+            .references(() => upstreamOAuthTokens.id, { onDelete: 'cascade' })
+            .notNull(),
+        code: text('code').notNull().unique(),
+        expiresAt: bigint('expires_at', { mode: 'number' }).notNull(),
+        used: text('used').$type<'true' | 'false'>().notNull().default('false'),
+        createdAt: bigint('created_at', { mode: 'number' }).$defaultFn(() => Date.now())
+    },
+    (t) => [
+        index('mcp_authorization_codes_code_idx').on(t.code),
+        index('mcp_authorization_codes_expires_at_idx').on(t.expiresAt)
+    ]
+)
+
+// Proxy Tokens we issue to MCP clients
+export const mcpProxyTokens = pgTable(
+    'mcp_proxy_tokens',
+    {
+        id: text('id')
+            .primaryKey()
+            .$defaultFn(() => `mpt_${nanoid(8)}`),
+        mcpClientRegistrationId: text('mcp_client_registration_id')
+            .references(() => mcpClientRegistrations.id, { onDelete: 'cascade' })
+            .notNull(),
+        upstreamTokenId: text('upstream_token_id')
+            .references(() => upstreamOAuthTokens.id, { onDelete: 'cascade' })
+            .notNull(),
+        accessToken: text('access_token').notNull().unique(),
+        refreshToken: text('refresh_token').unique(),
+        expiresAt: bigint('expires_at', { mode: 'number' }),
+        createdAt: bigint('created_at', { mode: 'number' }).$defaultFn(() => Date.now())
+    },
+    (t) => [
+        index('mcp_proxy_tokens_access_token_idx').on(t.accessToken),
+        index('mcp_proxy_tokens_refresh_token_idx').on(t.refreshToken),
+        index('mcp_proxy_tokens_expires_at_idx').on(t.expiresAt)
+    ]
+)
+
+export type CustomOAuthConfig = typeof customOAuthConfigs.$inferSelect
+export type UpstreamOAuthToken = typeof upstreamOAuthTokens.$inferSelect
+export type McpClientRegistration = typeof mcpClientRegistrations.$inferSelect
+export type McpAuthorizationCode = typeof mcpAuthorizationCodes.$inferSelect
+export type McpProxyToken = typeof mcpProxyTokens.$inferSelect
 
 export const ingestionJob = pgTable('retrieval_ingestion_job', {
     id: text('id').primaryKey(),
