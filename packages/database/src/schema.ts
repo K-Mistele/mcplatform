@@ -117,6 +117,7 @@ export const customOAuthConfigs = pgTable(
             .notNull(),
         name: text('name').notNull(),
         authorizationUrl: text('authorization_url').notNull(),
+        tokenUrl: text('token_url'),
         metadataUrl: text('metadata_url').notNull(),
         clientId: text('client_id').notNull(),
         clientSecret: text('client_secret').notNull(), // Will be encrypted in future
@@ -527,6 +528,32 @@ export const mcpClientRegistrations = pgTable(
     ]
 )
 
+// Authorization Sessions for tracking OAuth flow
+export const mcpAuthorizationSessions = pgTable(
+    'mcp_authorization_sessions',
+    {
+        id: text('id')
+            .primaryKey()
+            .$defaultFn(() => `mas_${nanoid(8)}`),
+        mcpClientRegistrationId: text('mcp_client_registration_id')
+            .references(() => mcpClientRegistrations.id, { onDelete: 'cascade' })
+            .notNull(),
+        customOAuthConfigId: text('custom_oauth_config_id')
+            .references(() => customOAuthConfigs.id, { onDelete: 'cascade' })
+            .notNull(),
+        state: text('state').notNull().unique(),
+        clientState: text('client_state'),
+        redirectUri: text('redirect_uri').notNull(),
+        scope: text('scope').notNull(),
+        createdAt: bigint('created_at', { mode: 'number' }).$defaultFn(() => Date.now()),
+        expiresAt: bigint('expires_at', { mode: 'number' }).notNull()
+    },
+    (t) => [
+        index('mcp_authorization_sessions_state_idx').on(t.state),
+        index('mcp_authorization_sessions_expires_at_idx').on(t.expiresAt)
+    ]
+)
+
 // Authorization Codes we issue
 export const mcpAuthorizationCodes = pgTable(
     'mcp_authorization_codes',
@@ -579,6 +606,7 @@ export const mcpProxyTokens = pgTable(
 export type CustomOAuthConfig = typeof customOAuthConfigs.$inferSelect
 export type UpstreamOAuthToken = typeof upstreamOAuthTokens.$inferSelect
 export type McpClientRegistration = typeof mcpClientRegistrations.$inferSelect
+export type McpAuthorizationSession = typeof mcpAuthorizationSessions.$inferSelect
 export type McpAuthorizationCode = typeof mcpAuthorizationCodes.$inferSelect
 export type McpProxyToken = typeof mcpProxyTokens.$inferSelect
 
