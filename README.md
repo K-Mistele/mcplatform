@@ -4,4 +4,4 @@ MCP-based platform for enhancing conversion, onboarding, and activation and incr
 
 - [ ] docs indexing and retrieval 
 - [ ] oauth 
-- [] track user including across installation button
+- [ ] track user including across installation button
