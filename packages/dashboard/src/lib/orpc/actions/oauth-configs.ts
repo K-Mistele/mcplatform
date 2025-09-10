@@ -269,18 +269,27 @@ export const deleteOAuthConfigAction = base
 export const listOAuthConfigsAction = base
     .handler(async ({ errors }) => {
         const session = await requireSession()
+        
+        // If no active organization, return empty array instead of throwing
         if (!session.session?.activeOrganizationId) {
-            throw errors.UNAUTHORIZED({ message: 'No active organization' })
+            console.warn('No active organization when fetching OAuth configs')
+            return []
         }
 
         const organizationId = session.session.activeOrganizationId
 
-        const configs = await db
-            .select()
-            .from(customOAuthConfigs)
-            .where(eq(customOAuthConfigs.organizationId, organizationId))
-            .orderBy(customOAuthConfigs.createdAt)
+        try {
+            const configs = await db
+                .select()
+                .from(customOAuthConfigs)
+                .where(eq(customOAuthConfigs.organizationId, organizationId))
+                .orderBy(customOAuthConfigs.createdAt)
 
-        return configs
+            return configs
+        } catch (error) {
+            console.error('Error fetching OAuth configs:', error)
+            // Return empty array on error rather than throwing
+            return []
+        }
     })
     .actionable({})

@@ -1,9 +1,9 @@
-import { requireSession } from '@/lib/auth/auth'
-import { db, schema } from 'database'
-import { eq, and, sql } from 'drizzle-orm'
-import { Suspense } from 'react'
 import { OAuthConfigsClient } from '@/components/oauth-configs-client'
 import { Skeleton } from '@/components/ui/skeleton'
+import { requireSession } from '@/lib/auth/auth'
+import { db, schema } from 'database'
+import { eq, sql } from 'drizzle-orm'
+import { Suspense } from 'react'
 import { ErrorBoundary } from 'react-error-boundary'
 
 export const metadata = {
@@ -13,7 +13,7 @@ export const metadata = {
 
 async function getOAuthConfigs(organizationId: string) {
     const { customOAuthConfigs, mcpServers } = schema
-    
+
     // Get OAuth configs with usage count
     const configs = await db
         .select({
@@ -51,24 +51,15 @@ function OAuthConfigsSkeleton() {
     )
 }
 
-function ErrorFallback({ error }: { error: Error }) {
-    return (
-        <div className="flex flex-col items-center justify-center p-8">
-            <h2 className="text-lg font-semibold text-red-600 mb-2">Something went wrong</h2>
-            <p className="text-sm text-muted-foreground">{error.message}</p>
-        </div>
-    )
-}
-
 export default async function OAuthConfigsPage() {
     const session = await requireSession()
-    
+
     if (!session.session?.activeOrganizationId) {
         throw new Error('No active organization')
     }
 
     const organizationId = session.session.activeOrganizationId
-    
+
     // Create promise for data
     const configsPromise = getOAuthConfigs(organizationId)
 
@@ -77,13 +68,14 @@ export default async function OAuthConfigsPage() {
             <div className="flex items-center justify-between">
                 <div>
                     <h2 className="text-3xl font-bold tracking-tight">OAuth Configurations</h2>
-                    <p className="text-muted-foreground">
-                        Manage OAuth server configurations for your organization
-                    </p>
+                    <p className="text-muted-foreground">Manage OAuth server configurations for your organization</p>
                 </div>
             </div>
 
-            <ErrorBoundary fallbackRender={ErrorFallback}>
+            <ErrorBoundary fallback={<div className="flex flex-col items-center justify-center p-8">
+                <h2 className="text-lg font-semibold text-red-600 mb-2">Something went wrong</h2>
+                <p className="text-sm text-muted-foreground">Failed to load OAuth configurations</p>
+            </div>}>
                 <Suspense fallback={<OAuthConfigsSkeleton />}>
                     <OAuthConfigsClient configsPromise={configsPromise} />
                 </Suspense>

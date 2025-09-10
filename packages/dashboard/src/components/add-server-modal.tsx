@@ -93,8 +93,13 @@ export function AddServerModal() {
             onSuccess((configs) => {
                 setOauthConfigs(configs || [])
             }),
-            onError(() => {
-                toast.error('Failed to load OAuth configurations')
+            onError((error) => {
+                console.error('OAuth config fetch error:', error)
+                if (isDefinedError(error)) {
+                    toast.error(`Failed to load OAuth configurations: ${error.message}`)
+                } else {
+                    toast.error('Failed to load OAuth configurations')
+                }
             })
         ]
     })
@@ -174,7 +179,7 @@ export function AddServerModal() {
                     <span className="lg:inline">Add Server</span>
                 </Button>
             </DialogTrigger>
-            <DialogContent className="sm:max-w-[425px]">
+            <DialogContent className={cn("sm:max-w-[425px]", authType === 'custom_oauth' && "sm:max-w-[600px]")}>
                 <DialogHeader>
                     <DialogTitle>Add MCP Server</DialogTitle>
                     <DialogDescription>
@@ -257,80 +262,84 @@ export function AddServerModal() {
                             )}
                         />
 
-                        <FormField
-                            control={form.control}
-                            name="authType"
-                            render={({ field }) => (
-                                <FormItem>
-                                    <FormLabel>Authentication Type</FormLabel>
-                                    <Select onValueChange={field.onChange} defaultValue={field.value}>
-                                        <FormControl>
-                                            <SelectTrigger>
-                                                <SelectValue placeholder="Select authentication type" />
-                                            </SelectTrigger>
-                                        </FormControl>
-                                        <SelectContent>
-                                            <SelectItem value="none">None</SelectItem>
-                                            <SelectItem value="platform_oauth">Platform OAuth</SelectItem>
-                                            <SelectItem value="custom_oauth">Custom OAuth</SelectItem>
-                                            <SelectItem value="collect_email">Collect Email</SelectItem>
-                                        </SelectContent>
-                                    </Select>
-                                    <FormDescription>
-                                        Choose how users will authenticate with the server.
-                                    </FormDescription>
-                                    <FormMessage />
-                                </FormItem>
-                            )}
-                        />
-
-                        {/* Progressive disclosure: Show OAuth config selection when custom_oauth is selected */}
-                        {authType === 'custom_oauth' && (
+                        <div className={cn(
+                            authType === 'custom_oauth' ? "grid grid-cols-2 gap-4" : "space-y-4"
+                        )}>
                             <FormField
                                 control={form.control}
-                                name="customOAuthConfigId"
+                                name="authType"
                                 render={({ field }) => (
                                     <FormItem>
-                                        <FormLabel>OAuth Configuration</FormLabel>
+                                        <FormLabel>Authentication Type</FormLabel>
                                         <Select onValueChange={field.onChange} defaultValue={field.value}>
                                             <FormControl>
                                                 <SelectTrigger>
-                                                    <SelectValue placeholder="Select OAuth configuration" />
+                                                    <SelectValue placeholder="Select authentication type" />
                                                 </SelectTrigger>
                                             </FormControl>
                                             <SelectContent>
-                                                {oauthConfigs.length === 0 ? (
-                                                    <div className="p-2 text-sm text-muted-foreground">
-                                                        <div className="flex items-center gap-2 mb-2">
-                                                            <IconKey className="h-4 w-4" />
-                                                            No configurations available
-                                                        </div>
-                                                        <div
-                                                            className="w-full px-3 py-1.5 text-center border border-input bg-background hover:bg-accent hover:text-accent-foreground rounded-md cursor-pointer transition-colors"
-                                                            onClick={() => {
-                                                                window.open('/dashboard/oauth-configs', '_blank')
-                                                            }}
-                                                        >
-                                                            Create Configuration
-                                                        </div>
-                                                    </div>
-                                                ) : (
-                                                    oauthConfigs.map((config) => (
-                                                        <SelectItem key={config.id} value={config.id}>
-                                                            {config.name}
-                                                        </SelectItem>
-                                                    ))
-                                                )}
+                                                <SelectItem value="none">None</SelectItem>
+                                                <SelectItem value="platform_oauth">Platform OAuth</SelectItem>
+                                                <SelectItem value="custom_oauth">Custom OAuth</SelectItem>
+                                                <SelectItem value="collect_email">Collect Email</SelectItem>
                                             </SelectContent>
                                         </Select>
                                         <FormDescription>
-                                            Select the OAuth server configuration to use for authentication.
+                                            Choose how users will authenticate with the server.
                                         </FormDescription>
                                         <FormMessage />
                                     </FormItem>
                                 )}
                             />
-                        )}
+
+                            {/* Progressive disclosure: Show OAuth config selection when custom_oauth is selected */}
+                            {authType === 'custom_oauth' && (
+                                <FormField
+                                    control={form.control}
+                                    name="customOAuthConfigId"
+                                    render={({ field }) => (
+                                        <FormItem>
+                                            <FormLabel>OAuth Configuration</FormLabel>
+                                            <Select onValueChange={field.onChange} defaultValue={field.value}>
+                                                <FormControl>
+                                                    <SelectTrigger>
+                                                        <SelectValue placeholder="Select OAuth configuration" />
+                                                    </SelectTrigger>
+                                                </FormControl>
+                                                <SelectContent>
+                                                    {oauthConfigs.length === 0 ? (
+                                                        <div className="p-2 text-sm text-muted-foreground">
+                                                            <div className="flex items-center gap-2 mb-2">
+                                                                <IconKey className="h-4 w-4" />
+                                                                No configurations available
+                                                            </div>
+                                                            <div
+                                                                className="w-full px-3 py-1.5 text-center border border-input bg-background hover:bg-accent hover:text-accent-foreground rounded-md cursor-pointer transition-colors"
+                                                                onClick={() => {
+                                                                    window.open('/dashboard/oauth-configs', '_blank')
+                                                                }}
+                                                            >
+                                                                Create Configuration
+                                                            </div>
+                                                        </div>
+                                                    ) : (
+                                                        oauthConfigs.map((config) => (
+                                                            <SelectItem key={config.id} value={config.id}>
+                                                                {config.name}
+                                                            </SelectItem>
+                                                        ))
+                                                    )}
+                                                </SelectContent>
+                                            </Select>
+                                            <FormDescription>
+                                                Select the OAuth server configuration to use for authentication.
+                                            </FormDescription>
+                                            <FormMessage />
+                                        </FormItem>
+                                    )}
+                                />
+                            )}
+                        </div>
 
                         <FormField
                             control={form.control}
