@@ -1,10 +1,10 @@
 import { db, schema } from 'database'
 import { and, eq } from 'drizzle-orm'
+import { nanoid } from 'nanoid'
 import { headers } from 'next/headers'
 import { redirect } from 'next/navigation'
 import type { NextRequest } from 'next/server'
 import { z } from 'zod'
-import { nanoid } from 'nanoid'
 
 export const dynamic = 'force-dynamic'
 
@@ -13,14 +13,19 @@ const authorizationRequestSchema = z.object({
     response_type: z.literal('code'),
     client_id: z.string(),
     redirect_uri: z.string().url(),
-    scope: z.string().optional(),
-    state: z.string().optional()
+    scope: z.string().nullish(),
+    state: z.string().nullish()
 })
 
 export async function GET(request: NextRequest) {
+    console.log('[OAuth Authorize] Authorization request received')
+
     await headers()
     const host = request.headers.get('host')
+    console.log('[OAuth Authorize] Host:', host)
+
     if (!host) {
+        console.error('[OAuth Authorize] Missing host header')
         return new Response('Invalid request: Host header not found', { status: 400 })
     }
 
@@ -33,10 +38,12 @@ export async function GET(request: NextRequest) {
         scope: searchParams.get('scope'),
         state: searchParams.get('state')
     }
+    console.log('[OAuth Authorize] Request parameters:', params)
 
     // Validate parameters
     const validation = authorizationRequestSchema.safeParse(params)
     if (!validation.success) {
+        console.error('[OAuth Authorize] Parameter validation failed:', validation.error.errors)
         const error = validation.error.errors[0]
         const errorParams = new URLSearchParams({
             error: 'invalid_request',
@@ -47,16 +54,19 @@ export async function GET(request: NextRequest) {
         }
         // If we have a redirect_uri, redirect with error, otherwise return error response
         if (params.redirect_uri) {
+            console.log('[OAuth Authorize] Redirecting with error to:', params.redirect_uri)
             return redirect(`${params.redirect_uri}?${errorParams.toString()}`)
         }
         return new Response('Invalid request parameters', { status: 400 })
     }
 
     const { client_id, redirect_uri, scope, state } = validation.data
+    console.log('[OAuth Authorize] Validated parameters - client_id:', client_id, 'scope:', scope)
 
     // Extract subdomain from host for VHost lookup
     const parts = host.split('.')
     if ((host.includes('localhost') && parts.length < 2) || (!host.includes('localhost') && parts.length < 3)) {
+        console.error('[OAuth Authorize] Invalid host format, cannot extract subdomain:', { host, parts })
         const errorParams = new URLSearchParams({
             error: 'invalid_request',
             error_description: 'Invalid host; subdomain not found'
@@ -66,8 +76,10 @@ export async function GET(request: NextRequest) {
     }
 
     const subdomain = parts[0]
+    console.log('[OAuth Authorize] Extracted subdomain:', subdomain)
 
     // Look up MCP server configuration
+    console.log('[OAuth Authorize] Looking up MCP server with slug:', subdomain)
     const [mcpServerConfiguration] = await db
         .select()
         .from(schema.mcpServers)
@@ -75,6 +87,7 @@ export async function GET(request: NextRequest) {
         .limit(1)
 
     if (!mcpServerConfiguration) {
+        console.error('[OAuth Authorize] MCP server not found for subdomain:', subdomain)
         const errorParams = new URLSearchParams({
             error: 'invalid_request',
             error_description: 'MCP server not found'
@@ -82,6 +95,12 @@ export async function GET(request: NextRequest) {
         if (state) errorParams.set('state', state)
         return redirect(`${redirect_uri}?${errorParams.toString()}`)
     }
+
+    console.log('[OAuth Authorize] Found MCP server:', {
+        id: mcpServerConfiguration.id,
+        authType: mcpServerConfiguration.authType,
+        hasCustomOAuth: !!mcpServerConfiguration.customOAuthConfigId
+    })
 
     // Ensure the server is configured for custom OAuth
     if (mcpServerConfiguration.authType !== 'custom_oauth' || !mcpServerConfiguration.customOAuthConfigId) {
@@ -94,6 +113,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Validate the proxy client_id against registered clients
+    console.log('[OAuth Authorize] Validating proxy client_id:', client_id)
     const [clientRegistration] = await db
         .select()
         .from(schema.mcpClientRegistrations)
@@ -106,6 +126,7 @@ export async function GET(request: NextRequest) {
         .limit(1)
 
     if (!clientRegistration) {
+        console.error('[OAuth Authorize] Client not registered:', client_id)
         const errorParams = new URLSearchParams({
             error: 'invalid_client',
             error_description: 'Client not registered'
@@ -113,6 +134,11 @@ export async function GET(request: NextRequest) {
         if (state) errorParams.set('state', state)
         return redirect(`${redirect_uri}?${errorParams.toString()}`)
     }
+
+    console.log('[OAuth Authorize] Found client registration:', {
+        id: clientRegistration.id,
+        redirectUris: clientRegistration.redirectUris
+    })
 
     // Validate redirect_uri matches registered redirect_uris
     const registeredRedirectUris = clientRegistration.redirectUris as string[]
@@ -144,9 +170,11 @@ export async function GET(request: NextRequest) {
 
     // Generate our own state parameter for security
     const oauthState = nanoid(32)
-    
+    console.log('[OAuth Authorize] Generated OAuth state:', oauthState)
+
     // Store the authorization session in a temporary store (we'll use a database table for this)
     // This allows us to track the flow and validate the callback
+    console.log('[OAuth Authorize] Storing authorization session...')
     await db.insert(schema.mcpAuthorizationSessions).values({
         id: `mas_${nanoid()}`,
         mcpClientRegistrationId: clientRegistration.id,
@@ -158,16 +186,25 @@ export async function GET(request: NextRequest) {
         createdAt: BigInt(Date.now()),
         expiresAt: BigInt(Date.now() + 10 * 60 * 1000) // 10 minutes
     })
+    console.log('[OAuth Authorize] Authorization session stored successfully')
 
     // Build the upstream OAuth authorization URL
+    const callbackUrl = `${request.nextUrl.protocol}//${host}/oauth/callback`
     const upstreamAuthUrl = new URL(customOAuthConfig.authorizationUrl)
     upstreamAuthUrl.searchParams.set('response_type', 'code')
     upstreamAuthUrl.searchParams.set('client_id', customOAuthConfig.clientId)
-    upstreamAuthUrl.searchParams.set('redirect_uri', `${request.nextUrl.protocol}//${host}/oauth/callback`)
+    upstreamAuthUrl.searchParams.set('redirect_uri', callbackUrl)
     upstreamAuthUrl.searchParams.set('state', oauthState)
     if (scope) {
         upstreamAuthUrl.searchParams.set('scope', scope)
     }
+
+    console.log('[OAuth Authorize] Redirecting to upstream OAuth server:', {
+        authorizationUrl: customOAuthConfig.authorizationUrl,
+        upstreamClientId: customOAuthConfig.clientId,
+        callbackUrl,
+        scope: scope || 'default'
+    })
 
     // Redirect the user to the upstream OAuth server
     return redirect(upstreamAuthUrl.toString())

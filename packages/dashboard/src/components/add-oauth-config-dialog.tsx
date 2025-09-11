@@ -1,5 +1,6 @@
 'use client'
 
+import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
 import {
     Dialog,
@@ -7,16 +8,15 @@ import {
     DialogDescription,
     DialogFooter,
     DialogHeader,
-    DialogTitle,
+    DialogTitle
 } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { Alert, AlertDescription } from '@/components/ui/alert'
-import { IconLoader2, IconCheck, IconX, IconEye, IconEyeOff } from '@tabler/icons-react'
-import { useServerAction } from '@orpc/react/hooks'
-import { isDefinedError, onError, onSuccess } from '@orpc/client'
 import { createOAuthConfigAction, validateOAuthServerAction } from '@/lib/orpc/actions/oauth-configs'
-import { useState, useEffect, useRef } from 'react'
+import { isDefinedError, onError, onSuccess } from '@orpc/client'
+import { useServerAction } from '@orpc/react/hooks'
+import { IconCheck, IconEye, IconEyeOff, IconLoader2, IconX } from '@tabler/icons-react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { toast } from 'sonner'
 
 interface AddOAuthConfigDialogProps {
@@ -33,10 +33,11 @@ export function AddOAuthConfigDialog({ open, onOpenChange }: AddOAuthConfigDialo
     const [validationStatus, setValidationStatus] = useState<'idle' | 'validating' | 'valid' | 'invalid'>('idle')
     const [validationError, setValidationError] = useState<string | null>(null)
     const [showCredentialFields, setShowCredentialFields] = useState(false)
-    
-    const validationTimeoutRef = useRef<NodeJS.Timeout>()
+    const [redirectUrl, setRedirectUrl] = useState<string>('')
 
-    const { execute: validateServer, status: validateStatus } = useServerAction(validateOAuthServerAction, {
+    const validationTimeoutRef = useRef<NodeJS.Timeout>(null)
+
+    const { execute: validateServerBase, status: validateStatus } = useServerAction(validateOAuthServerAction, {
         interceptors: [
             onSuccess((data) => {
                 setValidationStatus('valid')
@@ -54,6 +55,16 @@ export function AddOAuthConfigDialog({ open, onOpenChange }: AddOAuthConfigDialo
             })
         ]
     })
+
+    // Memoize the validateServer function to prevent effect re-runs
+    const validateServer = useCallback(validateServerBase, [])
+
+    // Set the redirect URL based on window.location.origin
+    useEffect(() => {
+        if (typeof window !== 'undefined') {
+            setRedirectUrl(`${window.location.origin}/oauth/callback`)
+        }
+    }, [])
 
     const { execute: createConfig, status: createStatus } = useServerAction(createOAuthConfigAction, {
         interceptors: [
@@ -129,17 +140,18 @@ export function AddOAuthConfigDialog({ open, onOpenChange }: AddOAuthConfigDialo
     const isSubmitting = createStatus === 'pending'
 
     return (
-        <Dialog open={open} onOpenChange={(open) => {
-            if (!open) resetForm()
-            onOpenChange(open)
-        }}>
+        <Dialog
+            open={open}
+            onOpenChange={(open) => {
+                if (!open) resetForm()
+                onOpenChange(open)
+            }}
+        >
             <DialogContent className="sm:max-w-[500px]">
                 <form onSubmit={handleSubmit}>
                     <DialogHeader>
                         <DialogTitle>Add OAuth Configuration</DialogTitle>
-                        <DialogDescription>
-                            Configure a custom OAuth server for authentication.
-                        </DialogDescription>
+                        <DialogDescription>Configure a custom OAuth server for authentication.</DialogDescription>
                     </DialogHeader>
 
                     <div className="grid gap-4 py-4">
@@ -172,12 +184,8 @@ export function AddOAuthConfigDialog({ open, onOpenChange }: AddOAuthConfigDialo
                                     {validationStatus === 'validating' && (
                                         <IconLoader2 className="h-4 w-4 animate-spin text-muted-foreground" />
                                     )}
-                                    {validationStatus === 'valid' && (
-                                        <IconCheck className="h-4 w-4 text-green-500" />
-                                    )}
-                                    {validationStatus === 'invalid' && (
-                                        <IconX className="h-4 w-4 text-red-500" />
-                                    )}
+                                    {validationStatus === 'valid' && <IconCheck className="h-4 w-4 text-green-500" />}
+                                    {validationStatus === 'invalid' && <IconX className="h-4 w-4 text-red-500" />}
                                 </div>
                             </div>
                             <p className="text-xs text-muted-foreground">
@@ -185,9 +193,7 @@ export function AddOAuthConfigDialog({ open, onOpenChange }: AddOAuthConfigDialo
                             </p>
                             {validationError && (
                                 <Alert variant="destructive" className="mt-2">
-                                    <AlertDescription className="text-xs">
-                                        {validationError}
-                                    </AlertDescription>
+                                    <AlertDescription className="text-xs">{validationError}</AlertDescription>
                                 </Alert>
                             )}
                         </div>
@@ -240,6 +246,20 @@ export function AddOAuthConfigDialog({ open, onOpenChange }: AddOAuthConfigDialo
                                 </div>
                             </>
                         )}
+
+                        {/* Note about redirect URL */}
+                        {showCredentialFields && redirectUrl && (
+                            <Alert className="mt-2">
+                                <AlertDescription className="text-xs">
+                                    <strong>Important:</strong> Add this redirect URL to your OAuth provider's allowed
+                                    callbacks:
+                                    <br />
+                                    <code className="text-xs bg-muted px-1 py-0.5 rounded mt-1 inline-block">
+                                        {redirectUrl}
+                                    </code>
+                                </AlertDescription>
+                            </Alert>
+                        )}
                     </div>
 
                     <DialogFooter>
@@ -251,9 +271,11 @@ export function AddOAuthConfigDialog({ open, onOpenChange }: AddOAuthConfigDialo
                         >
                             Cancel
                         </Button>
-                        <Button 
-                            type="submit" 
-                            disabled={isSubmitting || validationStatus !== 'valid' || !name || !clientId || !clientSecret}
+                        <Button
+                            type="submit"
+                            disabled={
+                                isSubmitting || validationStatus !== 'valid' || !name || !clientId || !clientSecret
+                            }
                         >
                             {isSubmitting ? (
                                 <>

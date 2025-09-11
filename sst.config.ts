@@ -77,7 +77,7 @@ export default $config({
             'inngest',
             'start',
             '-u',
-            $dev ? 'https://pro-model-sturgeon.ngrok-free.app/api/inngest' : appUrl,
+            appUrl,
             '--signing-key',
             INNGEST_SIGNING_KEY,
             '--event-key',
@@ -164,14 +164,6 @@ export default $config({
             warm: 1,
             dev: {
                 command: 'bun run dev'
-            }
-        })
-
-        // Set up ngrok so that the inngest service can connect to the app
-        new sst.x.DevCommand('Ngrok', {
-            link: [nextApp],
-            dev: {
-                command: 'bun run scripts/ngrok.ts'
             }
         })
     }

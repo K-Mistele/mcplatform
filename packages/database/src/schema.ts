@@ -517,7 +517,7 @@ export const mcpClientRegistrations = pgTable(
             .references(() => mcpServers.id, { onDelete: 'cascade' })
             .notNull(),
         clientId: text('client_id').notNull().unique(),
-        clientSecret: text('client_secret').notNull(), // Will be encrypted in future
+        clientSecret: text('client_secret'), // Nullable for public clients using 'none' auth method
         redirectUris: jsonb('redirect_uris').$type<string[]>().notNull(),
         clientMetadata: jsonb('client_metadata'),
         createdAt: bigint('created_at', { mode: 'number' }).$defaultFn(() => Date.now())

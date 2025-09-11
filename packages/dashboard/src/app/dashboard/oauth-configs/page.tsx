@@ -4,7 +4,6 @@ import { requireSession } from '@/lib/auth/auth'
 import { db, schema } from 'database'
 import { eq, sql } from 'drizzle-orm'
 import { Suspense } from 'react'
-import { ErrorBoundary } from 'react-error-boundary'
 
 export const metadata = {
     title: 'OAuth Configurations | MCPlatform',
@@ -72,14 +71,9 @@ export default async function OAuthConfigsPage() {
                 </div>
             </div>
 
-            <ErrorBoundary fallback={<div className="flex flex-col items-center justify-center p-8">
-                <h2 className="text-lg font-semibold text-red-600 mb-2">Something went wrong</h2>
-                <p className="text-sm text-muted-foreground">Failed to load OAuth configurations</p>
-            </div>}>
-                <Suspense fallback={<OAuthConfigsSkeleton />}>
-                    <OAuthConfigsClient configsPromise={configsPromise} />
-                </Suspense>
-            </ErrorBoundary>
+            <Suspense fallback={<OAuthConfigsSkeleton />}>
+                <OAuthConfigsClient configsPromise={configsPromise} />
+            </Suspense>
         </div>
     )
 }

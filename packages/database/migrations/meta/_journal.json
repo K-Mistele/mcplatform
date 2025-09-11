@@ -36,6 +36,20 @@
       "when": 1757465115964,
       "tag": "0004_orange_senator_kelly",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1757561427729,
+      "tag": "0005_dizzy_vermin",
+      "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1757564613741,
+      "tag": "0006_aspiring_rumiko_fujikawa",
+      "breakpoints": true
     }
   ]
 }

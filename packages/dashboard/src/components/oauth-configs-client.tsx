@@ -24,7 +24,9 @@ interface OAuthConfigsClientProps {
 }
 
 export function OAuthConfigsClient({ configsPromise }: OAuthConfigsClientProps) {
-    const configs = use(configsPromise)
+    const configsData = use(configsPromise)
+    // Ensure configs is always an array
+    const configs = Array.isArray(configsData) ? configsData : []
     
     const [searchValue, setSearchValue] = useState('')
     const [addDialogOpen, setAddDialogOpen] = useState(false)

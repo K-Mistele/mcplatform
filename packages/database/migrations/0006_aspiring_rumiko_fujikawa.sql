@@ -1,0 +1,1 @@
+ALTER TABLE "mcp_client_registrations" ALTER COLUMN "client_secret" DROP NOT NULL;

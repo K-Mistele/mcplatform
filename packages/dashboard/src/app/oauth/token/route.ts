@@ -162,6 +162,7 @@ export async function POST(request: NextRequest) {
         })
 
         // Return the token response
+        console.log('[OAuth Token] Successfully issued tokens for client:', client_id)
         return new Response(JSON.stringify({
             access_token: accessToken,
             token_type: 'Bearer',

@@ -1,6 +1,7 @@
 'use server'
 
 import { requireSession } from '@/lib/auth/auth'
+import { fetchOAuthMetadata } from '@/lib/oauth/validate-server'
 import { nanoid } from 'common/nanoid'
 import { db, schema } from 'database'
 import { and, eq } from 'drizzle-orm'
@@ -9,21 +10,6 @@ import { z } from 'zod'
 import { base } from '../router'
 
 const { customOAuthConfigs, mcpServers } = schema
-
-// RFC 8414 OAuth Authorization Server Metadata Schema
-const oauthMetadataSchema = z.object({
-    issuer: z.string().url(),
-    authorization_endpoint: z.string().url(),
-    token_endpoint: z.string().url(),
-    jwks_uri: z.string().url().optional(),
-    userinfo_endpoint: z.string().url().optional(),
-    registration_endpoint: z.string().url().optional(),
-    scopes_supported: z.array(z.string()).optional(),
-    response_types_supported: z.array(z.string()).optional(),
-    grant_types_supported: z.array(z.string()).optional(),
-    token_endpoint_auth_methods_supported: z.array(z.string()).optional(),
-    code_challenge_methods_supported: z.array(z.string()).optional()
-})
 
 // Input schemas
 const validateOAuthServerSchema = z.object({
@@ -58,53 +44,32 @@ async function validateOAuthServer(
         OAUTH_SERVER_UNREACHABLE: () => Error
     }
 ) {
-    try {
-        // Automatically append the well-known path if not already present
-        let fullMetadataUrl = metadataUrl
-        if (!fullMetadataUrl.includes('/.well-known/')) {
-            // Remove trailing slash if present
-            fullMetadataUrl = fullMetadataUrl.replace(/\/$/, '')
-            fullMetadataUrl = `${fullMetadataUrl}/.well-known/oauth-authorization-server`
-        }
+    console.log('[validateOAuthServer] Starting validation for:', metadataUrl)
 
-        // Fetch the OAuth metadata
-        const response = await fetch(fullMetadataUrl, {
-            method: 'GET',
-            headers: {
-                Accept: 'application/json'
-            },
-            signal: AbortSignal.timeout(10000) // 10 second timeout
-        })
+    // Use the shared fetchOAuthMetadata function
+    const metadata = await fetchOAuthMetadata(metadataUrl)
 
-        if (!response.ok) {
-            throw new Error(`OAuth server returned ${response.status}: ${response.statusText}`)
-        }
-
-        const metadata = await response.json()
-
-        // Validate against RFC 8414 schema
-        const validatedMetadata = oauthMetadataSchema.parse(metadata)
-
-        // Extract authorization URL directly from metadata
-        const authorizationUrl = validatedMetadata.authorization_endpoint
-
-        return {
-            success: true,
-            metadata: validatedMetadata,
-            authorizationUrl,
-            metadataUrl: fullMetadataUrl
-        }
-    } catch (error) {
-        if (error instanceof z.ZodError) {
-            throw errors.INVALID_OAUTH_METADATA()
-        }
-        if (error instanceof Error) {
-            if (error.name === 'AbortError') {
-                throw errors.OAUTH_SERVER_UNREACHABLE()
-            }
-            throw errors.OAUTH_SERVER_UNREACHABLE()
-        }
+    if (!metadata) {
+        console.error('[validateOAuthServer] Failed to fetch or validate OAuth metadata')
         throw errors.OAUTH_SERVER_UNREACHABLE()
+    }
+
+    // Extract authorization URL directly from metadata
+    const authorizationUrl = metadata.authorization_endpoint
+    console.log('[validateOAuthServer] Successfully validated, auth URL:', authorizationUrl)
+
+    // Build the full metadata URL (the function handles .well-known path)
+    let fullMetadataUrl = metadataUrl
+    if (!fullMetadataUrl.includes('/.well-known/')) {
+        fullMetadataUrl = fullMetadataUrl.replace(/\/$/, '')
+        fullMetadataUrl = `${fullMetadataUrl}/.well-known/oauth-authorization-server`
+    }
+
+    return {
+        success: true,
+        metadata,
+        authorizationUrl,
+        metadataUrl: fullMetadataUrl
     }
 }
 
@@ -125,48 +90,81 @@ export const validateOAuthServerAction = base
 export const createOAuthConfigAction = base
     .input(createOAuthConfigSchema)
     .handler(async ({ input, errors }) => {
+        console.log('[createOAuthConfigAction] Starting with input:', {
+            name: input.name,
+            metadataUrl: input.metadataUrl,
+            clientId: input.clientId.substring(0, 10) + '...',
+            hasClientSecret: !!input.clientSecret
+        })
+
         const session = await requireSession()
         if (!session.session?.activeOrganizationId) {
+            console.error('[createOAuthConfigAction] No active organization ID')
             throw errors.UNAUTHORIZED()
         }
 
         const organizationId = session.session.activeOrganizationId
+        console.log('[createOAuthConfigAction] Organization ID:', organizationId)
 
-        // First validate the OAuth server
+        // First validate the OAuth server - it will throw if validation fails
+        console.log('[createOAuthConfigAction] Validating OAuth server...')
         const validation = await validateOAuthServer(input.metadataUrl, errors)
-        if (!validation.success) {
-            throw errors.INVALID_OAUTH_METADATA()
-        }
+        // No need to check validation.success - the function throws on error
+        console.log('[createOAuthConfigAction] Validation successful')
+
+        // Extract token URL from metadata
+        const tokenUrl = validation.metadata.token_endpoint
+        console.log('[createOAuthConfigAction] Token URL:', tokenUrl)
 
         // Check if a config with this name already exists for the organization
-        const existing = await db
-            .select()
-            .from(customOAuthConfigs)
-            .where(and(eq(customOAuthConfigs.organizationId, organizationId), eq(customOAuthConfigs.name, input.name)))
-            .limit(1)
+        console.log('[createOAuthConfigAction] Checking for duplicate name:', input.name)
+        try {
+            const existing = await db
+                .select()
+                .from(customOAuthConfigs)
+                .where(
+                    and(eq(customOAuthConfigs.organizationId, organizationId), eq(customOAuthConfigs.name, input.name))
+                )
+                .limit(1)
 
-        if (existing.length > 0) {
-            throw errors.RESOURCE_ALREADY_EXISTS()
+            console.log('[createOAuthConfigAction] Duplicate check completed, found:', existing.length, 'configs')
+
+            if (existing.length > 0) {
+                console.error('[createOAuthConfigAction] Duplicate name found')
+                throw errors.RESOURCE_ALREADY_EXISTS()
+            }
+        } catch (queryError) {
+            console.error('[createOAuthConfigAction] Error checking for duplicates:', queryError)
+            throw queryError
         }
 
         // Create the configuration
-        const [config] = await db
-            .insert(customOAuthConfigs)
-            .values({
-                id: `coac_${nanoid(8)}`,
-                organizationId,
-                name: input.name,
-                metadataUrl: validation.metadataUrl,
-                authorizationUrl: validation.authorizationUrl,
-                clientId: input.clientId,
-                clientSecret: input.clientSecret // TODO: Encrypt before storing
-            })
-            .returning()
+        try {
+            console.log('[createOAuthConfigAction] Creating new config in database...')
+            const [config] = await db
+                .insert(customOAuthConfigs)
+                .values({
+                    id: `coac_${nanoid(8)}`,
+                    organizationId,
+                    name: input.name,
+                    metadataUrl: validation.metadataUrl,
+                    authorizationUrl: validation.authorizationUrl,
+                    tokenUrl,
+                    clientId: input.clientId,
+                    clientSecret: input.clientSecret // TODO: Encrypt before storing
+                })
+                .returning()
 
-        revalidatePath('/dashboard/oauth-configs')
-        revalidatePath('/dashboard/mcp-servers')
+            console.log('[createOAuthConfigAction] Successfully created config:', config.id)
 
-        return config
+            revalidatePath('/dashboard/oauth-configs')
+            revalidatePath('/dashboard/mcp-servers')
+
+            return config
+        } catch (dbError) {
+            console.error('[createOAuthConfigAction] Database insert failed:', dbError)
+            throw dbError
+        }
     })
     .actionable({})
 
@@ -194,13 +192,13 @@ export const updateOAuthConfigAction = base
 
         // If metadata URL is being updated, validate it first
         let authorizationUrl = existing.authorizationUrl
+        let tokenUrl = existing.tokenUrl
         let metadataUrl = existing.metadataUrl
         if (input.metadataUrl && input.metadataUrl !== existing.metadataUrl) {
             const validation = await validateOAuthServer(input.metadataUrl, errors)
-            if (!validation.success) {
-                throw errors.INVALID_OAUTH_METADATA()
-            }
+            // No need to check validation.success - the function throws on error
             authorizationUrl = validation.authorizationUrl
+            tokenUrl = validation.metadata.token_endpoint
             metadataUrl = validation.metadataUrl
         }
 
@@ -209,7 +207,7 @@ export const updateOAuthConfigAction = base
             .update(customOAuthConfigs)
             .set({
                 ...(input.name && { name: input.name }),
-                ...(input.metadataUrl && { metadataUrl, authorizationUrl }),
+                ...(input.metadataUrl && { metadataUrl, authorizationUrl, tokenUrl }),
                 ...(input.clientId && { clientId: input.clientId }),
                 ...(input.clientSecret && { clientSecret: input.clientSecret }) // TODO: Encrypt before storing
             })
@@ -269,7 +267,7 @@ export const deleteOAuthConfigAction = base
 export const listOAuthConfigsAction = base
     .handler(async ({ errors }) => {
         const session = await requireSession()
-        
+
         // If no active organization, return empty array instead of throwing
         if (!session.session?.activeOrganizationId) {
             console.warn('No active organization when fetching OAuth configs')

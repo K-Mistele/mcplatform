@@ -85,6 +85,7 @@ export async function GET(request: NextRequest) {
     }
 
     // otherwise we don't support this endpoint.
+    console.error('[OAuth Discovery] Unsupported auth type:', mcpServerConfiguration.authType)
     return new Response('Not found', { status: 404 })
 }
 
