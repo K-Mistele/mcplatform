@@ -21,6 +21,7 @@ async function getOAuthConfigs(organizationId: string) {
             metadataUrl: customOAuthConfigs.metadataUrl,
             authorizationUrl: customOAuthConfigs.authorizationUrl,
             clientId: customOAuthConfigs.clientId,
+            scopes: customOAuthConfigs.scopes,
             createdAt: customOAuthConfigs.createdAt,
             usageCount: sql<number>`
                 (SELECT COUNT(*) FROM ${mcpServers} 

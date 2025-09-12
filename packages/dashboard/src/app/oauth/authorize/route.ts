@@ -193,7 +193,6 @@ export async function GET(request: NextRequest) {
     // This allows us to track the flow and validate the callback
     console.log('[OAuth Authorize] Storing authorization session...')
     await db.insert(schema.mcpAuthorizationSessions).values({
-        id: `mas_${nanoid()}`,
         mcpClientRegistrationId: clientRegistration.id,
         customOAuthConfigId: customOAuthConfig.id,
         state: oauthState,
@@ -202,8 +201,7 @@ export async function GET(request: NextRequest) {
         scope: scope || customOAuthConfig.scopes || 'openid profile email',
         codeChallenge: code_challenge || null,
         codeChallengeMethod: code_challenge_method || null,
-        createdAt: BigInt(Date.now()),
-        expiresAt: BigInt(Date.now() + 10 * 60 * 1000) // 10 minutes
+        expiresAt: Date.now() + 10 * 60 * 1000 // 10 minutes
     })
     console.log('[OAuth Authorize] Authorization session stored successfully')
 

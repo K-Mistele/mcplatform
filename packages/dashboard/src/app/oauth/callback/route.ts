@@ -172,7 +172,7 @@ export async function GET(request: NextRequest) {
         
         // Store the upstream tokens
         const expiresAt = tokenData.expires_in 
-            ? BigInt(Date.now() + tokenData.expires_in * 1000)
+            ? Date.now() + tokenData.expires_in * 1000
             : null
 
         // Fetch userinfo from upstream OAuth provider
@@ -180,8 +180,7 @@ export async function GET(request: NextRequest) {
         let upstreamSub: string | null = null
         let profileData: any = null
         
-        const userinfoUrl = customOAuthConfig.userinfoUrl || 
-            await getUserinfoUrlFromMetadata(customOAuthConfig.metadataUrl)
+        const userinfoUrl = await getUserinfoUrlFromMetadata(customOAuthConfig.metadataUrl)
         
         if (userinfoUrl) {
             console.log('[OAuth Callback] Fetching userinfo from:', userinfoUrl)
@@ -281,13 +280,11 @@ export async function GET(request: NextRequest) {
         const [upstreamToken] = await db
             .insert(schema.upstreamOAuthTokens)
             .values({
-                id: `uoat_${nanoid()}`,
                 mcpServerUserId: mcpServerUserId!, // Now using real user ID
                 oauthConfigId: customOAuthConfig.id,
                 accessToken: tokenData.access_token, // TODO: Encrypt this
                 refreshToken: tokenData.refresh_token || null, // TODO: Encrypt this
-                expiresAt,
-                createdAt: BigInt(Date.now())
+                expiresAt
             })
             .returning()
         console.log('[OAuth Callback] Upstream tokens stored:', upstreamToken.id)
@@ -297,14 +294,12 @@ export async function GET(request: NextRequest) {
         console.log('[OAuth Callback] Generated MCP authorization code:', ourAuthCode.substring(0, 20) + '...')
         
         await db.insert(schema.mcpAuthorizationCodes).values({
-            id: `mac_${nanoid()}`,
             mcpClientRegistrationId: session.mcpClientRegistrationId,
             authorizationSessionId: session.id,
             upstreamTokenId: upstreamToken.id,
             code: ourAuthCode,
-            expiresAt: BigInt(Date.now() + 10 * 60 * 1000), // 10 minutes
-            used: 'false',
-            createdAt: BigInt(Date.now())
+            expiresAt: Date.now() + 10 * 60 * 1000, // 10 minutes
+            used: 'false'
         })
         console.log('[OAuth Callback] MCP authorization code stored')
 

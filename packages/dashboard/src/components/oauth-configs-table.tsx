@@ -25,7 +25,8 @@ interface OAuthConfig {
     metadataUrl: string
     authorizationUrl: string
     clientId: string
-    createdAt: bigint
+    scopes: string
+    createdAt: number | null
     usageCount: number
 }
 
@@ -36,8 +37,9 @@ interface OAuthConfigsTableProps {
 }
 
 export function OAuthConfigsTable({ configs, onEdit, onDelete }: OAuthConfigsTableProps) {
-    const formatDate = (timestamp: bigint) => {
-        const date = new Date(Number(timestamp))
+    const formatDate = (timestamp: number | null) => {
+        if (!timestamp) return 'Unknown'
+        const date = new Date(timestamp)
         const now = new Date()
         const diffInSeconds = Math.floor((now.getTime() - date.getTime()) / 1000)
         

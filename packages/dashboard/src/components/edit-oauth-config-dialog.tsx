@@ -25,8 +25,8 @@ interface OAuthConfig {
     metadataUrl: string
     authorizationUrl: string
     clientId: string
-    scopes?: string
-    createdAt: bigint
+    scopes: string
+    createdAt: number | null
     usageCount: number
 }
 
@@ -47,7 +47,7 @@ export function EditOAuthConfigDialog({ open, onOpenChange, config }: EditOAuthC
     const [validationError, setValidationError] = useState<string | null>(null)
     const [redirectUrl, setRedirectUrl] = useState<string>('')
     
-    const validationTimeoutRef = useRef<NodeJS.Timeout>()
+    const validationTimeoutRef = useRef<NodeJS.Timeout | null>(null)
     const previousUrlRef = useRef(config.metadataUrl)
 
     const { execute: validateServer } = useServerAction(validateOAuthServerAction, {

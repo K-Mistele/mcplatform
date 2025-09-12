@@ -275,13 +275,11 @@ export async function POST(request: NextRequest) {
         const expiresIn = 3600 // 1 hour
 
         await db.insert(schema.mcpProxyTokens).values({
-            id: `mpt_${nanoid()}`,
             mcpClientRegistrationId: clientRegistration.id,
             upstreamTokenId: authCode.upstreamTokenId,
             accessToken,
             refreshToken,
-            expiresAt: BigInt(Date.now() + expiresIn * 1000),
-            createdAt: BigInt(Date.now())
+            expiresAt: Date.now() + expiresIn * 1000
         })
 
         // Return the token response
@@ -386,13 +384,11 @@ export async function POST(request: NextRequest) {
         const expiresIn = 3600 // 1 hour
 
         await db.insert(schema.mcpProxyTokens).values({
-            id: `mpt_${nanoid()}`,
             mcpClientRegistrationId: clientRegistration.id,
             upstreamTokenId: proxyToken.upstreamTokenId,
             accessToken: newAccessToken,
             refreshToken: newRefreshToken,
-            expiresAt: BigInt(Date.now() + expiresIn * 1000),
-            createdAt: BigInt(Date.now())
+            expiresAt: Date.now() + expiresIn * 1000
         })
 
         // Return the token response

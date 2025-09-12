@@ -147,7 +147,6 @@ export async function POST(request: NextRequest) {
         const [clientRegistration] = await db
             .insert(schema.mcpClientRegistrations)
             .values({
-                id: `mcr_${nanoid()}`,
                 mcpServerId: mcpServerConfiguration.id,
                 clientId,
                 clientSecret, // TODO: Encrypt this in production
@@ -163,8 +162,7 @@ export async function POST(request: NextRequest) {
                     client_uri: registrationData.client_uri,
                     policy_uri: registrationData.policy_uri,
                     tos_uri: registrationData.tos_uri
-                },
-                createdAt: BigInt(Date.now())
+                }
             })
             .returning()
         
