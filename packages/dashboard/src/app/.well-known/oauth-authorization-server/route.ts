@@ -77,6 +77,7 @@ export async function GET(request: NextRequest) {
             subject_types_supported: ['public'],
             id_token_signing_alg_values_supported: ['RS256'],
             token_endpoint_auth_methods_supported: ['client_secret_basic', 'client_secret_post'],
+            code_challenge_methods_supported: ['S256'],
             claims_supported: ['sub', 'iss', 'aud', 'exp', 'nbf', 'iat', 'jti', 'email', 'email_verified', 'name']
         }
 

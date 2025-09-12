@@ -8,13 +8,15 @@ import { z } from 'zod'
 
 export const dynamic = 'force-dynamic'
 
-// OAuth authorization request parameters per RFC 6749
+// OAuth authorization request parameters per RFC 6749 with PKCE
 const authorizationRequestSchema = z.object({
     response_type: z.literal('code'),
     client_id: z.string(),
     redirect_uri: z.string().url(),
     scope: z.string().nullish(),
-    state: z.string().nullish()
+    state: z.string().nullish(),
+    code_challenge: z.string().min(43).max(128).regex(/^[A-Za-z0-9_-]+$/).optional(),
+    code_challenge_method: z.literal('S256').optional()
 })
 
 export async function GET(request: NextRequest) {
@@ -36,7 +38,9 @@ export async function GET(request: NextRequest) {
         client_id: searchParams.get('client_id'),
         redirect_uri: searchParams.get('redirect_uri'),
         scope: searchParams.get('scope'),
-        state: searchParams.get('state')
+        state: searchParams.get('state'),
+        code_challenge: searchParams.get('code_challenge') || undefined,
+        code_challenge_method: searchParams.get('code_challenge_method') || undefined
     }
     console.log('[OAuth Authorize] Request parameters:', params)
 
@@ -60,7 +64,7 @@ export async function GET(request: NextRequest) {
         return new Response('Invalid request parameters', { status: 400 })
     }
 
-    const { client_id, redirect_uri, scope, state } = validation.data
+    const { client_id, redirect_uri, scope, state, code_challenge, code_challenge_method } = validation.data
     console.log('[OAuth Authorize] Validated parameters - client_id:', client_id, 'scope:', scope)
 
     // Extract subdomain from host for VHost lookup
@@ -183,6 +187,8 @@ export async function GET(request: NextRequest) {
         clientState: state || null,
         redirectUri: redirect_uri,
         scope: scope || customOAuthConfig.scopes || 'openid profile email',
+        codeChallenge: code_challenge || null,
+        codeChallengeMethod: code_challenge_method || null,
         createdAt: BigInt(Date.now()),
         expiresAt: BigInt(Date.now() + 10 * 60 * 1000) // 10 minutes
     })

@@ -9,6 +9,7 @@ tags: [research, pkce, oauth, code-challenge, s256, authentication, custom-oauth
 status: complete
 last_updated: 2025-09-12
 last_updated_by: Claude
+last_updated_note: "Clarified that PKCE should NOT be forwarded to upstream OAuth servers"
 type: research
 ---
 
@@ -24,7 +25,9 @@ type: research
 MCP clients are failing to connect with error "Incompatible auth server: does not support code challenge method S256" when using custom_oauth. What's missing in the custom OAuth implementation for PKCE support, and what needs to be implemented?
 
 ## Summary
-The custom OAuth proxy implementation lacks PKCE (Proof Key for Code Exchange) support, while the platform OAuth correctly advertises S256 support. The issue stems from missing `code_challenge_methods_supported` in the OAuth discovery metadata for custom OAuth servers, and absent PKCE parameter handling throughout the authorization and token exchange flows. A complete PKCE implementation requires updates to discovery metadata, authorization request validation, session storage, and token verification logic.
+The custom OAuth proxy implementation lacks PKCE (Proof Key for Code Exchange) support, while the platform OAuth correctly advertises S256 support. The issue stems from missing `code_challenge_methods_supported` in the OAuth discovery metadata for custom OAuth servers, and absent PKCE parameter handling throughout the authorization and token exchange flows. 
+
+**Critical Architecture Point**: PKCE must be implemented ONLY between MCP clients and MCPlatform, NOT between MCPlatform and upstream OAuth servers. The proxy architecture means we handle two separate authorization flows - we validate PKCE from downstream MCP clients but do NOT forward PKCE to upstream servers (as this would break the security model where only the original client can provide the code_verifier).
 
 ## Detailed Findings
 
@@ -148,16 +151,18 @@ if (authSession.codeChallenge) {
 }
 ```
 
-#### Phase 5: Forward PKCE to Upstream (Optional)
-If upstream OAuth servers support PKCE, forward the parameters:
+### What We Are NOT Doing: Upstream PKCE
 
-```typescript
-// packages/dashboard/src/app/oauth/authorize/route.ts:191-209
-if (validation.data.code_challenge) {
-    upstreamAuthUrl.searchParams.set('code_challenge', validation.data.code_challenge)
-    upstreamAuthUrl.searchParams.set('code_challenge_method', validation.data.code_challenge_method || 'S256')
-}
-```
+**IMPORTANT**: We do NOT forward PKCE parameters to upstream OAuth servers. Here's why:
+
+1. **Security Model Incompatibility**: PKCE ensures only the client that initiated the request can exchange the code. The MCP client generates the code_verifier, not MCPlatform. If we forward the challenge upstream, we cannot provide the verifier during token exchange.
+
+2. **Proxy Architecture**: MCPlatform acts as the OAuth client to upstream servers. We exchange the upstream authorization code for tokens, then issue our own authorization code to the MCP client. The MCP client never receives the upstream authorization code.
+
+3. **Correct Implementation**: 
+   - Accept PKCE from downstream MCP clients → validate it ourselves
+   - Do NOT forward client's PKCE upstream → would break the flow
+   - If upstream requires PKCE, we'd generate our own separate PKCE pair (not implemented)
 
 ## Code References
 - `packages/dashboard/src/app/.well-known/oauth-authorization-server/route.ts:114` - Platform OAuth PKCE advertisement
@@ -178,7 +183,10 @@ MCPlatform uses two separate authentication systems:
 - MCPlatform acts as an OAuth authorization server to MCP clients
 - Proxies authentication to upstream customer OAuth servers
 - Issues proxy tokens, never exposes upstream tokens to MCP clients
-- PKCE verification happens at the proxy level, not forwarded upstream
+- **PKCE Scope**: PKCE is ONLY between MCP clients and MCPlatform
+- **Two Separate Flows**: 
+  - Downstream: MCP Client ↔ MCPlatform (with PKCE)
+  - Upstream: MCPlatform ↔ Customer OAuth (without client's PKCE)
 
 ### Security Considerations
 - PKCE is now recommended for ALL OAuth clients (RFC 8252), not just public clients
@@ -196,7 +204,7 @@ The PKCE support was intentionally removed during Phase 2 to simplify the initia
 - `specifications/08-custom-oauth/feature.md` - Feature requirements and architecture
 
 ## Open Questions
-1. Should PKCE be mandatory or optional for custom OAuth configurations?
-2. Do all upstream OAuth servers support PKCE forwarding?
-3. Should we support the 'plain' method or only 'S256'?
-4. How to handle legacy MCP clients that don't support PKCE?
+1. Should PKCE be mandatory or optional for MCP client connections?
+2. Should we support the 'plain' method or only 'S256'?
+3. How to handle legacy MCP clients that don't support PKCE?
+4. If upstream OAuth servers require PKCE, should MCPlatform generate its own PKCE pair for upstream connections (separate from client PKCE)?

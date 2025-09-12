@@ -546,6 +546,8 @@ export const mcpAuthorizationSessions = pgTable(
         clientState: text('client_state'),
         redirectUri: text('redirect_uri').notNull(),
         scope: text('scope').notNull(),
+        codeChallenge: text('code_challenge'),
+        codeChallengeMethod: text('code_challenge_method'),
         createdAt: bigint('created_at', { mode: 'number' }).$defaultFn(() => Date.now()),
         expiresAt: bigint('expires_at', { mode: 'number' }).notNull()
     },
@@ -564,6 +566,9 @@ export const mcpAuthorizationCodes = pgTable(
             .$defaultFn(() => `mac_${nanoid(8)}`),
         mcpClientRegistrationId: text('mcp_client_registration_id')
             .references(() => mcpClientRegistrations.id, { onDelete: 'cascade' })
+            .notNull(),
+        authorizationSessionId: text('authorization_session_id')
+            .references(() => mcpAuthorizationSessions.id, { onDelete: 'cascade' })
             .notNull(),
         upstreamTokenId: text('upstream_token_id')
             .references(() => upstreamOAuthTokens.id, { onDelete: 'cascade' })

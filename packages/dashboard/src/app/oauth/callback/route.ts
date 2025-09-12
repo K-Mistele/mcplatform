@@ -197,6 +197,7 @@ export async function GET(request: NextRequest) {
         await db.insert(schema.mcpAuthorizationCodes).values({
             id: `mac_${nanoid()}`,
             mcpClientRegistrationId: session.mcpClientRegistrationId,
+            authorizationSessionId: session.id,
             upstreamTokenId: upstreamToken.id,
             code: ourAuthCode,
             expiresAt: BigInt(Date.now() + 10 * 60 * 1000), // 10 minutes
@@ -205,10 +206,9 @@ export async function GET(request: NextRequest) {
         })
         console.log('[OAuth Callback] MCP authorization code stored')
 
-        // Clean up the authorization session
-        await db
-            .delete(schema.mcpAuthorizationSessions)
-            .where(eq(schema.mcpAuthorizationSessions.id, session.id))
+        // Note: We don't delete the authorization session here anymore
+        // It's needed for PKCE verification in the token endpoint
+        // It will expire naturally based on its expiresAt field
 
         // Redirect back to the MCP client with our authorization code
         const redirectParams = new URLSearchParams({

@@ -4,17 +4,19 @@ import { headers } from 'next/headers'
 import type { NextRequest } from 'next/server'
 import { nanoid } from 'nanoid'
 import { z } from 'zod'
+import { verifyPKCEChallenge } from '@/lib/oauth/pkce'
 
 export const dynamic = 'force-dynamic'
 
-// OAuth token request schema per RFC 6749
+// OAuth token request schema per RFC 6749 with PKCE
 const tokenRequestSchema = z.object({
     grant_type: z.enum(['authorization_code', 'refresh_token']),
     code: z.string().optional(),
     redirect_uri: z.string().url().optional(),
     refresh_token: z.string().optional(),
     client_id: z.string().optional(),
-    client_secret: z.string().optional()
+    client_secret: z.string().optional(),
+    code_verifier: z.string().min(43).max(128).regex(/^[A-Za-z0-9_-]+$/).optional()
 })
 
 export async function POST(request: NextRequest) {
@@ -70,7 +72,7 @@ export async function POST(request: NextRequest) {
         })
     }
 
-    const { grant_type, code, refresh_token, client_id, client_secret } = validation.data
+    const { grant_type, code, refresh_token, client_id, client_secret, code_verifier } = validation.data
 
     // Handle authorization code grant
     if (grant_type === 'authorization_code') {
@@ -115,6 +117,42 @@ export async function POST(request: NextRequest) {
                 status: 400,
                 headers: { 'Content-Type': 'application/json' }
             })
+        }
+
+        // Retrieve the authorization session to check for PKCE
+        const [authSession] = await db
+            .select()
+            .from(schema.mcpAuthorizationSessions)
+            .where(eq(schema.mcpAuthorizationSessions.id, authCode.authorizationSessionId))
+            .limit(1)
+
+        // Verify PKCE if it was used during authorization
+        if (authSession?.codeChallenge) {
+            if (!code_verifier) {
+                return new Response(JSON.stringify({
+                    error: 'invalid_grant',
+                    error_description: 'Code verifier required for PKCE'
+                }), {
+                    status: 400,
+                    headers: { 'Content-Type': 'application/json' }
+                })
+            }
+
+            const pkceValid = verifyPKCEChallenge(
+                code_verifier,
+                authSession.codeChallenge,
+                authSession.codeChallengeMethod || 'S256'
+            )
+
+            if (!pkceValid) {
+                return new Response(JSON.stringify({
+                    error: 'invalid_grant',
+                    error_description: 'Invalid code verifier'
+                }), {
+                    status: 400,
+                    headers: { 'Content-Type': 'application/json' }
+                })
+            }
         }
 
         // Verify client credentials
