@@ -25,6 +25,7 @@ interface OAuthConfig {
     metadataUrl: string
     authorizationUrl: string
     clientId: string
+    scopes?: string
     createdAt: bigint
     usageCount: number
 }
@@ -40,6 +41,7 @@ export function EditOAuthConfigDialog({ open, onOpenChange, config }: EditOAuthC
     const [metadataUrl, setMetadataUrl] = useState(config.metadataUrl)
     const [clientId, setClientId] = useState(config.clientId)
     const [clientSecret, setClientSecret] = useState('')
+    const [scopes, setScopes] = useState(config.scopes || 'openid profile email')
     const [showClientSecret, setShowClientSecret] = useState(false)
     const [validationStatus, setValidationStatus] = useState<'idle' | 'validating' | 'valid' | 'invalid'>('valid')
     const [validationError, setValidationError] = useState<string | null>(null)
@@ -140,6 +142,7 @@ export function EditOAuthConfigDialog({ open, onOpenChange, config }: EditOAuthC
         if (metadataUrl !== config.metadataUrl) updates.metadataUrl = metadataUrl
         if (clientId !== config.clientId) updates.clientId = clientId
         if (clientSecret) updates.clientSecret = clientSecret
+        if (scopes !== (config.scopes || 'openid profile email')) updates.scopes = scopes
 
         // Check if any field actually changed
         if (Object.keys(updates).length === 1) {
@@ -154,7 +157,8 @@ export function EditOAuthConfigDialog({ open, onOpenChange, config }: EditOAuthC
     const hasChanges = name !== config.name || 
                       metadataUrl !== config.metadataUrl || 
                       clientId !== config.clientId || 
-                      clientSecret !== ''
+                      clientSecret !== '' ||
+                      scopes !== (config.scopes || 'openid profile email')
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
@@ -254,6 +258,22 @@ export function EditOAuthConfigDialog({ open, onOpenChange, config }: EditOAuthC
                             </div>
                             <p className="text-xs text-muted-foreground">
                                 Only enter a new secret if you want to change it.
+                            </p>
+                        </div>
+
+                        <div className="grid gap-2">
+                            <Label htmlFor="edit-scopes">OAuth Scopes</Label>
+                            <Input
+                                id="edit-scopes"
+                                type="text"
+                                placeholder="openid profile email"
+                                value={scopes}
+                                onChange={(e) => setScopes(e.target.value)}
+                                required
+                                disabled={isSubmitting}
+                            />
+                            <p className="text-xs text-muted-foreground">
+                                Space-delimited list of OAuth scopes to request. Format varies by provider (e.g., "openid profile email" for standard OIDC, "read:user user:email" for GitHub).
                             </p>
                         </div>
 

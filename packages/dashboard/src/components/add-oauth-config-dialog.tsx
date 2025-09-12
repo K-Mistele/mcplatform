@@ -30,6 +30,7 @@ export function AddOAuthConfigDialog({ open, onOpenChange }: AddOAuthConfigDialo
     const [clientId, setClientId] = useState('')
     const [clientSecret, setClientSecret] = useState('')
     const [showClientSecret, setShowClientSecret] = useState(false)
+    const [scopes, setScopes] = useState('openid profile email')
     const [validationStatus, setValidationStatus] = useState<'idle' | 'validating' | 'valid' | 'invalid'>('idle')
     const [validationError, setValidationError] = useState<string | null>(null)
     const [showCredentialFields, setShowCredentialFields] = useState(false)
@@ -133,7 +134,8 @@ export function AddOAuthConfigDialog({ open, onOpenChange }: AddOAuthConfigDialo
             name,
             metadataUrl,
             clientId,
-            clientSecret
+            clientSecret,
+            scopes
         })
     }
 
@@ -242,6 +244,22 @@ export function AddOAuthConfigDialog({ open, onOpenChange }: AddOAuthConfigDialo
                                     </div>
                                     <p className="text-xs text-muted-foreground">
                                         This will be securely stored and used for token exchange.
+                                    </p>
+                                </div>
+
+                                <div className="grid gap-2">
+                                    <Label htmlFor="scopes">OAuth Scopes</Label>
+                                    <Input
+                                        id="scopes"
+                                        type="text"
+                                        placeholder="openid profile email"
+                                        value={scopes}
+                                        onChange={(e) => setScopes(e.target.value)}
+                                        required
+                                        disabled={isSubmitting}
+                                    />
+                                    <p className="text-xs text-muted-foreground">
+                                        Space-delimited list of OAuth scopes to request. Format varies by provider (e.g., "openid profile email" for standard OIDC, "read:user user:email" for GitHub).
                                     </p>
                                 </div>
                             </>

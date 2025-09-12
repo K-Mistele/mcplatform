@@ -182,7 +182,7 @@ export async function GET(request: NextRequest) {
         state: oauthState,
         clientState: state || null,
         redirectUri: redirect_uri,
-        scope: scope || 'openid profile email',
+        scope: scope || customOAuthConfig.scopes || 'openid profile email',
         createdAt: BigInt(Date.now()),
         expiresAt: BigInt(Date.now() + 10 * 60 * 1000) // 10 minutes
     })
@@ -195,15 +195,14 @@ export async function GET(request: NextRequest) {
     upstreamAuthUrl.searchParams.set('client_id', customOAuthConfig.clientId)
     upstreamAuthUrl.searchParams.set('redirect_uri', callbackUrl)
     upstreamAuthUrl.searchParams.set('state', oauthState)
-    if (scope) {
-        upstreamAuthUrl.searchParams.set('scope', scope)
-    }
+    const effectiveScope = scope || customOAuthConfig.scopes || 'openid profile email'
+    upstreamAuthUrl.searchParams.set('scope', effectiveScope)
 
     console.log('[OAuth Authorize] Redirecting to upstream OAuth server:', {
         authorizationUrl: customOAuthConfig.authorizationUrl,
         upstreamClientId: customOAuthConfig.clientId,
         callbackUrl,
-        scope: scope || 'default'
+        scope: effectiveScope
     })
 
     // Redirect the user to the upstream OAuth server

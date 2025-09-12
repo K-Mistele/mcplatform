@@ -20,7 +20,8 @@ const createOAuthConfigSchema = z.object({
     name: z.string().min(1).max(100),
     metadataUrl: z.string().url(),
     clientId: z.string().min(1),
-    clientSecret: z.string().min(1)
+    clientSecret: z.string().min(1),
+    scopes: z.string().min(1).default('openid profile email')
 })
 
 const updateOAuthConfigSchema = z.object({
@@ -28,7 +29,8 @@ const updateOAuthConfigSchema = z.object({
     name: z.string().min(1).max(100).optional(),
     metadataUrl: z.string().url().optional(),
     clientId: z.string().min(1).optional(),
-    clientSecret: z.string().min(1).optional()
+    clientSecret: z.string().min(1).optional(),
+    scopes: z.string().min(1).optional()
 })
 
 const deleteOAuthConfigSchema = z.object({
@@ -151,7 +153,8 @@ export const createOAuthConfigAction = base
                     authorizationUrl: validation.authorizationUrl,
                     tokenUrl,
                     clientId: input.clientId,
-                    clientSecret: input.clientSecret // TODO: Encrypt before storing
+                    clientSecret: input.clientSecret, // TODO: Encrypt before storing
+                    scopes: input.scopes
                 })
                 .returning()
 
@@ -209,7 +212,8 @@ export const updateOAuthConfigAction = base
                 ...(input.name && { name: input.name }),
                 ...(input.metadataUrl && { metadataUrl, authorizationUrl, tokenUrl }),
                 ...(input.clientId && { clientId: input.clientId }),
-                ...(input.clientSecret && { clientSecret: input.clientSecret }) // TODO: Encrypt before storing
+                ...(input.clientSecret && { clientSecret: input.clientSecret }), // TODO: Encrypt before storing
+                ...(input.scopes && { scopes: input.scopes })
             })
             .where(eq(customOAuthConfigs.id, input.id))
             .returning()

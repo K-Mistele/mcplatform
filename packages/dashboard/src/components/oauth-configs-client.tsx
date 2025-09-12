@@ -15,6 +15,7 @@ interface OAuthConfig {
     metadataUrl: string
     authorizationUrl: string
     clientId: string
+    scopes: string
     createdAt: number | null
     usageCount: number
 }

@@ -54,6 +54,13 @@ export async function GET(request: NextRequest) {
             return new Response('OAuth configuration not found', { status: 404 })
         }
 
+        // Fetch the OAuth configuration to get the configured scopes
+        const [oauthConfig] = await db
+            .select()
+            .from(schema.customOAuthConfigs)
+            .where(eq(schema.customOAuthConfigs.id, mcpServerConfiguration.customOAuthConfigId))
+            .limit(1)
+
         // Return metadata pointing to our proxy endpoints
         const baseUrl = `${requestUrl.protocol}//${host}`
         const metadata = {
@@ -63,7 +70,7 @@ export async function GET(request: NextRequest) {
             userinfo_endpoint: `${baseUrl}/oauth/userinfo`,
             jwks_uri: `${baseUrl}/oauth/jwks`,
             registration_endpoint: `${baseUrl}/oauth/register`,
-            scopes_supported: ['openid', 'profile', 'email'],
+            scopes_supported: oauthConfig?.scopes ? oauthConfig.scopes.split(' ') : ['openid', 'profile', 'email'],
             response_types_supported: ['code'],
             response_modes_supported: ['query'],
             grant_types_supported: ['authorization_code', 'refresh_token'],

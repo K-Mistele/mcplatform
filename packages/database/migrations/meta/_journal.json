@@ -50,6 +50,13 @@
       "when": 1757564613741,
       "tag": "0006_aspiring_rumiko_fujikawa",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1757691080271,
+      "tag": "0007_slimy_piledriver",
+      "breakpoints": true
     }
   ]
 }

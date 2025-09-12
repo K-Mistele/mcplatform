@@ -121,6 +121,7 @@ export const customOAuthConfigs = pgTable(
         metadataUrl: text('metadata_url').notNull(),
         clientId: text('client_id').notNull(),
         clientSecret: text('client_secret').notNull(), // Will be encrypted in future
+        scopes: text('scopes').default('openid profile email').notNull(),
         createdAt: bigint('created_at', { mode: 'number' }).$defaultFn(() => Date.now())
     },
     (t) => [

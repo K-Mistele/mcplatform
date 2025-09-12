@@ -203,7 +203,11 @@ export async function POST(request: NextRequest) {
             headers: {
                 'Content-Type': 'application/json',
                 'Cache-Control': 'no-store',
-                'Pragma': 'no-cache'
+                'Pragma': 'no-cache',
+                'Access-Control-Allow-Origin': '*',
+                'Access-Control-Allow-Methods': 'POST, OPTIONS',
+                'Access-Control-Allow-Headers': 'Content-Type',
+                'Access-Control-Max-Age': '86400'
             }
         })
     } catch (error) {
