@@ -8,6 +8,19 @@ import { z } from 'zod'
 
 export const dynamic = 'force-dynamic'
 
+// Extract base domain from subdomain host
+function extractBaseDomain(host: string): string {
+    if (host.includes('localhost')) {
+        return host // Keep full localhost:port
+    }
+    const parts = host.split('.')
+    // Remove subdomain, keep base domain
+    if (parts.length > 2) {
+        return parts.slice(1).join('.')
+    }
+    return host
+}
+
 // OAuth authorization request parameters per RFC 6749 with PKCE
 const authorizationRequestSchema = z.object({
     response_type: z.literal('code'),
@@ -194,8 +207,17 @@ export async function GET(request: NextRequest) {
     })
     console.log('[OAuth Authorize] Authorization session stored successfully')
 
-    // Build the upstream OAuth authorization URL
-    const callbackUrl = `${request.nextUrl.protocol}//${host}/oauth/callback`
+    // Build the upstream OAuth authorization URL with centralized callback
+    const betterAuthUrl = process.env.NEXT_PUBLIC_BETTER_AUTH_URL
+    let callbackUrl: string
+    if (betterAuthUrl) {
+        // Use configured platform URL
+        callbackUrl = `${betterAuthUrl}/oauth/callback`
+    } else {
+        // Fallback to extracting base domain from host
+        const baseDomain = extractBaseDomain(host)
+        callbackUrl = `${request.nextUrl.protocol}//${baseDomain}/oauth/callback`
+    }
     const upstreamAuthUrl = new URL(customOAuthConfig.authorizationUrl)
     upstreamAuthUrl.searchParams.set('response_type', 'code')
     upstreamAuthUrl.searchParams.set('client_id', customOAuthConfig.clientId)

@@ -45,6 +45,7 @@ export function EditOAuthConfigDialog({ open, onOpenChange, config }: EditOAuthC
     const [showClientSecret, setShowClientSecret] = useState(false)
     const [validationStatus, setValidationStatus] = useState<'idle' | 'validating' | 'valid' | 'invalid'>('valid')
     const [validationError, setValidationError] = useState<string | null>(null)
+    const [redirectUrl, setRedirectUrl] = useState<string>('')
     
     const validationTimeoutRef = useRef<NodeJS.Timeout>()
     const previousUrlRef = useRef(config.metadataUrl)
@@ -93,6 +94,24 @@ export function EditOAuthConfigDialog({ open, onOpenChange, config }: EditOAuthC
         setValidationError(null)
         previousUrlRef.current = config.metadataUrl
     }, [config])
+
+    // Set redirect URL on client side
+    useEffect(() => {
+        if (typeof window !== 'undefined') {
+            // Use NEXT_PUBLIC_BETTER_AUTH_URL if available, otherwise extract base domain
+            const betterAuthUrl = process.env.NEXT_PUBLIC_BETTER_AUTH_URL
+            if (betterAuthUrl) {
+                setRedirectUrl(`${betterAuthUrl}/oauth/callback`)
+            } else {
+                const origin = window.location.origin
+                const url = new URL(origin)
+                const baseDomain = url.hostname.includes('localhost') 
+                    ? origin 
+                    : `${url.protocol}//${url.hostname.split('.').slice(1).join('.')}`
+                setRedirectUrl(`${baseDomain}/oauth/callback`)
+            }
+        }
+    }, [])
 
     // Debounced validation when metadata URL changes
     useEffect(() => {
@@ -276,6 +295,18 @@ export function EditOAuthConfigDialog({ open, onOpenChange, config }: EditOAuthC
                                 Space-delimited list of OAuth scopes to request. Format varies by provider (e.g., "openid profile email" for standard OIDC, "read:user user:email" for GitHub).
                             </p>
                         </div>
+
+                        {validationStatus === 'valid' && redirectUrl && (
+                            <Alert className="mt-2">
+                                <AlertDescription className="text-xs">
+                                    <strong>Important:</strong> Ensure this redirect URL is configured in your OAuth provider:
+                                    <br />
+                                    <code className="text-xs bg-muted px-1 py-0.5 rounded mt-1 inline-block">
+                                        {redirectUrl}
+                                    </code>
+                                </AlertDescription>
+                            </Alert>
+                        )}
 
                         {config.usageCount > 0 && (
                             <Alert>
