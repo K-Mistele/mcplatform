@@ -34,7 +34,7 @@ export function CursorInstallLink({ serverName, serverUrl }: CursorInstallLinkPr
     const installLink = `cursor://anysphere.cursor-deeplink/mcp/install?name=${sanitizedServerName}&config=${base64Config}`
 
     // Generate the raw HTML for each button
-    const darkButtonHtml = `<a href="https://cursor.com/install-mcp?name=${sanitizedServerName}&config=${base64Config}">
+    const darkButtonHtml = `<a href="cursor://anysphere.cursor-deeplink/mcp/install?name=${sanitizedServerName}&config=${base64Config}">
     <img
         src="https://cursor.com/deeplink/mcp-install-dark.svg"
         alt="Add ${serverName} MCP server to Cursor"
@@ -42,7 +42,7 @@ export function CursorInstallLink({ serverName, serverUrl }: CursorInstallLinkPr
     />
 </a>`
 
-    const lightButtonHtml = `<a href="https://cursor.com/install-mcp?name=${sanitizedServerName}&config=${base64Config}">
+    const lightButtonHtml = `<a href="cursor://anysphere.cursor-deeplink/mcp/install?name=${sanitizedServerName}&config=${base64Config}">
     <img
         src="https://cursor.com/deeplink/mcp-install-light.svg"
         alt="Add ${serverName} MCP server to Cursor"
@@ -110,7 +110,7 @@ export function CursorInstallLink({ serverName, serverUrl }: CursorInstallLinkPr
                     <div className="flex flex-col items-start gap-2">
                         <div className="flex items-center gap-2">
                             <a
-                                href={`https://cursor.com/install-mcp?name=${sanitizedServerName}&config=${base64Config}`}
+                                href={`cursor://anysphere.cursor-deeplink/mcp/install?name=${sanitizedServerName}&config=${base64Config}`}
                             >
                                 <img
                                     src="https://cursor.com/deeplink/mcp-install-dark.svg"
@@ -125,7 +125,7 @@ export function CursorInstallLink({ serverName, serverUrl }: CursorInstallLinkPr
                         </div>
                         <div className="flex items-center gap-2">
                             <a
-                                href={`https://cursor.com/install-mcp?name=${sanitizedServerName}&config=${base64Config}`}
+                                href={`cursor://anysphere.cursor-deeplink/mcp/install?name=${sanitizedServerName}&config=${base64Config}`}
                             >
                                 <img
                                     src="https://cursor.com/deeplink/mcp-install-light.svg"
