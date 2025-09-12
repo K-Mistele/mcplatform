@@ -77,7 +77,7 @@ export default $config({
             'inngest',
             'start',
             '-u',
-            $dev ? 'https://pro-model-sturgeon.ngrok-free.app/api/inngest' : appUrl,
+            $dev ? 'https://resorptive-rufus-scyphiform.ngrok-free.app/api/inngest' : appUrl,
             '--signing-key',
             INNGEST_SIGNING_KEY,
             '--event-key',

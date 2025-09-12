@@ -3,7 +3,7 @@ import ngrok from '@ngrok/ngrok'
 await ngrok.forward({
     port: 3000,
     proto: 'http',
-    domain: 'pro-model-sturgeon.ngrok-free.app',
+    domain: 'resorptive-rufus-scyphiform.ngrok-free.app',
     authtoken: process.env.NGROK_AUTH_TOKEN
 })
 

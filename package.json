@@ -15,7 +15,7 @@
         "db:push": "cd packages/database && bun run db:push",
         "next:dev": "cd packages/dashboard && bun run dev",
         "tests": "bun sst shell -- bun test --timeout 15000",
-        "ngrok": "bash scripts/ngrok.sh"
+        "ngrok": "bun run scripts/ngrok.ts"
     },
     "devDependencies": {
         "@biomejs/biome": "^2.1.3",
@@ -29,6 +29,7 @@
     },
     "dependencies": {
         "@ngrok/ngrok": "^1.5.1",
+        "ngrok": "^5.0.0-beta.2",
         "sst": "3.17.10"
     }
 }
