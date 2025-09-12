@@ -162,9 +162,15 @@ export const mcpServerUser = pgTable(
             .$defaultFn(() => `mcpu_${nanoid(12)}`),
         trackingId: text('distinct_id').unique('mcp_server_user_distinct_id_unique', { nulls: 'distinct' }),
         email: text('email'),
+        upstreamSub: text('upstream_sub'),
+        profileData: jsonb('profile_data'),
         firstSeenAt: bigint('first_seen_at', { mode: 'number' }).$defaultFn(() => Date.now())
     },
-    (t) => [index('mcp_server_user_distinct_id_idx').on(t.trackingId), index('mcp_server_user_email_idx').on(t.email)]
+    (t) => [
+        index('mcp_server_user_distinct_id_idx').on(t.trackingId), 
+        index('mcp_server_user_email_idx').on(t.email),
+        index('mcp_server_user_upstream_sub_idx').on(t.upstreamSub)
+    ]
 )
 
 export const toolCalls = pgTable(

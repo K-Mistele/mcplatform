@@ -1,5 +1,5 @@
 import { db, schema } from 'database'
-import { and, eq, gt } from 'drizzle-orm'
+import { and, eq, gt, sql } from 'drizzle-orm'
 import { headers } from 'next/headers'
 import { redirect } from 'next/navigation'
 import type { NextRequest } from 'next/server'
@@ -123,6 +123,10 @@ export async function GET(request: NextRequest) {
         return redirect(`${session.redirectUri}?${errorParams.toString()}`)
     }
 
+    // Track redirect URL to return after try-catch
+    let successRedirectUrl: string | null = null
+    let errorRedirectUrl: string | null = null
+
     try {
         // Exchange code for tokens with upstream OAuth server
         const callbackUrl = `${request.nextUrl.protocol}//${request.headers.get('host')}/oauth/callback`
@@ -155,7 +159,8 @@ export async function GET(request: NextRequest) {
             if (session.clientState) {
                 errorParams.set('state', session.clientState)
             }
-            return redirect(`${session.redirectUri}?${errorParams.toString()}`)
+            errorRedirectUrl = `${session.redirectUri}?${errorParams.toString()}`
+            throw new Error('Token exchange failed') // Exit try block
         }
 
         const tokenData = await tokenResponse.json()
@@ -170,17 +175,114 @@ export async function GET(request: NextRequest) {
             ? BigInt(Date.now() + tokenData.expires_in * 1000)
             : null
 
-        // First, we need to get or create a user
-        // For now, we'll use a placeholder user ID until we implement user info fetching
-        const userId = `mcp_user_${nanoid()}`
-        console.log('[OAuth Callback] Generated placeholder user ID:', userId)
+        // Fetch userinfo from upstream OAuth provider
+        let email: string | null = null
+        let upstreamSub: string | null = null
+        let profileData: any = null
+        
+        const userinfoUrl = customOAuthConfig.userinfoUrl || 
+            await getUserinfoUrlFromMetadata(customOAuthConfig.metadataUrl)
+        
+        if (userinfoUrl) {
+            console.log('[OAuth Callback] Fetching userinfo from:', userinfoUrl)
+            try {
+                const userinfoResponse = await fetch(userinfoUrl, {
+                    headers: {
+                        'Authorization': `Bearer ${tokenData.access_token}`
+                    }
+                })
+                
+                if (userinfoResponse.ok) {
+                    profileData = await userinfoResponse.json()
+                    email = profileData.email || null
+                    upstreamSub = profileData.sub || null
+                    console.log('[OAuth Callback] Userinfo retrieved:', {
+                        hasEmail: !!email,
+                        hasSub: !!upstreamSub,
+                        hasName: !!profileData.name
+                    })
+                } else {
+                    console.error('[OAuth Callback] Failed to fetch userinfo:', userinfoResponse.status)
+                }
+            } catch (error) {
+                console.error('[OAuth Callback] Error fetching userinfo:', error)
+            }
+        } else {
+            console.log('[OAuth Callback] No userinfo endpoint available')
+        }
 
-        console.log('[OAuth Callback] Storing upstream tokens...')
+        // Organization-scoped user deduplication
+        let mcpServerUserId: string | undefined
+        
+        // First try to find existing user within the organization scope
+        if (email || upstreamSub) {
+            console.log('[OAuth Callback] Looking for existing user with email:', email, 'or sub:', upstreamSub)
+            
+            // Build query to find users within the same organization
+            const existingUserQuery = db
+                .selectDistinct({ userId: schema.mcpServerUser.id })
+                .from(schema.mcpServerUser)
+                .leftJoin(
+                    schema.mcpServerSession,
+                    eq(schema.mcpServerSession.mcpServerUserId, schema.mcpServerUser.id)
+                )
+                .leftJoin(
+                    schema.mcpServers,
+                    eq(schema.mcpServers.slug, schema.mcpServerSession.mcpServerSlug)
+                )
+                .where(
+                    and(
+                        eq(schema.mcpServers.organizationId, customOAuthConfig.organizationId),
+                        email && upstreamSub
+                            ? sql`(${schema.mcpServerUser.email} = ${email} OR ${schema.mcpServerUser.upstreamSub} = ${upstreamSub})`
+                            : email 
+                                ? eq(schema.mcpServerUser.email, email)
+                                : eq(schema.mcpServerUser.upstreamSub, upstreamSub!)
+                    )
+                )
+                .limit(1)
+            
+            const [existingUser] = await existingUserQuery
+            
+            if (existingUser) {
+                mcpServerUserId = existingUser.userId
+                console.log('[OAuth Callback] Found existing user:', mcpServerUserId)
+                
+                // Update user profile data if we have new information
+                if (profileData) {
+                    await db
+                        .update(schema.mcpServerUser)
+                        .set({
+                            email: email || undefined,
+                            upstreamSub: upstreamSub || undefined,
+                            profileData: profileData
+                        })
+                        .where(eq(schema.mcpServerUser.id, mcpServerUserId))
+                }
+            }
+        }
+        
+        // If no existing user found, create a new one
+        if (!mcpServerUserId) {
+            console.log('[OAuth Callback] Creating new user with email:', email, 'sub:', upstreamSub)
+            const [newUser] = await db
+                .insert(schema.mcpServerUser)
+                .values({
+                    email: email,
+                    upstreamSub: upstreamSub,
+                    profileData: profileData
+                })
+                .returning()
+            mcpServerUserId = newUser.id
+            console.log('[OAuth Callback] Created new user:', mcpServerUserId)
+        }
+
+        console.log('[OAuth Callback] Storing upstream tokens with user ID:', mcpServerUserId)
         const [upstreamToken] = await db
             .insert(schema.upstreamOAuthTokens)
             .values({
                 id: `uoat_${nanoid()}`,
-                mcpServerUserId: userId, // This should be resolved from userinfo endpoint
+                mcpServerUserId: mcpServerUserId!, // Now using real user ID
                 oauthConfigId: customOAuthConfig.id,
                 accessToken: tokenData.access_token, // TODO: Encrypt this
                 refreshToken: tokenData.refresh_token || null, // TODO: Encrypt this
@@ -223,19 +325,33 @@ export async function GET(request: NextRequest) {
             hasState: !!session.clientState
         })
 
-        return redirect(`${session.redirectUri}?${redirectParams.toString()}`)
+        successRedirectUrl = `${session.redirectUri}?${redirectParams.toString()}`
 
     } catch (error) {
         console.error('[OAuth Callback] Token exchange error:', error)
-        const errorParams = new URLSearchParams({
-            error: 'server_error',
-            error_description: 'Token exchange failed'
-        })
-        if (session.clientState) {
-            errorParams.set('state', session.clientState)
+        
+        // If we don't already have an error redirect URL, create one
+        if (!errorRedirectUrl) {
+            const errorParams = new URLSearchParams({
+                error: 'server_error',
+                error_description: 'Token exchange failed'
+            })
+            if (session.clientState) {
+                errorParams.set('state', session.clientState)
+            }
+            errorRedirectUrl = `${session.redirectUri}?${errorParams.toString()}`
         }
-        return redirect(`${session.redirectUri}?${errorParams.toString()}`)
     }
+    
+    // Perform the redirect outside of the try-catch block
+    if (successRedirectUrl) {
+        return redirect(successRedirectUrl)
+    } else if (errorRedirectUrl) {
+        return redirect(errorRedirectUrl)
+    }
+    
+    // Fallback error response (should not normally reach here)
+    return new Response('OAuth callback failed', { status: 500 })
 }
 
 // Helper function to get token URL from metadata
@@ -248,6 +364,23 @@ async function getTokenUrlFromMetadata(metadataUrl: string): Promise<string | nu
         }
     } catch (error) {
         console.error('Failed to fetch OAuth metadata:', error)
+    }
+    return null
+}
+
+// Helper function to get userinfo URL from metadata
+async function getUserinfoUrlFromMetadata(metadataUrl: string): Promise<string | null> {
+    try {
+        console.log('[OAuth Callback] Fetching metadata for userinfo endpoint from:', metadataUrl)
+        const response = await fetch(metadataUrl)
+        if (response.ok) {
+            const metadata = await response.json()
+            const userinfoEndpoint = metadata.userinfo_endpoint || null
+            console.log('[OAuth Callback] UserInfo endpoint from metadata:', userinfoEndpoint)
+            return userinfoEndpoint
+        }
+    } catch (error) {
+        console.error('[OAuth Callback] Failed to fetch OAuth metadata for userinfo:', error)
     }
     return null
 }

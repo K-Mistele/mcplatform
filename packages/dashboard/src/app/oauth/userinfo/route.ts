@@ -5,6 +5,15 @@ import type { NextRequest } from 'next/server'
 
 export const dynamic = 'force-dynamic'
 
+// Helper function to add CORS headers to all responses
+function corsHeaders(headers: Record<string, string> = {}) {
+    return {
+        'Access-Control-Allow-Origin': '*',
+        'Access-Control-Allow-Credentials': 'true',
+        ...headers
+    }
+}
+
 export async function GET(request: NextRequest) {
     console.log('[OAuth UserInfo] UserInfo request received')
     
@@ -21,10 +30,10 @@ export async function GET(request: NextRequest) {
             error_description: 'Missing or invalid Authorization header'
         }), {
             status: 401,
-            headers: { 
+            headers: corsHeaders({ 
                 'Content-Type': 'application/json',
                 'WWW-Authenticate': 'Bearer'
-            }
+            })
         })
     }
 
@@ -51,10 +60,10 @@ export async function GET(request: NextRequest) {
             error_description: 'Invalid or expired access token'
         }), {
             status: 401,
-            headers: { 
+            headers: corsHeaders({ 
                 'Content-Type': 'application/json',
                 'WWW-Authenticate': 'Bearer error="invalid_token"'
-            }
+            })
         })
     }
 
@@ -73,7 +82,7 @@ export async function GET(request: NextRequest) {
             error_description: 'Upstream token not found'
         }), {
             status: 500,
-            headers: { 'Content-Type': 'application/json' }
+            headers: corsHeaders({ 'Content-Type': 'application/json' })
         })
     }
 
@@ -89,10 +98,10 @@ export async function GET(request: NextRequest) {
             error_description: 'Upstream token has expired'
         }), {
             status: 401,
-            headers: { 
+            headers: corsHeaders({ 
                 'Content-Type': 'application/json',
                 'WWW-Authenticate': 'Bearer error="invalid_token"'
-            }
+            })
         })
     }
 
@@ -109,7 +118,7 @@ export async function GET(request: NextRequest) {
             error_description: 'OAuth configuration not found'
         }), {
             status: 500,
-            headers: { 'Content-Type': 'application/json' }
+            headers: corsHeaders({ 'Content-Type': 'application/json' })
         })
     }
 
@@ -125,7 +134,7 @@ export async function GET(request: NextRequest) {
             // We don't have other user info without the userinfo endpoint
         }), {
             status: 200,
-            headers: { 'Content-Type': 'application/json' }
+            headers: corsHeaders({ 'Content-Type': 'application/json' })
         })
     }
 
@@ -157,15 +166,6 @@ export async function GET(request: NextRequest) {
             hasName: !!userinfo.name
         })
         
-        // Update the user ID in our database if we have a sub from upstream
-        if (userinfo.sub && upstreamToken.mcpServerUserId !== userinfo.sub) {
-            console.log('[OAuth UserInfo] Updating user ID from', upstreamToken.mcpServerUserId, 'to', userinfo.sub)
-            await db
-                .update(schema.upstreamOAuthTokens)
-                .set({ mcpServerUserId: userinfo.sub })
-                .where(eq(schema.upstreamOAuthTokens.id, upstreamToken.id))
-        }
-
         // Return the user info to the MCP client
         console.log('[OAuth UserInfo] Returning userinfo to MCP client')
         return new Response(JSON.stringify(userinfo), {
@@ -181,7 +181,7 @@ export async function GET(request: NextRequest) {
             sub: upstreamToken.mcpServerUserId
         }), {
             status: 200,
-            headers: { 'Content-Type': 'application/json' }
+            headers: corsHeaders({ 'Content-Type': 'application/json' })
         })
     }
 }

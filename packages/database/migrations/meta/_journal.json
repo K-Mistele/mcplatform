@@ -64,6 +64,13 @@
       "when": 1757693594921,
       "tag": "0008_wet_mantis",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1757707109075,
+      "tag": "0009_rare_invaders",
+      "breakpoints": true
     }
   ]
 }
