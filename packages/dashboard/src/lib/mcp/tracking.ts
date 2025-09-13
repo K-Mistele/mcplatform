@@ -4,9 +4,10 @@
  */
 import { nanoid } from 'common/nanoid'
 import { db, mcpOAuthUser, schema } from 'database'
-import { and, eq, gt, or } from 'drizzle-orm'
+import { eq, or } from 'drizzle-orm'
 import { headers } from 'next/headers'
 import { auth } from '../auth/mcp/auth'
+import { resolveProxyTokenToUser, isProxySession } from './auth-utils'
 import type { McpServerConfig } from './types'
 
 /**
@@ -72,52 +73,18 @@ export async function getAndTrackMcpServerUser({
 
     // First: if the server uses OAuth, try to get the email from the session
     if (serverConfig.authType?.includes('oauth')) {
-        console.log('[Tracking] Server uses OAuth, authType:', serverConfig.authType)
         
         // For custom OAuth, check for proxy token directly in the request
         if (serverConfig.authType === 'custom_oauth' && request) {
             const authHeader = request.headers.get('authorization')
-            console.log('[Tracking] Checking for proxy token in request, auth header:', authHeader?.substring(0, 20) + '...')
             
             if (authHeader?.startsWith('Bearer mcp_at_')) {
                 const accessToken = authHeader.slice(7) // Remove 'Bearer ' prefix
-                console.log('[Tracking] Found proxy token, looking up user directly')
+                const proxyUser = await resolveProxyTokenToUser(accessToken)
                 
-                // Look up the proxy token to get the user
-                const [proxyToken] = await db
-                    .select()
-                    .from(schema.mcpProxyTokens)
-                    .where(
-                        and(
-                            eq(schema.mcpProxyTokens.accessToken, accessToken),
-                            gt(schema.mcpProxyTokens.expiresAt, Date.now())
-                        )
-                    )
-                    .limit(1)
-                
-                if (proxyToken) {
-                    // Get the upstream token to find the user ID
-                    const [upstreamToken] = await db
-                        .select()
-                        .from(schema.upstreamOAuthTokens)
-                        .where(eq(schema.upstreamOAuthTokens.id, proxyToken.upstreamTokenId))
-                        .limit(1)
-                    
-                    if (upstreamToken?.mcpServerUserId) {
-                        console.log('[Tracking] Found user via proxy token:', upstreamToken.mcpServerUserId)
-                        // Query the user to get email
-                        const [user] = await db
-                            .select()
-                            .from(schema.mcpServerUser)
-                            .where(eq(schema.mcpServerUser.id, upstreamToken.mcpServerUserId))
-                            .limit(1)
-                        
-                        if (user) {
-                            console.log('[Tracking] Found user email via proxy token:', user.email)
-                            email = user.email ?? undefined
-                            mcpServerUserId = user.id
-                        }
-                    }
+                if (proxyUser) {
+                    email = proxyUser.email ?? undefined
+                    mcpServerUserId = proxyUser.userId
                 }
             }
         }
@@ -125,42 +92,22 @@ export async function getAndTrackMcpServerUser({
         // Fallback to Better Auth session if no proxy token found
         if (!email) {
             const session = await auth.api.getMcpSession({ headers: await headers() })
-        console.log('[Tracking] Session retrieved:', {
-            hasSession: !!session,
-            userId: session?.userId,
-            hasTokenType: session ? 'tokenType' in session : false,
-            tokenType: session && 'tokenType' in session ? session.tokenType : undefined,
-            sessionKeys: session ? Object.keys(session) : []
-        })
         
-        if (session?.userId) {
-            // Check if this is a proxy session (custom OAuth) or platform OAuth
-            if ('tokenType' in session && session.tokenType === 'proxy') {
-                console.log('[Tracking] Detected proxy session (custom OAuth), querying mcpServerUser with ID:', session.userId)
-                // Custom OAuth: query mcpServerUser table
-                const [user] = await db
-                    .select()
-                    .from(schema.mcpServerUser)
-                    .where(eq(schema.mcpServerUser.id, session.userId))
-                    .limit(1)
-                console.log('[Tracking] mcpServerUser query result:', {
-                    found: !!user,
-                    userId: user?.id,
-                    email: user?.email,
-                    hasEmail: !!user?.email
-                })
-                if (user?.email) email = user.email
-            } else {
-                console.log('[Tracking] Detected platform OAuth session, querying mcpOAuthUser with ID:', session.userId)
-                // Platform OAuth: query mcpOAuthUser table
-                const [user] = await db.select().from(mcpOAuthUser).where(eq(mcpOAuthUser.id, session.userId)).limit(1)
-                console.log('[Tracking] mcpOAuthUser query result:', {
-                    found: !!user,
-                    userId: user?.id,
-                    email: user?.email,
-                    hasEmail: !!user?.email
-                })
-                if (user?.email) email = user.email
+            if (session?.userId) {
+                // Check if this is a proxy session (custom OAuth) or platform OAuth
+                if (isProxySession(session)) {
+                    // Custom OAuth: query mcpServerUser table
+                    const [user] = await db
+                        .select()
+                        .from(schema.mcpServerUser)
+                        .where(eq(schema.mcpServerUser.id, session.userId))
+                        .limit(1)
+                    if (user?.email) email = user.email
+                } else {
+                    // Platform OAuth: query mcpOAuthUser table
+                    const [user] = await db.select().from(mcpOAuthUser).where(eq(mcpOAuthUser.id, session.userId)).limit(1)
+                    if (user?.email) email = user.email
+                }
             }
         }
     }

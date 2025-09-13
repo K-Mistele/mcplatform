@@ -1,14 +1,9 @@
 import type { OAuthAccessToken } from 'better-auth/plugins'
-import { db, schema } from 'database'
-import { and, eq, gt } from 'drizzle-orm'
+import { resolveProxyTokenToUser } from './auth-utils'
+import type { McpSessionWithType } from './types'
 
-// Extended session type to support both platform OAuth and proxy tokens
-export type McpAuthSession = OAuthAccessToken | {
-    tokenType: 'proxy'
-    accessToken: string
-    userId: string
-    expiresAt?: number | null
-}
+// Re-export the session type for compatibility
+export type McpAuthSession = McpSessionWithType
 
 export const withMcpAuth = <
     Auth extends {
@@ -30,65 +25,24 @@ export const withMcpAuth = <
         
         let session: McpAuthSession | null = null
         
-        console.log('[WithMcpAuth] Auth header:', authHeader?.substring(0, 20) + '...')
         
         // Check if this is a proxy token (starts with mcp_at_)
         if (authHeader?.startsWith('Bearer mcp_at_')) {
             const accessToken = authHeader.slice(7) // Remove 'Bearer ' prefix
-            console.log('[WithMcpAuth] Detected proxy token, looking up in mcpProxyTokens')
+            const proxyUser = await resolveProxyTokenToUser(accessToken)
             
-            // Look up the proxy token
-            const [proxyToken] = await db
-                .select()
-                .from(schema.mcpProxyTokens)
-                .where(
-                    and(
-                        eq(schema.mcpProxyTokens.accessToken, accessToken),
-                        gt(schema.mcpProxyTokens.expiresAt, Date.now())
-                    )
-                )
-                .limit(1)
-            
-            console.log('[WithMcpAuth] Proxy token lookup result:', {
-                found: !!proxyToken,
-                upstreamTokenId: proxyToken?.upstreamTokenId,
-                expiresAt: proxyToken?.expiresAt
-            })
-            
-            if (proxyToken) {
-                // Get the upstream token to find the user ID
-                const [upstreamToken] = await db
-                    .select()
-                    .from(schema.upstreamOAuthTokens)
-                    .where(eq(schema.upstreamOAuthTokens.id, proxyToken.upstreamTokenId))
-                    .limit(1)
-                
-                console.log('[WithMcpAuth] Upstream token lookup result:', {
-                    found: !!upstreamToken,
-                    mcpServerUserId: upstreamToken?.mcpServerUserId,
-                    oauthConfigId: upstreamToken?.oauthConfigId
-                })
-                
-                if (upstreamToken) {
-                    session = {
-                        tokenType: 'proxy',
-                        accessToken: accessToken,
-                        userId: upstreamToken.mcpServerUserId,
-                        expiresAt: proxyToken.expiresAt
-                    }
-                    console.log('[WithMcpAuth] Created proxy session with userId:', upstreamToken.mcpServerUserId)
+            if (proxyUser) {
+                session = {
+                    tokenType: 'proxy',
+                    accessToken: accessToken,
+                    userId: proxyUser.userId,
+                    expiresAt: proxyUser.expiresAt
                 }
             }
         } else {
-            console.log('[WithMcpAuth] Not a proxy token, trying platform OAuth session')
             // Try platform OAuth session
             session = await auth.api.getMcpSession({
                 headers: req.headers
-            })
-            console.log('[WithMcpAuth] Platform OAuth session result:', {
-                found: !!session,
-                userId: session?.userId,
-                sessionKeys: session ? Object.keys(session) : []
             })
         }
         
