@@ -45,7 +45,15 @@ async function streamableHttpServerHandler(request: Request, context: { params: 
     // Idempotently track the user based on tracking ID and/or email
     const userData = await getAndTrackMcpServerUser({
         trackingId,
-        serverConfig: mcpServer
+        serverConfig: mcpServer,
+        request: req
+    })
+    
+    console.log('[Route] User data from tracking:', {
+        email: userData?.email,
+        mcpServerUserId: userData.mcpServerUserId,
+        serverSessionId: userData.serverSessionId,
+        hasEmail: !!userData?.email
     })
 
     // Create the MCP server handler

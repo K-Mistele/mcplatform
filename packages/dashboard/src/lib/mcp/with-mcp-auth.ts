@@ -30,9 +30,12 @@ export const withMcpAuth = <
         
         let session: McpAuthSession | null = null
         
+        console.log('[WithMcpAuth] Auth header:', authHeader?.substring(0, 20) + '...')
+        
         // Check if this is a proxy token (starts with mcp_at_)
         if (authHeader?.startsWith('Bearer mcp_at_')) {
             const accessToken = authHeader.slice(7) // Remove 'Bearer ' prefix
+            console.log('[WithMcpAuth] Detected proxy token, looking up in mcpProxyTokens')
             
             // Look up the proxy token
             const [proxyToken] = await db
@@ -46,6 +49,12 @@ export const withMcpAuth = <
                 )
                 .limit(1)
             
+            console.log('[WithMcpAuth] Proxy token lookup result:', {
+                found: !!proxyToken,
+                upstreamTokenId: proxyToken?.upstreamTokenId,
+                expiresAt: proxyToken?.expiresAt
+            })
+            
             if (proxyToken) {
                 // Get the upstream token to find the user ID
                 const [upstreamToken] = await db
@@ -54,6 +63,12 @@ export const withMcpAuth = <
                     .where(eq(schema.upstreamOAuthTokens.id, proxyToken.upstreamTokenId))
                     .limit(1)
                 
+                console.log('[WithMcpAuth] Upstream token lookup result:', {
+                    found: !!upstreamToken,
+                    mcpServerUserId: upstreamToken?.mcpServerUserId,
+                    oauthConfigId: upstreamToken?.oauthConfigId
+                })
+                
                 if (upstreamToken) {
                     session = {
                         tokenType: 'proxy',
@@ -61,12 +76,19 @@ export const withMcpAuth = <
                         userId: upstreamToken.mcpServerUserId,
                         expiresAt: proxyToken.expiresAt
                     }
+                    console.log('[WithMcpAuth] Created proxy session with userId:', upstreamToken.mcpServerUserId)
                 }
             }
         } else {
+            console.log('[WithMcpAuth] Not a proxy token, trying platform OAuth session')
             // Try platform OAuth session
             session = await auth.api.getMcpSession({
                 headers: req.headers
+            })
+            console.log('[WithMcpAuth] Platform OAuth session result:', {
+                found: !!session,
+                userId: session?.userId,
+                sessionKeys: session ? Object.keys(session) : []
             })
         }
         

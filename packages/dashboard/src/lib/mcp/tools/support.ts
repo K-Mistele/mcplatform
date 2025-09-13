@@ -94,8 +94,17 @@ function useDashboardSupportBackend({
             inputSchema: inputSchema.shape
         },
         async (args: z.infer<typeof inputSchema>) => {
+            console.log('[Support Tool] Called with:', {
+                emailParam: email,
+                argsHasEmail: 'email' in args,
+                argsEmail: 'email' in args ? args.email : undefined,
+                authType: serverConfig.authType,
+                serverSlug: serverConfig.slug
+            })
+            
             // If the user is not authenticated and we don't have an email, ask for it
             if (!email && !('email' in args) && !serverConfig.authType?.includes('oauth')) {
+                console.log('[Support Tool] No email and no OAuth, asking for email')
                 return {
                     content: [
                         {
@@ -106,12 +115,18 @@ function useDashboardSupportBackend({
                 }
             }
             let submissionEmail: string
-            if ('email' in args) submissionEmail = args.email as string
-            else if (email) submissionEmail = email
-            else
+            if ('email' in args) {
+                submissionEmail = args.email as string
+                console.log('[Support Tool] Using email from args:', submissionEmail)
+            } else if (email) {
+                submissionEmail = email
+                console.log('[Support Tool] Using email from param:', submissionEmail)
+            } else {
+                console.log('[Support Tool] No email found, returning login required message')
                 return {
                     content: [{ type: 'text', text: 'To get support, please log in and then call this tool again.' }]
                 }
+            }
 
             // Update the database
             const promises: Array<Promise<unknown>> = [
