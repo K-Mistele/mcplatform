@@ -122,16 +122,15 @@ export async function resolveMcpUserAuth(
             // Platform OAuth session
             const [oauthUser] = await db
                 .select()
-                .from(schema.mcpOauthUser)
-                .where(eq(schema.mcpOauthUser.id, session.userId))
+                .from(schema.mcpOAuthUser)
+                .where(eq(schema.mcpOAuthUser.id, session.userId))
                 .limit(1)
             
             if (oauthUser) {
                 return {
                     userId: oauthUser.id,
                     email: oauthUser.email,
-                    authType: 'platform',
-                    sessionId: session.sessionId
+                    authType: 'platform'
                 }
             }
         }
@@ -143,7 +142,7 @@ export async function resolveMcpUserAuth(
         const [existingSession] = await db
             .select()
             .from(schema.mcpServerSession)
-            .where(eq(schema.mcpServerSession.id, sessionId))
+            .where(eq(schema.mcpServerSession.mcpServerSessionId, sessionId))
             .limit(1)
         
         if (existingSession?.mcpServerUserId) {
