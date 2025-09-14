@@ -16,7 +16,8 @@ export const createMcpServerSchema = z.object({
         .min(6, 'Slug is required')
         .regex(/^[a-z0-9-]+$/, 'Slug must contain only lowercase letters, numbers, and hyphens'),
     authType: mcpServerAuthTypeSchema,
-    supportTicketType: supportRequestMethodSchema
+    supportTicketType: supportRequestMethodSchema,
+    customOAuthConfigId: z.string().optional()
 })
 
 export const validateSubdomainSchema = z.object({

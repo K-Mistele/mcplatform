@@ -24,9 +24,10 @@ async function handler(request: Request) {
     }
 
     const subdomain = parts[0]
-    const [mcpServerConfiguration] = await db
+    const [{ mcp_servers: mcpServerConfiguration, custom_oauth_configs: customOAuthConfig }] = await db
         .select()
         .from(schema.mcpServers)
+        .leftJoin(schema.customOAuthConfigs, eq(schema.mcpServers.customOAuthConfigId, schema.customOAuthConfigs.id))
         .where(eq(schema.mcpServers.slug, subdomain))
         .limit(1)
 
@@ -46,10 +47,17 @@ async function handler(request: Request) {
         return prh(request)
     }
     if (mcpServerConfiguration.authType === 'custom_oauth') {
-        const authServerUrl = mcpServerConfiguration.oauthIssuerUrl!
+        if (!customOAuthConfig) return new Response('OAuth config not found', { status: 404 })
+
+        console.log(
+            '[oauth-protected-resource] Custom OAuth config found, fetching metadata from:',
+            customOAuthConfig.metadataUrl
+        )
+        const authServerUrl = `${host.includes('localhost') ? 'http' : 'https'}://${host}`
+        console.log('authServerUrl', authServerUrl)
 
         const prh = protectedResourceHandler({
-            // Specify the Issuer URL of the associated Authorization Server
+            // Use the issuer URL from the OAuth server's metadata
             authServerUrls: [authServerUrl]
         })
 

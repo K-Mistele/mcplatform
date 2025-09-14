@@ -6,6 +6,7 @@ import {
     IconFileWord,
     IconHelp,
     IconHelpCircle,
+    IconKey,
     IconReport,
     IconSearch,
     IconServer2,
@@ -54,6 +55,12 @@ export const data = {
             url: '/dashboard/users',
             icon: IconUsers,
             description: 'View users and their connected MCP servers'
+        },
+        {
+            title: 'OAuth Configs',
+            url: '/dashboard/oauth-configs',
+            icon: IconKey,
+            description: 'Manage custom OAuth configurations for your MCP servers'
         },
         {
             title: 'Support Tickets',

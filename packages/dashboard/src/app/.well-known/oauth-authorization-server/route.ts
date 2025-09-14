@@ -44,13 +44,56 @@ export async function GET(request: NextRequest) {
         })
     }
 
-    // TODO - support custom oauth / openid connect
+    // Support custom oauth via proxy endpoints
     if (mcpServerConfiguration.authType === 'custom_oauth') {
         console.log('Using custom OAuth for server', mcpServerConfiguration.name)
-        return new Response('Not implemented', { status: 501 })
+        
+        // Check if the server has a custom OAuth configuration
+        if (!mcpServerConfiguration.customOAuthConfigId) {
+            console.error('Custom OAuth selected but no configuration found for server', mcpServerConfiguration.name)
+            return new Response('OAuth configuration not found', { status: 404 })
+        }
+
+        // Fetch the OAuth configuration to get the configured scopes
+        const [oauthConfig] = await db
+            .select()
+            .from(schema.customOAuthConfigs)
+            .where(eq(schema.customOAuthConfigs.id, mcpServerConfiguration.customOAuthConfigId))
+            .limit(1)
+
+        // Return metadata pointing to our proxy endpoints
+        const baseUrl = `${requestUrl.protocol}//${host}`
+        const metadata = {
+            issuer: baseUrl,
+            authorization_endpoint: `${baseUrl}/oauth/authorize`,
+            token_endpoint: `${baseUrl}/oauth/token`,
+            userinfo_endpoint: `${baseUrl}/oauth/userinfo`,
+            jwks_uri: `${baseUrl}/oauth/jwks`,
+            registration_endpoint: `${baseUrl}/oauth/register`,
+            scopes_supported: oauthConfig?.scopes ? oauthConfig.scopes.split(' ') : ['openid', 'profile', 'email'],
+            response_types_supported: ['code'],
+            response_modes_supported: ['query'],
+            grant_types_supported: ['authorization_code', 'refresh_token'],
+            subject_types_supported: ['public'],
+            id_token_signing_alg_values_supported: ['RS256'],
+            token_endpoint_auth_methods_supported: ['client_secret_basic', 'client_secret_post'],
+            code_challenge_methods_supported: ['S256'],
+            claims_supported: ['sub', 'iss', 'aud', 'exp', 'nbf', 'iat', 'jti', 'email', 'email_verified', 'name']
+        }
+
+        return new Response(JSON.stringify(metadata), {
+            headers: {
+                'Content-Type': 'application/json',
+                'Access-Control-Allow-Origin': '*',
+                'Access-Control-Allow-Methods': 'POST, OPTIONS',
+                'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+                'Access-Control-Max-Age': '86400'
+            }
+        })
     }
 
     // otherwise we don't support this endpoint.
+    console.error('[OAuth Discovery] Unsupported auth type:', mcpServerConfiguration.authType)
     return new Response('Not found', { status: 404 })
 }
 

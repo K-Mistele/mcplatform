@@ -26,9 +26,8 @@ async function streamableHttpServerHandler(request: Request, context: { params: 
     const trackingId = maybeGetTrackingId(slug)
     let req: Request
     if (request.body) {
-        const { request: newRequest, text: requestBody } = safelyReadRequest(request)
+        const { request: newRequest } = safelyReadRequest(request)
         req = newRequest
-        requestBody.then((text) => console.log(`JSON RPC REQUEST:`, text))
     } else {
         req = request
     }
@@ -45,8 +44,10 @@ async function streamableHttpServerHandler(request: Request, context: { params: 
     // Idempotently track the user based on tracking ID and/or email
     const userData = await getAndTrackMcpServerUser({
         trackingId,
-        serverConfig: mcpServer
+        serverConfig: mcpServer,
+        request: req
     })
+    
 
     // Create the MCP server handler
     const requestHandler = createHandlerForServer({
@@ -59,8 +60,7 @@ async function streamableHttpServerHandler(request: Request, context: { params: 
 
     // await the handler with the request.
     const response = await requestHandler(req)
-    const { response: newResponse, text: responseText } = cloneResponse(response)
-    responseText.then((text) => console.log(`JSON RPC RESPONSE:`, text))
+    const { response: newResponse } = cloneResponse(response)
 
     // If the user data is present, set the session ID in the response headers.
     newResponse.headers.set('Mcp-Session-Id', userData.serverSessionId)

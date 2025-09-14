@@ -1,0 +1,1 @@
+ALTER TABLE "custom_oauth_configs" ADD COLUMN "scopes" text DEFAULT 'openid profile email' NOT NULL;

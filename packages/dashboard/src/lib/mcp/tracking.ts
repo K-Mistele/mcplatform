@@ -3,10 +3,11 @@
  * TODO this needs to user something faster than postgres.
  */
 import { nanoid } from 'common/nanoid'
-import { db, schema, mcpOAuthUser } from 'database'
+import { db, mcpOAuthUser, schema } from 'database'
 import { eq, or } from 'drizzle-orm'
 import { headers } from 'next/headers'
 import { auth } from '../auth/mcp/auth'
+import { resolveProxyTokenToUser, isProxySession } from './auth-utils'
 import type { McpServerConfig } from './types'
 
 /**
@@ -56,28 +57,58 @@ export async function trackToolCall({
  */
 export async function getAndTrackMcpServerUser({
     serverConfig,
+    request,
     ...data
 }: {
     trackingId?: string | null
     serverConfig: McpServerConfig
+    request?: Request
 }) {
     let serverSessionId: string | null = (await headers()).get('Mcp-Session-Id')
-    let email: string | undefined 
+    let email: string | undefined
     let emailUpdated = false
     let trackingIdUpdated = false
-    let mcpServerUserId: string | undefined 
+    let mcpServerUserId: string | undefined
     let trackingId: string | undefined | null = data.trackingId
 
     // First: if the server uses OAuth, try to get the email from the session
     if (serverConfig.authType?.includes('oauth')) {
-        const session = await auth.api.getMcpSession({ headers: await headers() })
-        if (session?.userId) {
-            const [user] = await db
-                .select()
-                .from(mcpOAuthUser)
-                .where(eq(mcpOAuthUser.id, session.userId))
-                .limit(1)
-            if (user) email = user.email
+        
+        // For custom OAuth, check for proxy token directly in the request
+        if (serverConfig.authType === 'custom_oauth' && request) {
+            const authHeader = request.headers.get('authorization')
+            
+            if (authHeader?.startsWith('Bearer mcp_at_')) {
+                const accessToken = authHeader.slice(7) // Remove 'Bearer ' prefix
+                const proxyUser = await resolveProxyTokenToUser(accessToken)
+                
+                if (proxyUser) {
+                    email = proxyUser.email ?? undefined
+                    mcpServerUserId = proxyUser.userId
+                }
+            }
+        }
+        
+        // Fallback to Better Auth session if no proxy token found
+        if (!email) {
+            const session = await auth.api.getMcpSession({ headers: await headers() })
+        
+            if (session?.userId) {
+                // Check if this is a proxy session (custom OAuth) or platform OAuth
+                if (isProxySession(session)) {
+                    // Custom OAuth: query mcpServerUser table
+                    const [user] = await db
+                        .select()
+                        .from(schema.mcpServerUser)
+                        .where(eq(schema.mcpServerUser.id, session.userId))
+                        .limit(1)
+                    if (user?.email) email = user.email
+                } else {
+                    // Platform OAuth: query mcpOAuthUser table
+                    const [user] = await db.select().from(mcpOAuthUser).where(eq(mcpOAuthUser.id, session.userId)).limit(1)
+                    if (user?.email) email = user.email
+                }
+            }
         }
     }
 
