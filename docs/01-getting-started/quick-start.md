@@ -38,7 +38,14 @@ ngrok config check  # Should show valid configuration
    
    Fill in the required values (see [Environment Variables](#environment-variables) section below).
 
-3. **Start the development environment:**
+3. **Install SST tunnel (first time only):**
+   ```bash
+   sudo sst tunnel install
+   ```
+   
+   This creates a network interface for secure tunnels to AWS resources. You only need to run this once on your machine.
+
+4. **Start the development environment:**
    ```bash
    bun run dev
    ```
@@ -49,7 +56,7 @@ ngrok config check  # Should show valid configuration
    - Starts ngrok for external connectivity
    - Runs database migrations automatically
 
-4. **Access the application:**
+5. **Access the application:**
    
    Once the setup completes, you'll see output similar to:
    ```

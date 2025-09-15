@@ -80,6 +80,16 @@ bun run studio
 
 SST (Serverless Stack) manages AWS infrastructure and local development.
 
+### Initial Setup
+
+**Install the tunnel** - Required before first development run:
+
+```bash
+sudo sst tunnel install
+```
+
+To be able to create a tunnel, SST needs to create a network interface on your local machine. You only need to run this once on your machine.
+
 ### SST Commands
 
 ```bash
