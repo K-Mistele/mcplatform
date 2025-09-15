@@ -31,7 +31,7 @@ aws logs tail "/aws/lambda/mcplatform-dev-DashboardServerUseast1Function-wdsaeea
 bun sst tunnel --stage dev
 
 # Terminal 2: Run Drizzle Studio
-bun run studio
+bun sst shell --stage dev -- bun run studio
 # Access: https://local.drizzle.studio/
 
 # Terminal 3 (or any other): Connect with psql (uses same tunnel)
@@ -78,7 +78,19 @@ bun sst deploy --stage {stage-name}
 
 # Remove stage (be careful!)
 bun sst remove --stage {stage-name}
+
+# Example: Remove specific stage
+bun sst remove --stage arshath
 ```
+
+⚠️ **Warning**: Removing a stage permanently deletes ALL AWS resources including:
+- Lambda functions and API Gateway
+- RDS database and all data
+- Redis instance and cache
+- VPC, subnets, and networking
+- S3 buckets and stored files
+
+Make sure you want to delete the stage before running the remove command.
 
 ## Quick Troubleshooting
 
