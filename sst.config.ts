@@ -139,7 +139,7 @@ export default $config({
 
         const nextApp = new sst.aws.Nextjs('Dashboard', {
             path: './packages/dashboard',
-            regions: ['us-east-1'],
+            regions: ['us-east-2'],
             domain: {
                 name: domainName,
                 dns: sst.aws.dns(),
