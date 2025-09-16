@@ -14,21 +14,12 @@ This pilot program will validate MCPlatform's value proposition with 5-10 target
 
 ### Infrastructure Requirements
 
-#### Production Environment Setup
-- **Cloud Provider**: AWS (via SST)
-- **Domain**: `*.naptha.gg` (wildcard DNS already configured)
-- **Database**: RDS PostgreSQL (db.t3.micro → db.t3.small for pilot)
-- **Cache**: Redis/Valkey cluster
-- **Compute**: ECS with auto-scaling (1-3 instances)
-- **CDN**: CloudFront for static assets
 
 #### Pre-Pilot Technical Enhancements (Week -1)
 
 **High Priority (2-3 days)**:
-1. **CI/CD Pipeline Setup**
-   - Staging environment deployment
 
-2. **Enhanced Monitoring**
+**Enhanced Monitoring**
    - CloudWatch dashboards for customer metrics
    - Error tracking and alerting
    - Customer usage analytics
