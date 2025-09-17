@@ -65,8 +65,8 @@ Each pilot customer receives:
 #### Week 0: Pre-Pilot Setup
 **Technical**:
 - [ ] Deploy infrastructure
+- [ ] Set up redirect urls and related creds
 - [ ] Set up monitoring and alerting
-- [ ] Prepare onboarding automation
 
 **Customer Preparation**:
 - [ ] Finalize 5-10 pilot customers
