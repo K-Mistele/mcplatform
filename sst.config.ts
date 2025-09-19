@@ -20,6 +20,12 @@ const NEXT_PUBLIC_BETTER_AUTH_URL = requireEnv('NEXT_PUBLIC_BETTER_AUTH_URL')
 const GOOGLE_API_KEY = requireEnv('GOOGLE_API_KEY')
 const TURBOPUFFER_API_KEY = requireEnv('TURBOPUFFER_API_KEY')
 
+// Domain configuration
+const DOMAIN_NAME = process.env.DOMAIN_NAME || 'naptha.gg'
+
+// Ngrok configuration for development
+const NGROK_STATIC_URL = process.env.NGROK_STATIC_URL
+
 export default $config({
     app(input) {
         return {
@@ -62,7 +68,7 @@ export default $config({
         })
 
         // Configure the next.js app domain; this will be used to connect inngest to the app.
-        const appDomain = $app.stage === 'production' ? 'naptha.gg' : `${$app.stage}.naptha.gg`
+        const appDomain = $app.stage === 'production' ? DOMAIN_NAME : `${$app.stage}.${DOMAIN_NAME}`
         const appUrl = `https://${appDomain}/api/inngest`
 
         // URL-encode the postgres and redis passwords since inngest uses net/url in go
@@ -77,7 +83,7 @@ export default $config({
             'inngest',
             'start',
             '-u',
-            appUrl,
+            $dev ? `https://${NGROK_STATIC_URL}/api/inngest` : appUrl,
             '--signing-key',
             INNGEST_SIGNING_KEY,
             '--event-key',
@@ -135,7 +141,7 @@ export default $config({
             }
         })
 
-        const domainName = $app.stage === 'production' ? 'naptha.gg' : `${$app.stage}.naptha.gg`
+        const domainName = $app.stage === 'production' ? DOMAIN_NAME : `${$app.stage}.${DOMAIN_NAME}`
 
         const nextApp = new sst.aws.Nextjs('Dashboard', {
             path: './packages/dashboard',
