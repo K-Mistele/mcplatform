@@ -94,6 +94,7 @@ function useDashboardSupportBackend({
             inputSchema: inputSchema.shape
         },
         async (args: z.infer<typeof inputSchema>) => {
+            
             // If the user is not authenticated and we don't have an email, ask for it
             if (!email && !('email' in args) && !serverConfig.authType?.includes('oauth')) {
                 return {
@@ -106,12 +107,15 @@ function useDashboardSupportBackend({
                 }
             }
             let submissionEmail: string
-            if ('email' in args) submissionEmail = args.email as string
-            else if (email) submissionEmail = email
-            else
+            if ('email' in args) {
+                submissionEmail = args.email as string
+            } else if (email) {
+                submissionEmail = email
+            } else {
                 return {
                     content: [{ type: 'text', text: 'To get support, please log in and then call this tool again.' }]
                 }
+            }
 
             // Update the database
             const promises: Array<Promise<unknown>> = [

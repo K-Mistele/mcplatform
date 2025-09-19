@@ -88,7 +88,8 @@ export const updateMcpServerConfiguration = base
         z.object({
             serverId: z.string(),
             authType: z.enum(['platform_oauth', 'custom_oauth', 'none', 'collect_email']),
-            supportTicketType: z.enum(['slack', 'linear', 'dashboard', 'none'])
+            supportTicketType: z.enum(['slack', 'linear', 'dashboard', 'none']),
+            customOAuthConfigId: z.string().optional()
         })
     )
     .handler(async ({ input, errors, context }) => {
@@ -99,7 +100,8 @@ export const updateMcpServerConfiguration = base
             .update(schema.mcpServers)
             .set({
                 authType: input.authType,
-                supportTicketType: input.supportTicketType
+                supportTicketType: input.supportTicketType,
+                customOAuthConfigId: input.customOAuthConfigId
             })
             .where(
                 and(

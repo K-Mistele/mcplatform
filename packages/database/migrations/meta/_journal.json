@@ -29,6 +29,48 @@
       "when": 1754329596812,
       "tag": "0003_fresh_blacklash",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1757465115964,
+      "tag": "0004_orange_senator_kelly",
+      "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1757561427729,
+      "tag": "0005_dizzy_vermin",
+      "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1757564613741,
+      "tag": "0006_aspiring_rumiko_fujikawa",
+      "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1757691080271,
+      "tag": "0007_slimy_piledriver",
+      "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1757693594921,
+      "tag": "0008_wet_mantis",
+      "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1757707109075,
+      "tag": "0009_rare_invaders",
+      "breakpoints": true
     }
   ]
 }

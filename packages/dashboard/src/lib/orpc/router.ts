@@ -9,7 +9,11 @@ export const base = os.errors({
     UNAUTHORIZED: {},
     RESOURCE_NOT_FOUND: {},
     INVALID_SUBDOMAIN: {},
-    SUBDOMAIN_ALREADY_EXISTS: {}
+    SUBDOMAIN_ALREADY_EXISTS: {},
+    INVALID_OAUTH_METADATA: {},
+    OAUTH_SERVER_UNREACHABLE: {},
+    RESOURCE_ALREADY_EXISTS: {},
+    RESOURCE_IN_USE: {}
 })
 
 export const executeExample = os

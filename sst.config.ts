@@ -172,13 +172,5 @@ export default $config({
                 command: 'bun run dev'
             }
         })
-
-        // Set up ngrok so that the inngest service can connect to the app
-        new sst.x.DevCommand('Ngrok', {
-            link: [nextApp],
-            dev: {
-                command: 'bun run scripts/ngrok.ts'
-            }
-        })
     }
 })
